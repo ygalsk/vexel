@@ -6,13 +6,14 @@
 src/
   engine/
     input.zig         — Key/mouse event translation from vaxis to engine types
+    timer.zig         — Timer/tween system: one-shot, repeating, interpolation with easing
     
   graphics/
     renderer.zig      — Kitty-based rendering: text, rects, clear, screen info
     kitty.zig         — (Phase 1) Kitty graphics protocol: upload, place, animate, z-index
     image.zig         — (Phase 2) Image loading (PNG via zigimg), sprite sheets, atlas
     compositing.zig   — (Phase 1) Layer compositing, alpha blending, dirty-rect tracking
-    tilemap.zig       — (Phase 5) Tilemap rendering and scrolling
+    tilemap.zig       — Tilemap rendering: viewport culling, smooth scrolling
     
   audio/
     audio.zig         — miniaudio wrapper via zaudio: device management, sound slots, playback
@@ -22,7 +23,7 @@ src/
     lua_api.zig       — Register engine.* functions into Lua (graphics, input, etc.)
     
   persistence/
-    db.zig            — (Phase 5) SQLite wrapper (zqlite) exposed to Lua
+    db.zig            — SQLite wrapper (zqlite) + key-value save API
 
   main.zig            — Standalone binary: parse args, load game dir, run main loop
 ```

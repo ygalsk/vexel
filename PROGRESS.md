@@ -9,8 +9,11 @@
 | 2 | Image & Sprite Support | Done |
 | 3 | Input & Scene Management | Done |
 | 4 | Audio | Done |
-| 5 | Tilemap & Persistence | Not started |
-| 6 | Polish & Codecritter Port | Partially started (1/17) |
+| 5 | Tilemap & Persistence | Done |
+| 6 | Robustness | Not started |
+| 7 | Performance | Partially started (1/8) |
+| 8 | Documentation | Not started |
+| 9 | Codecritter Port | Not started |
 
 ## What's Built
 
@@ -71,6 +74,21 @@ Phase 1's original plan included sub-cell/sextant rendering. The implementation 
 - Game-relative path resolution for asset loading
 - Test game: `games/rhythm/` (4-lane rhythm game with music + SFX)
 
+### Phase 5 — Tilemap & Persistence
+- Timer system: one-shot (`after`) and repeating (`every`) timers with cancel
+- Tween system: smooth interpolation of Lua table fields with easing functions
+  - Easing: linear, ease_in, ease_out, ease_in_out (quadratic)
+  - On-complete callbacks
+- SQLite persistence via zqlite
+  - Raw SQL: `engine.db.open/exec/query/close` with bind parameters
+  - Key-value sugar: `engine.save.set/get` (auto-creates save.db in game dir)
+  - DB handles as Lua userdata with GC finalizers
+- Tilemap renderer: draw tile-based maps with sprite sheet tilesets
+  - Viewport culling (only renders visible tiles)
+  - Smooth scrolling via sub-pixel camera offsets
+  - Dev-assigned compositor layers
+- Test game: `games/roguelike/` (procedural dungeon, save/load, tween camera)
+
 ## Source Files
 
 ```
@@ -86,4 +104,7 @@ src/scripting/lua_engine.zig    — Lua state management, lifecycle calls
 src/scripting/lua_api.zig       — Lua API bindings (engine.* table)
 src/scripting/sprite_system.zig — Retained sprite system, animations
 src/audio/audio.zig             — Audio system (zaudio/miniaudio wrapper)
+src/engine/timer.zig            — Timer/tween system (one-shot, repeating, interpolation)
+src/graphics/tilemap.zig        — Tilemap renderer (sprite sheet tiles, viewport culling)
+src/persistence/db.zig          — SQLite wrapper (zqlite) + key-value save API
 ```

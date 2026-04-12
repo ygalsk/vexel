@@ -406,6 +406,22 @@ pub fn getFrameCount(self: *const Renderer, handle: ImageHandle) u32 {
     return mgr.getFrameCount(handle);
 }
 
+pub const FrameSize = struct { w: u32, h: u32 };
+
+pub fn getFrameSize(self: *const Renderer, handle: ImageHandle) ?FrameSize {
+    const pm = self.pixel_mode orelse return null;
+    const mgr = pm.image_manager orelse return null;
+    const fs = mgr.getFrameSize(handle) orelse return null;
+    return FrameSize{ .w = fs.w, .h = fs.h };
+}
+
+/// Temporarily override sprite mode, returning the previous mode for restore.
+pub fn setSpriteMode(self: *Renderer, mode: SpriteMode) SpriteMode {
+    const prev = self.sprite_mode;
+    self.sprite_mode = mode;
+    return prev;
+}
+
 pub fn updateSize(self: *Renderer, winsize: vaxis.Winsize) void {
     self.screen_info = .{
         .cols = winsize.cols,

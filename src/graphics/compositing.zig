@@ -188,8 +188,8 @@ pub fn drawRect(self: *Compositor, x: i32, y: i32, w: i32, h: i32, color: Color)
     // Clip to buffer bounds
     const x0: usize = @intCast(@max(0, x));
     const y0: usize = @intCast(@max(0, y));
-    const x1: usize = @intCast(@min(@as(i32, self.width), x + w));
-    const y1: usize = @intCast(@min(@as(i32, self.height), y + h));
+    const x1: usize = @intCast(@max(0, @min(@as(i32, self.width), x + w)));
+    const y1: usize = @intCast(@max(0, @min(@as(i32, self.height), y + h)));
     if (x0 >= x1 or y0 >= y1) return;
 
     const layer = &self.layers[self.active_layer];
@@ -276,7 +276,7 @@ pub fn drawCircle(self: *Compositor, cx: i32, cy: i32, r: i32, color: Color) voi
 fn drawHLineRaw(layer: *Layer, buf_w: u16, buf_h: u16, x1: i32, x2: i32, y: i32, color_u32: u32) bool {
     if (y < 0 or y >= buf_h) return false;
     const start: usize = @intCast(@max(0, x1));
-    const end: usize = @intCast(@min(@as(i32, buf_w), x2 + 1));
+    const end: usize = @intCast(@max(0, @min(@as(i32, buf_w), x2 + 1)));
     if (start >= end) return false;
 
     const uy: usize = @intCast(y);

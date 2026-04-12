@@ -188,6 +188,14 @@ pub fn getImageInfo(self: *const ImageManager, handle: ImageHandle) ?ImageInfo {
     };
 }
 
+pub fn getFrameSize(self: *const ImageManager, handle: ImageHandle) ?struct { w: u32, h: u32 } {
+    const img = self.getOccupiedConst(handle) orelse return null;
+    if (img.tile_w == 0 or img.tile_h == 0) {
+        return .{ .w = img.width, .h = img.height };
+    }
+    return .{ .w = @as(u32, img.tile_w), .h = @as(u32, img.tile_h) };
+}
+
 pub fn getFrameRect(self: *const ImageManager, handle: ImageHandle, frame_index: u32) ?Rect {
     const img = self.getOccupiedConst(handle) orelse return null;
     if (img.tile_w == 0 or img.tile_h == 0) {

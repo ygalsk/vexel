@@ -278,7 +278,9 @@ pub fn onKey(self: *SceneManager, key_name: []const u8, action: []const u8) void
         }
         _ = self.lua.pushString(key_name);
         _ = self.lua.pushString(action);
-        self.lua.protectedCall(.{ .args = 2, .results = 0 }) catch {};
+        self.lua.protectedCall(.{ .args = 2, .results = 0 }) catch {
+            self.logSceneError("on_key");
+        };
         self.lua.pop(1); // pop scene table
     }
 }
@@ -297,7 +299,9 @@ pub fn onMouse(self: *SceneManager, x: i32, y: i32, button: []const u8, action: 
         self.lua.pushInteger(y);
         _ = self.lua.pushString(button);
         _ = self.lua.pushString(action);
-        self.lua.protectedCall(.{ .args = 4, .results = 0 }) catch {};
+        self.lua.protectedCall(.{ .args = 4, .results = 0 }) catch {
+            self.logSceneError("on_mouse");
+        };
         self.lua.pop(1);
     }
 }
@@ -325,6 +329,14 @@ fn getCompositor(self: *SceneManager) ?*Compositing {
     return self.renderer.getCompositor();
 }
 
+fn logSceneError(self: *SceneManager, context: []const u8) void {
+    const msg = self.lua.toString(-1) catch "unknown error";
+    var buf: [512]u8 = undefined;
+    const formatted = std.fmt.bufPrint(&buf, "Lua error in scene.{s}: {s}\n", .{ context, msg }) catch "vexel: scene error\n";
+    std.fs.File.stderr().writeAll(formatted) catch {};
+    self.lua.pop(1);
+}
+
 /// Call a zero-arg or data-arg callback on a scene table.
 /// When args > 0, those values must already be on the Lua stack BEFORE this call.
 /// Stack on entry: [...args...] (args values on top)
@@ -344,10 +356,14 @@ fn callSceneCallback(self: *SceneManager, table_ref: i32, func_name: [:0]const u
         self.lua.remove(-2); // remove scene table: [...args...] [func]
         // Rotate func below args: [...] [func] [args...]
         self.lua.rotate(-@as(i32, @intCast(args)) - 1, 1);
-        self.lua.protectedCall(.{ .args = args, .results = 0 }) catch {};
+        self.lua.protectedCall(.{ .args = args, .results = 0 }) catch {
+            self.logSceneError(func_name);
+        };
     } else {
         self.lua.remove(-2); // remove scene table: [func]
-        self.lua.protectedCall(.{ .args = 0, .results = 0 }) catch {};
+        self.lua.protectedCall(.{ .args = 0, .results = 0 }) catch {
+            self.logSceneError(func_name);
+        };
     }
 }
 
@@ -360,7 +376,9 @@ fn callSceneCallbackWithNumber(self: *SceneManager, table_ref: i32, func_name: [
     }
     self.lua.remove(-2); // remove scene table
     self.lua.pushNumber(@floatCast(value));
-    self.lua.protectedCall(.{ .args = 1, .results = 0 }) catch {};
+    self.lua.protectedCall(.{ .args = 1, .results = 0 }) catch {
+        self.logSceneError(func_name);
+    };
 }
 
 // --- Transition blending ---

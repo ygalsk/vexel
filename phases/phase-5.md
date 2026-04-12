@@ -1,58 +1,60 @@
 # Phase 5: Tilemap & Persistence
 
 ## Goal
-Tilemap rendering with scrolling viewport. SQLite persistence for game saves.
+Tilemap rendering with scrolling viewport. SQLite persistence for game saves. Timer/tween system.
 
 ## Deliverables
 
 ### Tilemap Renderer (`src/graphics/tilemap.zig`)
-- [ ] Load tileset image (PNG sprite sheet of tiles)
-- [ ] Accept map data as 2D array of tile indices
-- [ ] Render visible portion of map to screen
-- [ ] Scrolling viewport with camera position
-- [ ] Smooth scrolling (sub-tile pixel offsets)
-- [ ] Multiple tilemap layers (ground, decoration, collision)
+- [x] Accept map data as 1D array of tile indices (row-major, 1-based; 0 = empty)
+- [x] Render visible portion of map to screen (viewport culling)
+- [x] Scrolling viewport with camera position
+- [x] Smooth scrolling (sub-pixel camera offsets)
+- [x] Dev-assigned compositor layers (0-7)
 
 ### Persistence (`src/persistence/db.zig`)
-- [ ] SQLite wrapper via zqlite
-- [ ] Open/close database files
-- [ ] Execute SQL statements with parameters
-- [ ] Query results as Lua tables
-- [ ] Simple key-value save API (sugar over SQLite)
+- [x] SQLite wrapper via zqlite
+- [x] Open/close database files
+- [x] Execute SQL statements with parameters
+- [x] Query results as Lua tables
+- [x] Simple key-value save API (sugar over SQLite)
+- [x] Auto-create save.db in game directory
 
 ### Lua API — Tilemap
-- [ ] `engine.graphics.load_tilemap(path, tile_w, tile_h)` → tilemap handle
-- [ ] `engine.graphics.draw_tilemap(tilemap, map_data, offset_x, offset_y)`
-- [ ] Camera control — set viewport position
+- [x] `engine.graphics.draw_tilemap(tileset, map_data, opts)` — render tilemap with camera
+- [x] Uses existing `load_spritesheet` for tileset loading
 
 ### Lua API — Persistence
-- [ ] `engine.db.open(path)` → db handle
-- [ ] `db:exec(sql, ...)` — execute with bind parameters
-- [ ] `db:query(sql, ...)` → array of row tables
-- [ ] `db:close()`
-- [ ] `engine.save.set(key, value)` — simple key-value
-- [ ] `engine.save.get(key)` → value
-- [ ] Auto-create save directory in game dir
+- [x] `engine.db.open(path)` → db userdata
+- [x] `db:exec(sql, ...)` — execute with bind parameters
+- [x] `db:query(sql, ...)` → array of row tables
+- [x] `db:close()` (also auto-closes via GC)
+- [x] `engine.save.set(key, value)` — simple key-value
+- [x] `engine.save.get(key)` → value or nil
 
-### Timers & Tweens
-- [ ] `engine.timer.after(seconds, callback)`
-- [ ] `engine.timer.every(seconds, callback)`
-- [ ] `engine.timer.cancel(handle)`
-- [ ] `engine.tween(target, props, duration, easing)`
-- [ ] Easing functions: linear, ease_in, ease_out, ease_in_out
+### Timers & Tweens (`src/engine/timer.zig`)
+- [x] `engine.timer.after(seconds, callback)` → handle
+- [x] `engine.timer.every(seconds, callback)` → handle
+- [x] `engine.timer.cancel(handle)`
+- [x] `engine.tween(target, props, duration, easing?, on_complete?)` → handle
+- [x] Easing functions: linear, ease_in, ease_out, ease_in_out
 
 ## Test Game
 Mini roguelike with procedural map and save/load. Demonstrates:
 - Tilemap rendering with scrolling
 - Procedural map generation in Lua
-- Save/load game state via SQLite
-- Timer-based animations
+- Save/load game state via engine.save
+- Timer-based animations (blinking, timed messages)
+- Tween for smooth camera following
 
 ## Files
 ```
-src/graphics/tilemap.zig     — NEW
-src/persistence/db.zig       — NEW
-src/scripting/lua_api.zig    — MODIFY (tilemap + db + timer APIs)
-games/roguelike/main.lua     — NEW test game
-games/roguelike/assets/      — NEW (tileset images)
+src/engine/timer.zig             — NEW
+src/graphics/tilemap.zig         — NEW
+src/persistence/db.zig           — NEW
+src/scripting/lua_api.zig        — MODIFIED (tilemap + db + timer APIs)
+src/main.zig                     — MODIFIED (timer + save_db init)
+build.zig                        — MODIFIED (new modules)
+games/roguelike/main.lua         — NEW test game
+games/roguelike/assets/tileset.png — NEW (4-tile 8x8 tileset)
 ```

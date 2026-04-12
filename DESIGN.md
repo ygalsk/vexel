@@ -27,7 +27,10 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for module structure and rendering pipeli
 | 3 | Input & Scene Management | Pending | [phases/phase-3.md](phases/phase-3.md) |
 | 4 | Audio | Pending | [phases/phase-4.md](phases/phase-4.md) |
 | 5 | Tilemap & Persistence | Pending | [phases/phase-5.md](phases/phase-5.md) |
-| 6 | Polish & Codecritter Port | Pending | [phases/phase-6.md](phases/phase-6.md) |
+| 6 | Robustness | Not started | [phases/phase-6.md](phases/phase-6.md) |
+| 7 | Performance | Partially started (1/8) | [phases/phase-7.md](phases/phase-7.md) |
+| 8 | Documentation | Not started | [phases/phase-8.md](phases/phase-8.md) |
+| 9 | Codecritter Port | Not started | [phases/phase-9.md](phases/phase-9.md) |
 
 ## Dependencies
 

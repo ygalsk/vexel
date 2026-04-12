@@ -102,6 +102,33 @@ pub fn build(b: *std.Build) void {
         },
     });
 
+    const timer_mod = b.createModule(.{
+        .root_source_file = b.path("src/engine/timer.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &.{
+            .{ .name = "zlua", .module = zlua_dep.module("zlua") },
+        },
+    });
+
+    const tilemap_mod = b.createModule(.{
+        .root_source_file = b.path("src/graphics/tilemap.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &.{
+            .{ .name = "renderer", .module = renderer_mod },
+        },
+    });
+
+    const db_mod = b.createModule(.{
+        .root_source_file = b.path("src/persistence/db.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &.{
+            .{ .name = "zqlite", .module = zqlite_dep.module("zqlite") },
+        },
+    });
+
     const audio_mod = if (zaudio_dep) |dep| b.createModule(.{
         .root_source_file = b.path("src/audio/audio.zig"),
         .target = target,
@@ -142,6 +169,9 @@ pub fn build(b: *std.Build) void {
             .{ .name = "sprite_system", .module = sprite_system_mod },
             .{ .name = "scene", .module = scene_mod },
             .{ .name = "input", .module = input_mod },
+            .{ .name = "timer", .module = timer_mod },
+            .{ .name = "db", .module = db_mod },
+            .{ .name = "tilemap", .module = tilemap_mod },
         },
     });
     if (audio_mod) |am| {
@@ -166,6 +196,8 @@ pub fn build(b: *std.Build) void {
                 .{ .name = "lua_engine", .module = lua_engine_mod },
                 .{ .name = "lua_api", .module = lua_api_mod },
                 .{ .name = "sprite_system", .module = sprite_system_mod },
+                .{ .name = "timer", .module = timer_mod },
+                .{ .name = "db", .module = db_mod },
             },
         }),
     });
@@ -229,6 +261,15 @@ pub fn build(b: *std.Build) void {
             .{ .name = "renderer", .module = renderer_mod },
             .{ .name = "compositing", .module = compositing_mod },
         }},
+        .{ .path = "src/engine/timer.zig", .imports = &.{
+            .{ .name = "zlua", .module = zlua_dep.module("zlua") },
+        }},
+        .{ .path = "src/graphics/tilemap.zig", .imports = &.{
+            .{ .name = "renderer", .module = renderer_mod },
+        }},
+        .{ .path = "src/persistence/db.zig", .imports = &.{
+            .{ .name = "zqlite", .module = zqlite_dep.module("zqlite") },
+        }},
         .{ .path = "src/scripting/lua_api.zig", .imports = &.{
             .{ .name = "zlua", .module = zlua_dep.module("zlua") },
             .{ .name = "renderer", .module = renderer_mod },
@@ -236,6 +277,9 @@ pub fn build(b: *std.Build) void {
             .{ .name = "sprite_system", .module = sprite_system_mod },
             .{ .name = "scene", .module = scene_mod },
             .{ .name = "input", .module = input_mod },
+            .{ .name = "timer", .module = timer_mod },
+            .{ .name = "db", .module = db_mod },
+            .{ .name = "tilemap", .module = tilemap_mod },
             .{ .name = "audio", .module = audio_mod.? },
         }},
     };

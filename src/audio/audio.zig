@@ -29,7 +29,8 @@ pub const AudioSystem = struct {
     available: bool,
 
     pub fn init(allocator: Allocator, game_dir: []const u8) AudioSystem {
-        const engine = zaudio.Engine.create(null) catch {
+        zaudio.init(allocator);
+        const engine = zaudio.Engine.create(zaudio.Engine.Config.init()) catch {
             return AudioSystem{
                 .engine = undefined,
                 .slots = .{},
@@ -63,6 +64,7 @@ pub const AudioSystem = struct {
         if (self.available) {
             self.engine.destroy();
         }
+        zaudio.deinit();
     }
 
     pub fn loadSound(self: *AudioSystem, path: [:0]const u8, opts: LoadOpts) !SoundId {

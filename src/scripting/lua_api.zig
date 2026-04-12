@@ -11,8 +11,15 @@ const AudioSystem = audio_mod_.AudioSystem;
 const SoundId = audio_mod_.SoundId;
 const AudioLoadOpts = audio_mod_.LoadOpts;
 const AudioPlayOpts = audio_mod_.PlayOpts;
+const timer_mod_ = @import("timer");
+const TimerSystem = timer_mod_.TimerSystem;
+const db_mod_ = @import("db");
+const SaveDb = db_mod_.SaveDb;
+const PersistDb = db_mod_.Db;
+const tilemap = @import("tilemap");
 const METATABLE_IMAGE = "VexelImage";
 const METATABLE_SOUND = "VexelSound";
+const METATABLE_DB = "VexelDb";
 
 /// Userdata stored inside each Lua image handle (canonical definition in sprite_system.zig).
 pub const LuaImageHandle = SpriteSystem.LuaImageHandle;
@@ -38,9 +45,36 @@ fn pushAudioClosure(lua: *Lua, audio_system: *AudioSystem, func: zlua.CFn) void 
     lua.pushClosure(func, 1);
 }
 
+fn pushTimerClosure(lua: *Lua, timer_system: *TimerSystem, func: zlua.CFn) void {
+    lua.pushLightUserdata(timer_system);
+    lua.pushClosure(func, 1);
+}
+
+fn pushSaveClosure(lua: *Lua, save_db: *SaveDb, func: zlua.CFn) void {
+    lua.pushLightUserdata(save_db);
+    lua.pushClosure(func, 1);
+}
+
+pub const EngineContext = struct {
+    renderer: *Renderer,
+    sprite_system: *SpriteSystem,
+    scene_mgr: *SceneManager,
+    input_state: *InputState,
+    audio_system: ?*AudioSystem,
+    timer_system: *TimerSystem,
+    save_db: *SaveDb,
+};
+
 /// Register all engine.* API functions into the Lua state.
 /// Call this after LuaEngine.init() but before loadGame().
-pub fn register(lua: *Lua, renderer: *Renderer, sprite_system: *SpriteSystem, scene_mgr: *SceneManager, input_state: *InputState, audio_system: ?*AudioSystem) void {
+pub fn register(lua: *Lua, ctx: EngineContext) void {
+    const renderer = ctx.renderer;
+    const sprite_system = ctx.sprite_system;
+    const scene_mgr = ctx.scene_mgr;
+    const input_state = ctx.input_state;
+    const audio_system = ctx.audio_system;
+    const timer_system = ctx.timer_system;
+    const save_db = ctx.save_db;
     // Create VexelImage metatable with __gc
     lua.newMetatable(METATABLE_IMAGE) catch {};
     pushRendererClosure(lua, renderer, zlua.wrap(lImageGc));
@@ -115,6 +149,10 @@ pub fn register(lua: *Lua, renderer: *Renderer, sprite_system: *SpriteSystem, sc
     lua.setField(-2, "buffer");
 
     lua.setField(-2, "pixel");
+
+    pushRendererClosure(lua, renderer, zlua.wrap(lDrawTilemap));
+    lua.setField(-2, "draw_tilemap");
+
     lua.setField(-2, "graphics");
 
     // engine.input
@@ -158,6 +196,41 @@ pub fn register(lua: *Lua, renderer: *Renderer, sprite_system: *SpriteSystem, sc
         lua.setField(-2, "stop_all");
         lua.setField(-2, "audio");
     }
+
+    // engine.timer
+    lua.newTable();
+    pushTimerClosure(lua, timer_system, zlua.wrap(lTimerAfter));
+    lua.setField(-2, "after");
+    pushTimerClosure(lua, timer_system, zlua.wrap(lTimerEvery));
+    lua.setField(-2, "every");
+    pushTimerClosure(lua, timer_system, zlua.wrap(lTimerCancel));
+    lua.setField(-2, "cancel");
+    lua.setField(-2, "timer");
+
+    // engine.tween
+    pushTimerClosure(lua, timer_system, zlua.wrap(lTween));
+    lua.setField(-2, "tween");
+
+    // engine.db
+    lua.newMetatable(METATABLE_DB) catch {};
+    lua.pushFunction(zlua.wrap(lDbGc));
+    lua.setField(-2, "__gc");
+    lua.pushFunction(zlua.wrap(lDbIndex));
+    lua.setField(-2, "__index");
+    lua.pop(1);
+
+    lua.newTable();
+    pushSaveClosure(lua, save_db, zlua.wrap(lDbOpen));
+    lua.setField(-2, "open");
+    lua.setField(-2, "db");
+
+    // engine.save
+    lua.newTable();
+    pushSaveClosure(lua, save_db, zlua.wrap(lSaveSet));
+    lua.setField(-2, "set");
+    pushSaveClosure(lua, save_db, zlua.wrap(lSaveGet));
+    lua.setField(-2, "get");
+    lua.setField(-2, "save");
 
     lua.pushFunction(zlua.wrap(lQuitGame));
     lua.setField(-2, "quit_game");
@@ -329,6 +402,82 @@ fn lSetLayer(lua: *Lua) i32 {
 fn lClearAll(lua: *Lua) i32 {
     const renderer = getRenderer(lua);
     renderer.pixelClearAll();
+    return 0;
+}
+
+// --- Tilemap functions ---
+
+/// engine.graphics.draw_tilemap(tileset, map_data, opts)
+/// opts: { width = N, cam_x = 0, cam_y = 0, layer = 0 }
+fn lDrawTilemap(lua: *Lua) i32 {
+    const renderer = getRenderer(lua);
+
+    // Arg 1: tileset image handle
+    const ud = checkImageHandle(lua, 1);
+    if (!ud.valid) return 0;
+
+    // Arg 2: map_data table (1D array of tile indices)
+    if (lua.typeOf(2) != .table) {
+        lua.raiseErrorStr("draw_tilemap: expected table as map_data", .{});
+    }
+
+    // Arg 3: opts table
+    if (lua.typeOf(3) != .table) {
+        lua.raiseErrorStr("draw_tilemap: expected opts table", .{});
+    }
+
+    // Read opts
+    var map_width: u32 = 0;
+    var cam_x: f64 = 0;
+    var cam_y: f64 = 0;
+    var layer: u8 = 0;
+
+    if (lua.getField(3, "width") == .number) {
+        map_width = @intCast(lua.toInteger(-1) catch 0);
+    }
+    lua.pop(1);
+    if (lua.getField(3, "cam_x") == .number) {
+        cam_x = @floatCast(lua.toNumber(-1) catch 0.0);
+    }
+    lua.pop(1);
+    if (lua.getField(3, "cam_y") == .number) {
+        cam_y = @floatCast(lua.toNumber(-1) catch 0.0);
+    }
+    lua.pop(1);
+    if (lua.getField(3, "layer") == .number) {
+        layer = @intCast(lua.toInteger(-1) catch 0);
+    }
+    lua.pop(1);
+
+    if (map_width == 0) {
+        lua.raiseErrorStr("draw_tilemap: opts.width is required", .{});
+    }
+
+    // Read map data from Lua table into temp buffer
+    const map_len = lua.rawLen(2);
+    if (map_len == 0) return 0;
+
+    const allocator = renderer.getPixelAllocator() orelse return 0;
+    const map_data = allocator.alloc(u32, map_len) catch return 0;
+    defer allocator.free(map_data);
+
+    for (0..map_len) |i| {
+        _ = lua.rawGetIndex(2, @intCast(i + 1));
+        const val = lua.toInteger(-1) catch 0;
+        map_data[i] = if (val < 0) 0 else @intCast(val);
+        lua.pop(1);
+    }
+
+    // Get tile dimensions from sprite sheet
+    const frame_info = renderer.getFrameSize(ud.handle) orelse return 0;
+
+    tilemap.renderTilemap(renderer, ud.handle, map_data, frame_info.w, frame_info.h, .{
+        .map_width = map_width,
+        .cam_x = cam_x,
+        .cam_y = cam_y,
+        .layer = layer,
+    });
+
     return 0;
 }
 
@@ -610,6 +759,404 @@ fn lQuitGame(lua: *Lua) i32 {
     lua.setField(-2, "should_quit");
     lua.pop(1);
     return 0;
+}
+
+// --- Timer/Tween functions ---
+
+fn getTimerSystem(lua: *Lua) *TimerSystem {
+    const ptr = lua.toPointer(Lua.upvalueIndex(1)) catch unreachable;
+    return @ptrCast(@constCast(@alignCast(ptr)));
+}
+
+/// engine.timer.after(seconds, callback) -> handle
+fn lTimerAfter(lua: *Lua) i32 {
+    const timer_sys = getTimerSystem(lua);
+    const seconds: f64 = @floatCast(lua.toNumber(1) catch {
+        lua.raiseErrorStr("timer.after: expected number for seconds", .{});
+    });
+    if (lua.typeOf(2) != .function) {
+        lua.raiseErrorStr("timer.after: expected function as callback", .{});
+    }
+    lua.pushValue(2);
+    const cb_ref = lua.ref(zlua.registry_index) catch {
+        lua.raiseErrorStr("timer.after: failed to create reference", .{});
+    };
+
+    const id = timer_sys.addTimer(cb_ref, seconds, null) catch {
+        lua.raiseErrorStr("timer.after: allocation failed", .{});
+    };
+    lua.pushInteger(@intCast(id));
+    return 1;
+}
+
+/// engine.timer.every(seconds, callback) -> handle
+fn lTimerEvery(lua: *Lua) i32 {
+    const timer_sys = getTimerSystem(lua);
+    const seconds: f64 = @floatCast(lua.toNumber(1) catch {
+        lua.raiseErrorStr("timer.every: expected number for seconds", .{});
+    });
+    if (lua.typeOf(2) != .function) {
+        lua.raiseErrorStr("timer.every: expected function as callback", .{});
+    }
+    lua.pushValue(2);
+    const cb_ref = lua.ref(zlua.registry_index) catch {
+        lua.raiseErrorStr("timer.every: failed to create reference", .{});
+    };
+
+    const id = timer_sys.addTimer(cb_ref, seconds, seconds) catch {
+        lua.raiseErrorStr("timer.every: allocation failed", .{});
+    };
+    lua.pushInteger(@intCast(id));
+    return 1;
+}
+
+/// engine.timer.cancel(handle)
+fn lTimerCancel(lua: *Lua) i32 {
+    const timer_sys = getTimerSystem(lua);
+    const id: u32 = @intCast(lua.toInteger(1) catch {
+        lua.raiseErrorStr("timer.cancel: expected integer handle", .{});
+    });
+    timer_sys.cancelTimer(id);
+    return 0;
+}
+
+/// engine.tween(target, props, duration, easing?, on_complete?) -> handle
+fn lTween(lua: *Lua) i32 {
+    const timer_sys = getTimerSystem(lua);
+
+    // Arg 1: target table
+    if (lua.typeOf(1) != .table) {
+        lua.raiseErrorStr("tween: expected table as target", .{});
+    }
+
+    // Arg 2: props table {field = end_value, ...}
+    if (lua.typeOf(2) != .table) {
+        lua.raiseErrorStr("tween: expected table as props", .{});
+    }
+
+    // Arg 3: duration
+    const duration: f64 = @floatCast(lua.toNumber(3) catch {
+        lua.raiseErrorStr("tween: expected number for duration", .{});
+    });
+
+    // Arg 4: optional easing string
+    const easing: timer_mod_.EasingFn = if (lua.typeOf(4) == .string)
+        timer_mod_.easingFromString(lua.toString(4) catch "linear")
+    else
+        timer_mod_.easeLinear;
+
+    // Arg 5: optional on_complete callback
+    var on_complete_ref: i32 = zlua.ref_no;
+    if (lua.typeOf(5) == .function) {
+        lua.pushValue(5);
+        on_complete_ref = lua.ref(zlua.registry_index) catch zlua.ref_no;
+    }
+
+    // Count props and build TweenProp array
+    var prop_count: usize = 0;
+    lua.pushNil();
+    while (lua.next(2)) {
+        prop_count += 1;
+        lua.pop(1); // pop value, keep key
+    }
+
+    const allocator = timer_sys.allocator;
+    const props = allocator.alloc(timer_mod_.TweenProp, prop_count) catch {
+        lua.raiseErrorStr("tween: allocation failed", .{});
+    };
+
+    // Iterate props table again to fill in values
+    var idx: usize = 0;
+    lua.pushNil();
+    while (lua.next(2)) {
+        // key at -2, value at -1
+        const field_name = lua.toString(-2) catch {
+            allocator.free(props);
+            lua.raiseErrorStr("tween: prop keys must be strings", .{});
+        };
+        const end_val: f64 = @floatCast(lua.toNumber(-1) catch {
+            allocator.free(props);
+            lua.raiseErrorStr("tween: prop values must be numbers", .{});
+        });
+
+        // Read current value from target table
+        _ = lua.getField(1, field_name);
+        const start_val: f64 = @floatCast(lua.toNumber(-1) catch 0.0);
+        lua.pop(1);
+
+        // Allocate copy of field name
+        const name_copy = allocator.allocSentinel(u8, field_name.len, 0) catch {
+            allocator.free(props);
+            lua.raiseErrorStr("tween: allocation failed", .{});
+        };
+        @memcpy(name_copy, field_name);
+
+        props[idx] = .{
+            .field_name = name_copy,
+            .start_val = start_val,
+            .end_val = end_val,
+        };
+        idx += 1;
+        lua.pop(1); // pop value, keep key
+    }
+
+    // Create ref to target table
+    lua.pushValue(1);
+    const target_ref = lua.ref(zlua.registry_index) catch {
+        for (props) |prop| allocator.free(prop.field_name);
+        allocator.free(props);
+        lua.raiseErrorStr("tween: failed to create reference", .{});
+    };
+
+    const id = timer_sys.addTween(target_ref, props, duration, easing, on_complete_ref) catch {
+        for (props) |prop| allocator.free(prop.field_name);
+        allocator.free(props);
+        lua.raiseErrorStr("tween: allocation failed", .{});
+    };
+
+    lua.pushInteger(@intCast(id));
+    return 1;
+}
+
+// --- DB functions ---
+
+const LuaDbHandle = struct {
+    db: PersistDb,
+    open: bool,
+};
+
+fn getSaveDb(lua: *Lua) *SaveDb {
+    const ptr = lua.toPointer(Lua.upvalueIndex(1)) catch unreachable;
+    return @ptrCast(@constCast(@alignCast(ptr)));
+}
+
+fn checkDbHandle(lua: *Lua, arg: i32) *LuaDbHandle {
+    return lua.checkUserdata(LuaDbHandle, arg, METATABLE_DB);
+}
+
+/// engine.db.open(path) -> db userdata
+fn lDbOpen(lua: *Lua) i32 {
+    const save_db = getSaveDb(lua);
+    const rel_path = lua.toString(1) catch {
+        lua.raiseErrorStr("db.open: expected string path", .{});
+    };
+
+    // Resolve path relative to game dir
+    const abs_path = std.fs.path.joinZ(save_db.allocator, &.{ save_db.game_dir, rel_path }) catch {
+        lua.raiseErrorStr("db.open: failed to resolve path", .{});
+    };
+    defer save_db.allocator.free(abs_path);
+
+    const db = PersistDb.open(abs_path) catch {
+        lua.raiseErrorStr("db.open: failed to open database '%s'", .{rel_path.ptr});
+    };
+
+    const ud = lua.newUserdata(LuaDbHandle, 0);
+    ud.* = .{ .db = db, .open = true };
+    _ = lua.getField(zlua.registry_index, METATABLE_DB);
+    lua.setMetatable(-2);
+    return 1;
+}
+
+/// __gc for db handle
+fn lDbGc(lua: *Lua) i32 {
+    const ud = checkDbHandle(lua, 1);
+    if (ud.open) {
+        ud.db.close();
+        ud.open = false;
+    }
+    return 0;
+}
+
+/// __index for db handle — dispatch methods
+fn lDbIndex(lua: *Lua) i32 {
+    const key = lua.toString(2) catch return 0;
+
+    const methods = std.StaticStringMap(zlua.CFn).initComptime(.{
+        .{ "exec", zlua.wrap(lDbExec) },
+        .{ "query", zlua.wrap(lDbQuery) },
+        .{ "close", zlua.wrap(lDbClose) },
+    });
+
+    if (methods.get(key)) |func| {
+        lua.pushClosure(func, 0);
+        return 1;
+    }
+    return 0;
+}
+
+/// Bind Lua arguments (from arg position `start_arg` upward) to a zqlite statement.
+fn bindLuaParams(lua: *Lua, stmt: anytype, start_arg: i32) void {
+    const top = lua.getTop();
+    var bind_idx: usize = 1;
+    var arg_idx: i32 = start_arg;
+    while (arg_idx <= top) : ({
+        arg_idx += 1;
+        bind_idx += 1;
+    }) {
+        switch (lua.typeOf(arg_idx)) {
+            .number => {
+                if (lua.toInteger(arg_idx)) |int_val| {
+                    stmt.bindValue(int_val, bind_idx) catch {
+                        lua.raiseErrorStr("db: bind failed", .{});
+                    };
+                } else |_| {
+                    const float_val: f64 = @floatCast(lua.toNumber(arg_idx) catch 0.0);
+                    stmt.bindValue(float_val, bind_idx) catch {
+                        lua.raiseErrorStr("db: bind failed", .{});
+                    };
+                }
+            },
+            .string => {
+                const str = lua.toString(arg_idx) catch "";
+                stmt.bindValue(str, bind_idx) catch {
+                    lua.raiseErrorStr("db: bind failed", .{});
+                };
+            },
+            .nil => {
+                stmt.bindValue(@as(?[]const u8, null), bind_idx) catch {
+                    lua.raiseErrorStr("db: bind failed", .{});
+                };
+            },
+            else => {
+                lua.raiseErrorStr("db: unsupported bind type", .{});
+            },
+        }
+    }
+}
+
+/// db:exec(sql, ...) — execute SQL with bind params
+fn lDbExec(lua: *Lua) i32 {
+    const ud = checkDbHandle(lua, 1);
+    if (!ud.open) {
+        lua.raiseErrorStr("db:exec: database is closed", .{});
+    }
+    const sql = lua.toString(2) catch {
+        lua.raiseErrorStr("db:exec: expected string SQL", .{});
+    };
+
+    var stmt = ud.db.conn.prepare(sql) catch {
+        lua.raiseErrorStr("db:exec: prepare failed: %s", .{ud.db.conn.lastError()});
+    };
+    defer stmt.deinit();
+
+    bindLuaParams(lua, &stmt, 3);
+
+    stmt.stepToCompletion() catch {
+        lua.raiseErrorStr("db:exec: execution failed: %s", .{ud.db.conn.lastError()});
+    };
+    return 0;
+}
+
+/// db:query(sql, ...) -> array of row tables
+fn lDbQuery(lua: *Lua) i32 {
+    const ud = checkDbHandle(lua, 1);
+    if (!ud.open) {
+        lua.raiseErrorStr("db:query: database is closed", .{});
+    }
+    const sql = lua.toString(2) catch {
+        lua.raiseErrorStr("db:query: expected string SQL", .{});
+    };
+
+    var stmt = ud.db.conn.prepare(sql) catch {
+        lua.raiseErrorStr("db:query: prepare failed: %s", .{ud.db.conn.lastError()});
+    };
+    defer stmt.deinit();
+
+    bindLuaParams(lua, &stmt, 3);
+
+    // Build result table
+    lua.newTable(); // results array
+    var row_num: i32 = 1;
+    const col_count: usize = @intCast(stmt.columnCount());
+
+    while (stmt.step() catch {
+        lua.raiseErrorStr("db:query: step failed: %s", .{ud.db.conn.lastError()});
+    }) {
+        lua.newTable(); // row table
+
+        for (0..col_count) |col| {
+            const col_name: [:0]const u8 = std.mem.span(stmt.columnName(col));
+            switch (stmt.columnType(col)) {
+                .int => lua.pushInteger(stmt.int(col)),
+                .float => lua.pushNumber(@floatCast(stmt.float(col))),
+                .text => _ = lua.pushString(stmt.text(col)),
+                .null => lua.pushNil(),
+                else => lua.pushNil(),
+            }
+            lua.setField(-2, col_name);
+        }
+
+        lua.rawSetIndex(-2, row_num);
+        row_num += 1;
+    }
+
+    return 1;
+}
+
+/// db:close()
+fn lDbClose(lua: *Lua) i32 {
+    const ud = checkDbHandle(lua, 1);
+    if (ud.open) {
+        ud.db.close();
+        ud.open = false;
+    }
+    return 0;
+}
+
+// --- Save functions ---
+
+/// engine.save.set(key, value)
+fn lSaveSet(lua: *Lua) i32 {
+    const save_db = getSaveDb(lua);
+    const key = lua.toString(1) catch {
+        lua.raiseErrorStr("save.set: expected string key", .{});
+    };
+
+    // Convert value to string — use Lua's built-in tostring for numbers
+    const value: [:0]const u8 = switch (lua.typeOf(2)) {
+        .string => lua.toString(2) catch "",
+        .number => lua.toString(2) catch "0",
+        .boolean => if (lua.toBoolean(2)) @as([:0]const u8, "true") else "false",
+        .nil => {
+            // nil means delete
+            save_db.set(key, "") catch {
+                lua.raiseErrorStr("save.set: failed to write", .{});
+            };
+            return 0;
+        },
+        else => {
+            lua.raiseErrorStr("save.set: unsupported value type", .{});
+        },
+    };
+
+    save_db.set(key, value) catch {
+        lua.raiseErrorStr("save.set: failed to write", .{});
+    };
+    return 0;
+}
+
+/// engine.save.get(key) -> value or nil
+fn lSaveGet(lua: *Lua) i32 {
+    const save_db = getSaveDb(lua);
+    const key = lua.toString(1) catch {
+        lua.raiseErrorStr("save.get: expected string key", .{});
+    };
+
+    const value = save_db.get(key) catch {
+        lua.raiseErrorStr("save.get: failed to read", .{});
+    };
+
+    if (value) |v| {
+        if (v.len == 0) {
+            lua.pushNil();
+        } else {
+            _ = lua.pushString(v);
+        }
+    } else {
+        lua.pushNil();
+    }
+    return 1;
 }
 
 // --- Audio functions ---

@@ -247,35 +247,104 @@ engine.audio.stop_all()
 Sound handles are automatically cleaned up by Lua's garbage collector.
 If no audio device is available (SSH, containers), audio is silently disabled.
 
-## Persistence (Phase 5)
+## Timers & Tweens (Phase 5 — Available Now)
 
 ```lua
--- SQLite
-local db = engine.db.open("save.db")
+-- One-shot timer: fires callback after delay
+local handle = engine.timer.after(2.0, function()
+    show_title()
+end)
+
+-- Repeating timer: fires every interval
+local blinker = engine.timer.every(0.5, function()
+    cursor_visible = not cursor_visible
+end)
+
+-- Cancel a timer
+engine.timer.cancel(handle)
+
+-- Tween: smoothly interpolate table fields over time
+-- Reads current values as start, interpolates to target values
+engine.tween(camera, { x = 100, y = 50 }, 0.3)                -- linear (default)
+engine.tween(camera, { x = 100, y = 50 }, 0.3, "ease_out")    -- with easing
+engine.tween(sprite, { x = 200 }, 1.0, "ease_in_out", function()
+    print("tween done!")  -- optional on_complete callback
+end)
+
+-- Easing functions: "linear", "ease_in", "ease_out", "ease_in_out" (all quadratic)
+```
+
+Timers and tweens are ticked automatically by the engine each frame.
+Timer/tween handles are integers (not userdata).
+
+## Persistence (Phase 5 — Available Now)
+
+### Simple Key-Value (engine.save)
+
+Auto-creates `save.db` in the game directory on first use.
+
+```lua
+-- Save values (strings, numbers, booleans — stored as strings)
+engine.save.set("high_score", "9001")
+engine.save.set("player_name", "Ada")
+
+-- Load values (returns string or nil)
+local score = engine.save.get("high_score")   -- "9001" or nil
+local name = engine.save.get("player_name")   -- "Ada" or nil
+
+-- Delete by setting nil or empty string
+engine.save.set("temp_data", nil)
+```
+
+### Raw SQLite (engine.db)
+
+For games that need full relational storage.
+
+```lua
+-- Open database (path relative to game directory)
+local db = engine.db.open("data.db")
+
+-- Execute statements with bind parameters
 db:exec("CREATE TABLE IF NOT EXISTS saves (slot INTEGER, data TEXT)")
-db:exec("INSERT INTO saves VALUES (1, ?)", json_string)
+db:exec("INSERT INTO saves VALUES (?, ?)", 1, "hello world")
+
+-- Query — returns array of row tables
 local rows = db:query("SELECT * FROM saves WHERE slot = ?", 1)
+for i, row in ipairs(rows) do
+    print(row.slot, row.data)  -- columns accessed by name
+end
+
+-- Close (also called automatically on GC)
 db:close()
-
--- Simple key-value
-engine.save.set("high_score", 9001)
-engine.save.get("high_score")  -- 9001
 ```
 
-## Tilemap (Phase 5)
+Bind parameters support: integers, floats, strings, and nil (SQL NULL).
+
+## Tilemap (Phase 5 — Available Now)
+
+Draw tile-based maps using a sprite sheet as tileset. The engine handles
+viewport culling and scrolling.
 
 ```lua
-local tilemap = engine.graphics.load_tilemap("assets/floor.png", 8, 8)
-engine.graphics.draw_tilemap(tilemap, map_data, offset_x, offset_y)
+-- Load a sprite sheet as tileset (same as load_spritesheet)
+local tileset = engine.graphics.load_spritesheet("assets/tiles.png", 8, 8)
+
+-- Build map data: flat 1D array of tile indices (row-major, 1-based; 0 = empty)
+local map = {}
+for i = 1, 40 * 30 do
+    map[i] = math.random(1, 4)  -- random tiles
+end
+
+-- Draw tilemap with scrolling camera
+engine.graphics.draw_tilemap(tileset, map, {
+    width = 40,        -- map width in tiles (required)
+    cam_x = 120.5,     -- camera X offset in pixels (sub-pixel for smooth scrolling)
+    cam_y = 80.0,      -- camera Y offset in pixels
+    layer = 0,         -- compositor layer (0-7)
+})
 ```
 
-## Timers & Tweens (Phase 5)
-
-```lua
-engine.timer.after(2.0, function() show_title() end)
-engine.timer.every(0.5, function() blink_cursor() end)
-engine.tween(sprite, { x = 100, y = 50 }, 0.3, "ease_out")
-```
+Map height is derived from `#map / width`. Only visible tiles are rendered.
 
 ## Engine Control
 

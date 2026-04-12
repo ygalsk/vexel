@@ -8,6 +8,10 @@ const SpriteSystem = @import("sprite_system");
 const input_mod = @import("input");
 const SceneManager = @import("scene");
 const AudioSystem = @import("audio").AudioSystem;
+const TimerSystem = @import("timer").TimerSystem;
+const SaveDb = @import("db").SaveDb;
+
+const posix = std.posix;
 
 const Winsize = vaxis.Winsize;
 const IoWriter = std.io.Writer;
@@ -21,13 +25,43 @@ const Event = union(enum) {
     focus_out,
 };
 
+// --- Global state for panic/signal cleanup ---
+
+var g_cleanup_tty: ?*vaxis.Tty = null;
+var g_cleanup_vx: ?*vaxis.Vaxis = null;
+var g_signal_received: std.atomic.Value(bool) = std.atomic.Value(bool).init(false);
+
+/// Custom panic handler: restore terminal before crashing.
+pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, ret_addr: ?usize) noreturn {
+    if (g_cleanup_vx) |vx| {
+        if (g_cleanup_tty) |t| {
+            vx.exitAltScreen(t.writer()) catch {};
+        }
+    }
+    std.debug.defaultPanic(msg, ret_addr);
+}
+
+fn signalHandler(_: c_int) callconv(.c) void {
+    g_signal_received.store(true, .release);
+}
+
 fn stderrPrint(comptime fmt: []const u8, args: anytype) void {
     var buf: [1024]u8 = undefined;
     const msg = std.fmt.bufPrint(&buf, fmt, args) catch "vexel: error\n";
     std.fs.File.stderr().writeAll(msg) catch {};
 }
 
-fn handleLuaError(
+fn logLuaError(
+    lua_eng: *lua_engine_mod,
+    comptime context: []const u8,
+    err: anyerror,
+) void {
+    const msg = lua_eng.lua.toString(-1) catch "unknown error";
+    stderrPrint("Lua error in {s}: {s} ({any})\n", .{ context, msg, err });
+    lua_eng.lua.pop(1);
+}
+
+fn fatalLuaError(
     vx: *vaxis.Vaxis,
     writer: *IoWriter,
     lua_eng: *lua_engine_mod,
@@ -74,13 +108,23 @@ pub fn main() !void {
 
     const writer = tty.writer();
     try vx.enterAltScreen(writer);
-    try vx.queryTerminal(writer, 1_000_000_000);
 
-    const winsize = vaxis.Tty.getWinsize(tty.fd) catch Winsize{
-        .rows = 24,
-        .cols = 80,
-        .x_pixel = 640,
-        .y_pixel = 384,
+    // Enable panic/signal cleanup now that we're in alt screen
+    g_cleanup_tty = &tty;
+    g_cleanup_vx = &vx;
+
+    vx.queryTerminal(writer, 1_000_000_000) catch {
+        stderrPrint("Warning: terminal query timed out, using defaults\n", .{});
+    };
+
+    const winsize = vaxis.Tty.getWinsize(tty.fd) catch |err| blk: {
+        stderrPrint("Warning: could not get terminal size ({any}), using 80x24\n", .{err});
+        break :blk Winsize{
+            .rows = 24,
+            .cols = 80,
+            .x_pixel = 640,
+            .y_pixel = 384,
+        };
     };
     try vx.resize(allocator, writer, winsize);
 
@@ -117,19 +161,42 @@ pub fn main() !void {
     var scene_mgr = SceneManager.init(allocator, lua_eng.lua, &renderer);
     defer scene_mgr.deinit();
 
+    var timer_system = TimerSystem.init(allocator, lua_eng.lua);
+    defer timer_system.deinit();
+
+    var save_db = SaveDb.init(allocator, game_dir);
+    defer save_db.deinit();
+
     const audio_ptr: ?*AudioSystem = if (audio_system.available) &audio_system else null;
-    lua_api.register(lua_eng.lua, &renderer, &sprite_system, &scene_mgr, &input_state, audio_ptr);
+    lua_api.register(lua_eng.lua, .{
+        .renderer = &renderer,
+        .sprite_system = &sprite_system,
+        .scene_mgr = &scene_mgr,
+        .input_state = &input_state,
+        .audio_system = audio_ptr,
+        .timer_system = &timer_system,
+        .save_db = &save_db,
+    });
 
     lua_eng.loadGame() catch |err| {
-        handleLuaError(&vx, writer, &lua_eng, "loadGame", err);
+        fatalLuaError(&vx, writer, &lua_eng, "loadGame", err);
     };
 
     lua_eng.callLoad() catch |err| {
-        handleLuaError(&vx, writer, &lua_eng, "engine.load()", err);
+        fatalLuaError(&vx, writer, &lua_eng, "engine.load()", err);
     };
 
     // After load, switch to placer mode for per-frame sprites (avoids full compositor re-upload)
     renderer.sprite_mode = .placer;
+
+    // Install signal handlers for clean shutdown
+    const sa: posix.Sigaction = .{
+        .handler = .{ .handler = signalHandler },
+        .mask = posix.sigemptyset(),
+        .flags = 0,
+    };
+    posix.sigaction(posix.SIG.INT, &sa, null);
+    posix.sigaction(posix.SIG.TERM, &sa, null);
 
     const has_scenes = scene_mgr.hasScenes();
 
@@ -137,6 +204,9 @@ pub fn main() !void {
     var running = true;
 
     while (running) {
+        // Check for signal-triggered shutdown
+        if (g_signal_received.load(.acquire)) break;
+
         // Process all pending events
         while (loop.tryEvent()) |event| {
             switch (event) {
@@ -152,7 +222,7 @@ pub fn main() !void {
                         scene_mgr.onKey(ev.name, @tagName(ev.action));
                     } else {
                         lua_eng.callOnKey(ev.name, @tagName(ev.action)) catch |err| {
-                            handleLuaError(&vx, writer, &lua_eng, "engine.on_key()", err);
+                            logLuaError(&lua_eng, "engine.on_key()", err);
                         };
                     }
                 },
@@ -163,7 +233,7 @@ pub fn main() !void {
                         scene_mgr.onKey(ev.name, @tagName(ev.action));
                     } else {
                         lua_eng.callOnKey(ev.name, @tagName(ev.action)) catch |err| {
-                            handleLuaError(&vx, writer, &lua_eng, "engine.on_key()", err);
+                            logLuaError(&lua_eng, "engine.on_key()", err);
                         };
                     }
                 },
@@ -174,7 +244,7 @@ pub fn main() !void {
                         scene_mgr.onMouse(ev.x, ev.y, ev.button.name(), ev.action.name());
                     } else {
                         lua_eng.callOnMouse(ev.x, ev.y, ev.button.name(), ev.action.name()) catch |err| {
-                            handleLuaError(&vx, writer, &lua_eng, "engine.on_mouse()", err);
+                            logLuaError(&lua_eng, "engine.on_mouse()", err);
                         };
                     }
                 },
@@ -187,7 +257,7 @@ pub fn main() !void {
             }
         }
 
-        if (!running or lua_eng.shouldQuit()) break;
+        if (!running or lua_eng.shouldQuit() or g_signal_received.load(.acquire)) break;
 
         // Frame timing
         const dt_ns = timer.lap();
@@ -198,9 +268,10 @@ pub fn main() !void {
             scene_mgr.update(dt);
         } else {
             lua_eng.callUpdate(dt) catch |err| {
-                handleLuaError(&vx, writer, &lua_eng, "engine.update()", err);
+                logLuaError(&lua_eng, "engine.update()", err);
             };
         }
+        timer_system.tick(dt);
         sprite_system.updateAnimations(@floatCast(dt), lua_eng.lua);
         renderer.clear();
         renderer.clearSprites();
@@ -209,7 +280,7 @@ pub fn main() !void {
             scene_mgr.draw();
         } else {
             lua_eng.callDraw() catch |err| {
-                handleLuaError(&vx, writer, &lua_eng, "engine.draw()", err);
+                logLuaError(&lua_eng, "engine.draw()", err);
             };
         }
 
