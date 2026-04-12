@@ -58,12 +58,9 @@ width: u16,
 height: u16,
 active_layer: u8,
 composite_buf: []u8,
-upscaled_buf: ?[]u8,
 composite_image: ?vaxis.Image,
 pending_free_id: ?u32,
 any_dirty: bool,
-terminal_w: u16,
-terminal_h: u16,
 
 pub fn init(allocator: std.mem.Allocator, kitty: *Kitty, vx: *vaxis.Vaxis) !Compositor {
     const buf_size = @as(usize, DEFAULT_WIDTH) * @as(usize, DEFAULT_HEIGHT) * 4;
@@ -77,12 +74,9 @@ pub fn init(allocator: std.mem.Allocator, kitty: *Kitty, vx: *vaxis.Vaxis) !Comp
         .height = DEFAULT_HEIGHT,
         .active_layer = 0,
         .composite_buf = try allocator.alloc(u8, buf_size),
-        .upscaled_buf = null,
         .composite_image = null,
         .pending_free_id = null,
         .any_dirty = false,
-        .terminal_w = 0,
-        .terminal_h = 0,
     };
     @memset(comp.composite_buf, 0);
 
@@ -103,7 +97,6 @@ pub fn deinit(self: *Compositor) void {
         self.allocator.free(layer.pixels);
     }
     self.allocator.free(self.composite_buf);
-    if (self.upscaled_buf) |buf| self.allocator.free(buf);
 }
 
 /// Change the logical pixel resolution. Reallocates all layer buffers.
@@ -121,10 +114,6 @@ pub fn setResolution(self: *Compositor, w: u16, h: u16) !void {
     self.allocator.free(self.composite_buf);
     self.composite_buf = try self.allocator.alloc(u8, buf_size);
     @memset(self.composite_buf, 0);
-    if (self.upscaled_buf) |buf| {
-        self.allocator.free(buf);
-        self.upscaled_buf = null;
-    }
     if (self.pending_free_id) |old_id| {
         self.kitty.freeImage(old_id);
         self.pending_free_id = null;
@@ -136,31 +125,6 @@ pub fn setResolution(self: *Compositor, w: u16, h: u16) !void {
     self.width = w;
     self.height = h;
     self.any_dirty = true;
-}
-
-/// Update the terminal pixel dimensions (used for nearest-neighbor pre-scaling).
-pub fn setTerminalSize(self: *Compositor, term_w: u16, term_h: u16) void {
-    if (term_w != self.terminal_w or term_h != self.terminal_h) {
-        self.terminal_w = term_w;
-        self.terminal_h = term_h;
-        // Invalidate the upscaled buffer — it will be reallocated on next flush
-        if (self.upscaled_buf) |buf| {
-            self.allocator.free(buf);
-            self.upscaled_buf = null;
-        }
-        self.any_dirty = true;
-        for (&self.layers) |*layer| {
-            if (layer.has_content) layer.dirty = true;
-        }
-    }
-}
-
-/// Integer scale factor for nearest-neighbor upscaling to terminal pixels.
-/// Disabled (returns 1) — games that want crisp output should set their
-/// virtual resolution to match the display via set_resolution().
-fn getUpscale(self: *const Compositor) u16 {
-    _ = self;
-    return 1;
 }
 
 /// Set which layer subsequent draw calls target.
@@ -456,49 +420,7 @@ pub fn flush(self: *Compositor) !void {
 
     self.flattenLayers();
 
-    // Pre-scale using nearest-neighbor for crisp pixels, then upload
-    const scale: u32 = self.getUpscale();
-    const upload_pixels: []const u8, const upload_w: u16, const upload_h: u16 = if (scale > 1) blk: {
-        const new_w: u32 = @as(u32, self.width) * scale;
-        const new_h: u32 = @as(u32, self.height) * scale;
-        const byte_count = new_w * new_h * 4;
-
-        // Reallocate upscaled buffer if needed
-        if (self.upscaled_buf == null or self.upscaled_buf.?.len != byte_count) {
-            if (self.upscaled_buf) |old| self.allocator.free(old);
-            self.upscaled_buf = try self.allocator.alloc(u8, byte_count);
-        }
-        const buf = self.upscaled_buf.?;
-
-        const src_w: usize = self.width;
-        const dst_stride: usize = @as(usize, new_w) * 4;
-
-        // Build each source row expanded horizontally, then replicate vertically
-        for (0..@as(usize, self.height)) |sy| {
-            const src_row_off = sy * src_w * 4;
-            const dst_row0_off = sy * scale * dst_stride;
-
-            // Expand row: repeat each source pixel `scale` times horizontally
-            for (0..src_w) |sx| {
-                const src_off = src_row_off + sx * 4;
-                const pixel = self.composite_buf[src_off..][0..4];
-                for (0..scale) |rep| {
-                    const dst_off = dst_row0_off + (sx * scale + rep) * 4;
-                    @memcpy(buf[dst_off..][0..4], pixel);
-                }
-            }
-
-            // Replicate the expanded row for remaining scale lines
-            const first_row = buf[dst_row0_off..][0..dst_stride];
-            for (1..scale) |rep| {
-                const dup_off = dst_row0_off + rep * dst_stride;
-                @memcpy(buf[dup_off..][0..dst_stride], first_row);
-            }
-        }
-        break :blk .{ buf, @intCast(new_w), @intCast(new_h) };
-    } else .{ self.composite_buf, self.width, self.height };
-
-    const new_img = try self.kitty.uploadRgba(upload_pixels, upload_w, upload_h);
+    const new_img = try self.kitty.uploadRgba(self.composite_buf, self.width, self.height);
 
     // Place new image (behind text)
     const win = self.vx.window();

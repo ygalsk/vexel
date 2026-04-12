@@ -15,12 +15,8 @@ pub const PlayOpts = struct {
     pan: f32 = 0.0,
 };
 
-const ManagedSound = struct {
-    sound: *zaudio.Sound,
-};
-
 const SoundSlot = union(enum) {
-    occupied: ManagedSound,
+    occupied: *zaudio.Sound,
     free: ?u32,
 };
 
@@ -55,11 +51,10 @@ pub const AudioSystem = struct {
     }
 
     pub fn deinit(self: *AudioSystem) void {
-        // Destroy all occupied sounds
         if (self.available) {
             for (self.slots.items) |*slot| {
                 switch (slot.*) {
-                    .occupied => |ms| ms.sound.destroy(),
+                    .occupied => |sound| sound.destroy(),
                     .free => {},
                 }
             }
@@ -79,7 +74,6 @@ pub const AudioSystem = struct {
         }
 
         const sound = try self.engine.createSoundFromFile(path, .{ .flags = flags });
-        const ms = ManagedSound{ .sound = sound };
 
         if (self.first_free) |free_idx| {
             const slot = &self.slots.items[free_idx];
@@ -87,11 +81,11 @@ pub const AudioSystem = struct {
                 .free => |next| next,
                 .occupied => unreachable,
             };
-            slot.* = .{ .occupied = ms };
+            slot.* = .{ .occupied = sound };
             return free_idx;
         } else {
             const id: u32 = @intCast(self.slots.items.len);
-            try self.slots.append(self.allocator, .{ .occupied = ms });
+            try self.slots.append(self.allocator, .{ .occupied = sound });
             return id;
         }
     }
@@ -100,8 +94,8 @@ pub const AudioSystem = struct {
         if (id >= self.slots.items.len) return;
         const slot = &self.slots.items[id];
         switch (slot.*) {
-            .occupied => |ms| {
-                ms.sound.destroy();
+            .occupied => |sound| {
+                sound.destroy();
                 slot.* = .{ .free = self.first_free };
                 self.first_free = id;
             },
@@ -113,7 +107,7 @@ pub const AudioSystem = struct {
         if (!self.available) return null;
         if (id >= self.slots.items.len) return null;
         return switch (self.slots.items[id]) {
-            .occupied => |ms| ms.sound,
+            .occupied => |sound| sound,
             .free => null,
         };
     }
@@ -174,7 +168,7 @@ pub const AudioSystem = struct {
         if (!self.available) return;
         for (self.slots.items) |slot| {
             switch (slot) {
-                .occupied => |ms| ms.sound.stop() catch {},
+                .occupied => |sound| sound.stop() catch {},
                 .free => {},
             }
         }

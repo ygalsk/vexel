@@ -9,8 +9,6 @@ const input_mod = @import("input");
 const SceneManager = @import("scene");
 const AudioSystem = @import("audio").AudioSystem;
 
-pub const audio_available = true;
-
 const Winsize = vaxis.Winsize;
 const IoWriter = std.io.Writer;
 
