@@ -5,12 +5,12 @@
 | Phase | Name | Status |
 |-------|------|--------|
 | 0 | Skeleton | Done |
-| 1 | Kitty Graphics + Sub-cell Rendering | Done (adapted) |
+| 1 | Kitty Graphics + Pixel Rendering | Done (adapted) |
 | 2 | Image & Sprite Support | Done |
 | 3 | Input & Scene Management | Not started |
 | 4 | Audio | Not started |
 | 5 | Tilemap & Persistence | Not started |
-| 6 | Polish & Codecritter Port | Not started |
+| 6 | Polish & Codecritter Port | Partially started (1/17) |
 
 ## What's Built
 

@@ -1,58 +1,61 @@
-# Phase 1: Kitty Graphics + Sub-cell Rendering
+# Phase 1: Kitty Graphics + Pixel Rendering — DONE (adapted)
 
 ## Goal
-Pixel-level rendering through kitty graphics protocol. Sub-cell resolution via half-blocks and sextants for text-mode primitives.
+Pixel-level rendering through kitty graphics protocol. Original plan included sub-cell primitives via half-blocks and sextants — replaced by full-pixel compositor which is strictly more capable.
 
 ## Deliverables
 
 ### Kitty Graphics Core (`src/graphics/kitty.zig`)
-- [ ] Upload RGBA pixel data via APC escape sequences (`a=T`, `f=32`)
-- [ ] Image ID management — assign IDs, track uploaded images
-- [ ] Image placement — position images at cell coordinates with pixel offsets
-- [ ] Sub-rect rendering — clip source images for sprite sheet frames
-- [ ] Z-index layering — place images behind text (`z < 0`) or above (`z > 0`)
-- [ ] Image deletion — free server-side images when no longer needed
-- [ ] Capability check — verify kitty graphics support at startup
+- [x] Upload RGBA pixel data via kitty graphics protocol (base64 encoded)
+- [x] Image ID management — vaxis handles IDs, compositor tracks composite_image
+- [x] Image placement — position images at cell coordinates with pixel offsets (sprite_placer.zig)
+- [x] Sub-rect rendering — clip source images for sprite sheet frames (blitImage + clip_region)
+- [x] Z-index layering — place images behind text (`z < 0`) or above (`z > 0`)
+- [x] Image deletion — free server-side images when no longer needed
+- [x] Capability check — verify kitty graphics support at startup
 
-### Sub-cell Primitives (`src/graphics/subcell.zig`)
-- [ ] Half-block renderer (▄▀) — 1×2 sub-pixels per cell
-- [ ] Sextant renderer (U+1FB00–1FB3B) — 2×3 sub-pixels per cell
-- [ ] Pixel buffer — in-memory RGBA buffer for primitive drawing
-- [ ] `draw_rect(x, y, w, h, color)` in sub-cell coordinates
-- [ ] `draw_line(x1, y1, x2, y2, color)` — Bresenham's
-- [ ] `draw_circle(cx, cy, r, color)` — midpoint circle
+### Pixel Primitives (`src/graphics/compositing.zig`)
+Replaced the sub-cell approach (half-blocks, sextants) with a full-pixel compositor. Drawing happens on in-memory RGBA buffers, composited and uploaded as a single kitty image per frame.
+
+- [x] ~~Half-block renderer~~ — replaced by pixel compositor
+- [x] ~~Sextant renderer~~ — replaced by pixel compositor
+- [x] Pixel buffer — in-memory RGBA buffer per layer for primitive drawing
+- [x] `pixel.rect(x, y, w, h, color)` in pixel coordinates
+- [x] `pixel.line(x1, y1, x2, y2, color)` — Bresenham's
+- [x] `pixel.circle(cx, cy, r, color)` — midpoint circle
 
 ### Layer Compositing (`src/graphics/compositing.zig`)
-- [ ] Layer stack — ordered planes with z-index
-- [ ] Dirty-rect tracking — only re-render changed regions
-- [ ] Map layers to kitty z-index placements
-- [ ] `engine.graphics.set_layer(n)` Lua API
+- [x] Layer stack — 8 ordered layers with per-layer dirty tracking
+- [x] Dirty tracking — per-layer dirty flags, skip re-composite when unchanged
+- [x] Map layers to kitty z-index placements
+- [x] `engine.graphics.set_layer(n)` Lua API
 
 ### Lua API Extensions
-- [ ] `engine.graphics.draw_rect(x, y, w, h, color)` — sub-cell coordinates
-- [ ] `engine.graphics.draw_line(x1, y1, x2, y2, color)`
-- [ ] `engine.graphics.draw_circle(cx, cy, r, color)`
-- [ ] `engine.graphics.get_resolution()` — returns logical pixel dimensions
-- [ ] `engine.graphics.set_layer(n)`
+- [x] `engine.graphics.pixel.rect(x, y, w, h, color)`
+- [x] `engine.graphics.pixel.line(x1, y1, x2, y2, color)`
+- [x] `engine.graphics.pixel.circle(cx, cy, r, color)`
+- [x] `engine.graphics.get_resolution()` — returns logical pixel dimensions
+- [x] `engine.graphics.set_resolution(w, h)` — set virtual resolution
+- [x] `engine.graphics.set_layer(n)`
 
 ### Coordinate System
-- [ ] Define logical pixel grid based on terminal cell pixel size
-- [ ] `engine.graphics.get_resolution()` returns sub-cell pixel dimensions
-- [ ] All drawing APIs work in logical pixel coordinates
+- [x] Virtual pixel grid with configurable resolution (default 320×180)
+- [x] `engine.graphics.get_resolution()` returns virtual pixel dimensions
+- [x] All pixel drawing APIs work in virtual pixel coordinates
 
 ## Test Game
-Bouncing ball with sub-pixel-smooth movement. Demonstrates:
-- Smooth movement at sub-cell resolution
+Bouncing ball with pixel-smooth movement (`games/bounce/`). Demonstrates:
+- Smooth movement at pixel resolution
 - Color-filled primitives (rect, circle)
 - Line drawing
 - Layer ordering
 
 ## Files
 ```
-src/graphics/kitty.zig      — NEW
-src/graphics/subcell.zig     — NEW
-src/graphics/compositing.zig — NEW
-src/graphics/renderer.zig    — MODIFY (add sub-cell + kitty backends)
-src/scripting/lua_api.zig    — MODIFY (add new drawing functions)
-games/bounce/main.lua        — NEW test game
+src/graphics/kitty.zig       — Kitty protocol wrapper (RGBA upload, free)
+src/graphics/compositing.zig — Layer compositor, pixel primitives, alpha blending
+src/graphics/renderer.zig    — MODIFIED (pixel mode, sprite placer)
+src/graphics/sprite_placer.zig — Per-frame kitty image placements
+src/scripting/lua_api.zig    — MODIFIED (pixel drawing + layer Lua API)
+games/bounce/main.lua        ��� Test game
 ```

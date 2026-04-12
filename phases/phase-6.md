@@ -12,7 +12,7 @@ Performance optimization, documentation, and begin porting Codecritter as a Lua 
 - [ ] Image atlas packing — reduce number of kitty image uploads
 - [ ] Frame budget monitoring — warn when update+draw exceeds 16ms
 - [ ] Memory profiling — track allocations per frame
-- [ ] Cache Lua function refs — store `luaL_ref` for update/draw/on_key/on_mouse at load time to avoid per-frame `getGlobal("engine")` lookups
+- [x] Cache Lua function refs — store `luaL_ref` for update/draw/on_key/on_mouse at load time to avoid per-frame `getGlobal("engine")` lookups
 - [ ] Row-at-a-time `@memset` for drawRect/drawHLine — fill contiguous pixel spans in bulk instead of per-pixel writes
 
 ### Documentation

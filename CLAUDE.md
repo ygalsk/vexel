@@ -27,7 +27,8 @@ phases/           # Phase implementation plans with checklists
 - `LUA_API.md` — full Lua-facing API reference
 - `phases/phase-N.md` — detailed checklist per implementation phase
 
-## Design Philosophy
+## Design Philosophy — NON-NEGOTIABLE
+- **NON-NEGOTIABLE**: Always apply these principles when writing code, solving problems, and designing systems. This is not optional guidance — it is how all work in this project must be done.
 - Follow John Ousterhout's principles (A Philosophy of Software Design): deep modules with simple interfaces, strategic not tactical programming, reduce complexity through good abstractions
 - Aristotelian problem decomposition: break problems into fundamental categories, define clear genus/species relationships between concepts, reason from first principles
 - When stuck or designing a new subsystem, do thorough web research on how existing game engines (LÖVE, Raylib, SDL) handle the same problem before implementing
@@ -36,6 +37,7 @@ phases/           # Phase implementation plans with checklists
 ## Workflow
 - **NON-NEGOTIABLE**: Always discuss major steps and design decisions with the user BEFORE implementing. Never make architectural choices, API design decisions, or significant implementation changes silently.
 - When starting a new phase or major feature, present key decisions and tradeoffs for user input first.
+- After every `/simplify`: update `PROGRESS.md` with current phase status, stage all files, and write a commit.
 
 ## Conventions
 - Kitty graphics protocol only — no sixel, no unicode sub-cell fallback, no ASCII
