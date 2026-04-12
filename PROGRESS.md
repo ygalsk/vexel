@@ -7,7 +7,7 @@
 | 0 | Skeleton | Done |
 | 1 | Kitty Graphics + Pixel Rendering | Done (adapted) |
 | 2 | Image & Sprite Support | Done |
-| 3 | Input & Scene Management | Not started |
+| 3 | Input & Scene Management | Done |
 | 4 | Audio | Not started |
 | 5 | Tilemap & Persistence | Not started |
 | 6 | Polish & Codecritter Port | Partially started (1/17) |
@@ -45,11 +45,24 @@ Phase 1's original plan included sub-cell/sextant rendering. The implementation 
 - GC finalizers for automatic resource cleanup
 - Test games: `games/sprites/`, `games/platformer/`
 
+### Phase 3 — Input & Scene Management
+- Input state tracker: key-down table, mouse position/buttons, gamepad abstraction
+- Input state queries: `engine.input.is_key_down(key)`, `engine.input.get_mouse()`, `engine.input.get_gamepad()`
+- Scene manager with push/pop/switch stack operations
+- Scene callbacks: load, update, draw, on_key, on_mouse, unload, pause, resume
+- Scene-to-scene data passing via registry refs
+- Transition system: fade (alpha lerp), slide_left, slide_right, wipe
+- Custom transition duration with compositor snapshot blending
+- Legacy mode: existing games without scenes work unchanged
+- Lua `require()` support from game directories
+- Test game: `games/scenes/` (menu → dragon flight → pause)
+
 ## Source Files
 
 ```
 src/main.zig                    — Entry point, main loop, event handling
-src/engine/input.zig            — Key/mouse event translation
+src/engine/input.zig            — Key/mouse event translation, input state tracker
+src/engine/scene.zig            — Scene manager (stack, transitions, legacy mode)
 src/graphics/renderer.zig       — High-level rendering facade
 src/graphics/kitty.zig          — Kitty graphics protocol (upload, free)
 src/graphics/compositing.zig    — Layer compositor (pixel buffer, blending)

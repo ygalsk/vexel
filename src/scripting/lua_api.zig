@@ -3,6 +3,9 @@ const zlua = @import("zlua");
 const Lua = zlua.Lua;
 const Renderer = @import("renderer");
 const SpriteSystem = @import("sprite_system");
+const SceneManager = @import("scene");
+const input_mod = @import("input");
+const InputState = input_mod.InputState;
 const METATABLE_IMAGE = "VexelImage";
 
 /// Userdata stored inside each Lua image handle (canonical definition in sprite_system.zig).
@@ -14,9 +17,19 @@ fn pushRendererClosure(lua: *Lua, renderer: *Renderer, func: zlua.CFn) void {
     lua.pushClosure(func, 1);
 }
 
+fn pushSceneClosure(lua: *Lua, scene_mgr: *SceneManager, func: zlua.CFn) void {
+    lua.pushLightUserdata(scene_mgr);
+    lua.pushClosure(func, 1);
+}
+
+fn pushInputClosure(lua: *Lua, input_state: *InputState, func: zlua.CFn) void {
+    lua.pushLightUserdata(input_state);
+    lua.pushClosure(func, 1);
+}
+
 /// Register all engine.* API functions into the Lua state.
 /// Call this after LuaEngine.init() but before loadGame().
-pub fn register(lua: *Lua, renderer: *Renderer, sprite_system: *SpriteSystem) void {
+pub fn register(lua: *Lua, renderer: *Renderer, sprite_system: *SpriteSystem, scene_mgr: *SceneManager, input_state: *InputState) void {
     // Create VexelImage metatable with __gc
     lua.newMetatable(METATABLE_IMAGE) catch {};
     pushRendererClosure(lua, renderer, zlua.wrap(lImageGc));
@@ -84,8 +97,36 @@ pub fn register(lua: *Lua, renderer: *Renderer, sprite_system: *SpriteSystem) vo
     pushRendererClosure(lua, renderer, zlua.wrap(lPixelClear));
     lua.setField(-2, "clear");
 
+    pushRendererClosure(lua, renderer, zlua.wrap(lPixelSet));
+    lua.setField(-2, "set");
+
+    pushRendererClosure(lua, renderer, zlua.wrap(lPixelBuffer));
+    lua.setField(-2, "buffer");
+
     lua.setField(-2, "pixel");
     lua.setField(-2, "graphics");
+
+    // engine.input
+    lua.newTable();
+    pushInputClosure(lua, input_state, zlua.wrap(lInputIsKeyDown));
+    lua.setField(-2, "is_key_down");
+    pushInputClosure(lua, input_state, zlua.wrap(lInputGetMouse));
+    lua.setField(-2, "get_mouse");
+    pushInputClosure(lua, input_state, zlua.wrap(lInputGetGamepad));
+    lua.setField(-2, "get_gamepad");
+    lua.setField(-2, "input");
+
+    // engine.scene
+    lua.newTable();
+    pushSceneClosure(lua, scene_mgr, zlua.wrap(lSceneRegister));
+    lua.setField(-2, "register");
+    pushSceneClosure(lua, scene_mgr, zlua.wrap(lScenePush));
+    lua.setField(-2, "push");
+    pushSceneClosure(lua, scene_mgr, zlua.wrap(lScenePop));
+    lua.setField(-2, "pop");
+    pushSceneClosure(lua, scene_mgr, zlua.wrap(lSceneSwitch));
+    lua.setField(-2, "switch");
+    lua.setField(-2, "scene");
 
     lua.pushFunction(zlua.wrap(lQuitGame));
     lua.setField(-2, "quit_game");
@@ -184,6 +225,42 @@ fn lPixelCircle(lua: *Lua) i32 {
     const cy: i32 = @intCast(lua.toInteger(2) catch 0);
     const r: i32 = @intCast(lua.toInteger(3) catch 1);
     renderer.pixelDrawCircle(cx, cy, r, luaHexColor(lua, 4, 0xFFFFFF));
+    return 0;
+}
+
+fn lPixelSet(lua: *Lua) i32 {
+    const renderer = getRenderer(lua);
+    const x: i32 = @intCast(lua.toInteger(1) catch 0);
+    const y: i32 = @intCast(lua.toInteger(2) catch 0);
+    renderer.pixelSetPixel(x, y, luaHexColor(lua, 3, 0xFFFFFF));
+    return 0;
+}
+
+fn lPixelBuffer(lua: *Lua) i32 {
+    const renderer = getRenderer(lua);
+    // Args: table, x, y, w, h
+    if (lua.typeOf(1) != .table) {
+        lua.raiseErrorStr("pixel.buffer: expected table as first argument", .{});
+    }
+    const x: i32 = @intCast(lua.toInteger(2) catch 0);
+    const y: i32 = @intCast(lua.toInteger(3) catch 0);
+    const w: i32 = @intCast(lua.toInteger(4) catch 0);
+    const h: i32 = @intCast(lua.toInteger(5) catch 0);
+    if (w <= 0 or h <= 0) return 0;
+
+    const count: usize = @intCast(w * h);
+    const allocator = renderer.getPixelAllocator() orelse return 0;
+    const colors = allocator.alloc(u32, count) catch return 0;
+    defer allocator.free(colors);
+
+    for (0..count) |i| {
+        _ = lua.rawGetIndex(1, @intCast(i + 1));
+        const val = lua.toInteger(-1) catch 0;
+        colors[i] = Renderer.Color.fromHex(@intCast(@as(i64, val))).pack();
+        lua.pop(1);
+    }
+
+    renderer.pixelBlitBuffer(x, y, w, h, colors);
     return 0;
 }
 
@@ -346,6 +423,150 @@ fn releaseImageHandle(lua: *Lua, ud: *LuaImageHandle) void {
     const renderer = getRenderer(lua);
     renderer.unloadImage(ud.handle);
     ud.valid = false;
+}
+
+// --- Input functions ---
+
+fn getInputState(lua: *Lua) *InputState {
+    const ptr = lua.toPointer(Lua.upvalueIndex(1)) catch unreachable;
+    return @ptrCast(@constCast(@alignCast(ptr)));
+}
+
+fn lInputIsKeyDown(lua: *Lua) i32 {
+    const input_state = getInputState(lua);
+    const key = lua.toString(1) catch {
+        lua.pushBoolean(false);
+        return 1;
+    };
+    lua.pushBoolean(input_state.isKeyDown(key));
+    return 1;
+}
+
+fn lInputGetMouse(lua: *Lua) i32 {
+    const input_state = getInputState(lua);
+    lua.pushInteger(input_state.mouse_x);
+    lua.pushInteger(input_state.mouse_y);
+    lua.newTable();
+    lua.pushBoolean(input_state.mouse_left);
+    lua.setField(-2, "left");
+    lua.pushBoolean(input_state.mouse_right);
+    lua.setField(-2, "right");
+    lua.pushBoolean(input_state.mouse_middle);
+    lua.setField(-2, "middle");
+    return 3;
+}
+
+fn lInputGetGamepad(lua: *Lua) i32 {
+    const input_state = getInputState(lua);
+    const gp = input_mod.getGamepadState(input_state);
+    lua.newTable();
+    lua.pushBoolean(gp.up);
+    lua.setField(-2, "up");
+    lua.pushBoolean(gp.down);
+    lua.setField(-2, "down");
+    lua.pushBoolean(gp.left);
+    lua.setField(-2, "left");
+    lua.pushBoolean(gp.right);
+    lua.setField(-2, "right");
+    lua.pushBoolean(gp.a);
+    lua.setField(-2, "a");
+    lua.pushBoolean(gp.b);
+    lua.setField(-2, "b");
+    lua.pushBoolean(gp.start);
+    lua.setField(-2, "start");
+    lua.pushBoolean(gp.select);
+    lua.setField(-2, "select");
+    return 1;
+}
+
+// --- Scene functions ---
+
+fn getSceneManager(lua: *Lua) *SceneManager {
+    const ptr = lua.toPointer(Lua.upvalueIndex(1)) catch unreachable;
+    return @ptrCast(@constCast(@alignCast(ptr)));
+}
+
+fn lSceneRegister(lua: *Lua) i32 {
+    const scene_mgr = getSceneManager(lua);
+    const name = lua.toString(1) catch {
+        lua.raiseErrorStr("scene.register: expected string name", .{});
+    };
+    // Arg 2 must be a table
+    if (lua.typeOf(2) != .table) {
+        lua.raiseErrorStr("scene.register: expected table as second argument", .{});
+    }
+    lua.pushValue(2); // push table copy for ref
+    const table_ref = lua.ref(zlua.registry_index) catch {
+        lua.raiseErrorStr("scene.register: failed to create reference", .{});
+    };
+    scene_mgr.registerScene(name, table_ref) catch {
+        lua.raiseErrorStr("scene.register: allocation failed", .{});
+    };
+    return 0;
+}
+
+fn lScenePush(lua: *Lua) i32 {
+    const scene_mgr = getSceneManager(lua);
+    const name = lua.toString(1) catch {
+        lua.raiseErrorStr("scene.push: expected string name", .{});
+    };
+    // Optional data argument
+    var data_ref: i32 = zlua.ref_no;
+    if (lua.typeOf(2) != .none and lua.typeOf(2) != .nil) {
+        lua.pushValue(2);
+        data_ref = lua.ref(zlua.registry_index) catch zlua.ref_no;
+    }
+    scene_mgr.pushScene(name, data_ref) catch {
+        lua.raiseErrorStr("scene.push: failed", .{});
+    };
+    return 0;
+}
+
+fn lScenePop(lua: *Lua) i32 {
+    const scene_mgr = getSceneManager(lua);
+    var data_ref: i32 = zlua.ref_no;
+    if (lua.typeOf(1) != .none and lua.typeOf(1) != .nil) {
+        lua.pushValue(1);
+        data_ref = lua.ref(zlua.registry_index) catch zlua.ref_no;
+    }
+    scene_mgr.popScene(data_ref) catch {
+        lua.raiseErrorStr("scene.pop: failed", .{});
+    };
+    return 0;
+}
+
+fn lSceneSwitch(lua: *Lua) i32 {
+    const scene_mgr = getSceneManager(lua);
+    const name = lua.toString(1) catch {
+        lua.raiseErrorStr("scene.switch: expected string name", .{});
+    };
+
+    var kind: SceneManager.TransitionKind = .none;
+    var duration: f64 = 0;
+    var data_ref: i32 = zlua.ref_no;
+
+    // Parse optional opts table (arg 2)
+    if (lua.typeOf(2) == .table) {
+        if (lua.getField(2, "transition") == .string) {
+            const t_str = lua.toString(-1) catch "none";
+            kind = SceneManager.TransitionKind.fromString(t_str);
+        }
+        lua.pop(1);
+        if (lua.getField(2, "duration") == .number) {
+            duration = @floatCast(lua.toNumber(-1) catch 0.0);
+        }
+        lua.pop(1);
+        if (lua.getField(2, "data") != .nil) {
+            data_ref = lua.ref(zlua.registry_index) catch zlua.ref_no;
+        } else {
+            lua.pop(1);
+        }
+    }
+
+    scene_mgr.switchScene(name, kind, duration, data_ref) catch {
+        lua.raiseErrorStr("scene.switch: failed", .{});
+    };
+    return 0;
 }
 
 fn lQuitGame(lua: *Lua) i32 {

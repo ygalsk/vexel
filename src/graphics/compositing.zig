@@ -148,6 +148,42 @@ pub fn setPixel(self: *Compositor, x: i32, y: i32, color: Color) void {
     self.markLayerDirty(layer);
 }
 
+/// Blit a flat array of packed u32 RGBA colors onto the active layer at (x, y).
+/// The colors slice must have exactly w * h entries (row-major).
+pub fn blitBuffer(self: *Compositor, x: i32, y: i32, w: i32, h: i32, colors: []const u32) void {
+    if (w <= 0 or h <= 0) return;
+
+    // Clip destination rect to layer bounds
+    const x0: i32 = @max(0, x);
+    const y0: i32 = @max(0, y);
+    const x1: i32 = @min(@as(i32, self.width), x + w);
+    const y1: i32 = @min(@as(i32, self.height), y + h);
+    if (x0 >= x1 or y0 >= y1) return;
+
+    const layer = &self.layers[self.active_layer];
+    const dst_stride: usize = @as(usize, self.width) * 4;
+    const src_w: usize = @intCast(w);
+
+    // Source offset for clipping
+    const src_x0: usize = @intCast(x0 - x);
+    const src_y0: usize = @intCast(y0 - y);
+    const cols: usize = @intCast(x1 - x0);
+    const rows: usize = @intCast(y1 - y0);
+
+    var row: usize = 0;
+    while (row < rows) : (row += 1) {
+        const src_row_start = (src_y0 + row) * src_w + src_x0;
+        const dst_row_off = @as(usize, @intCast(y0)) + row;
+        const dst_off_start = dst_row_off * dst_stride + @as(usize, @intCast(x0)) * 4;
+
+        const src_slice = colors[src_row_start..][0..cols];
+        const dst_bytes = layer.pixels[dst_off_start..][0 .. cols * 4];
+        const aligned: []align(@alignOf(u32)) u8 = @alignCast(dst_bytes);
+        @memcpy(std.mem.bytesAsSlice(u32, aligned), src_slice);
+    }
+    self.markLayerDirty(layer);
+}
+
 pub fn drawRect(self: *Compositor, x: i32, y: i32, w: i32, h: i32, color: Color) void {
     // Clip to buffer bounds
     const x0: usize = @intCast(@max(0, x));
@@ -382,30 +418,7 @@ pub fn flush(self: *Compositor) !void {
         return;
     }
 
-    const byte_count = @as(usize, self.width) * @as(usize, self.height) * 4;
-
-    // Flatten layers: memcpy the first visible layer, blend the rest
-    var first_copied = false;
-    for (&self.layers) |*layer| {
-        if (!layer.visible) continue;
-        if (!layer.has_content) continue;
-
-        if (!first_copied) {
-            @memcpy(self.composite_buf[0..byte_count], layer.pixels[0..byte_count]);
-            first_copied = true;
-        } else {
-            const pixel_count = byte_count / 4;
-            var i: usize = 0;
-            while (i < pixel_count) : (i += 1) {
-                const off = i * 4;
-                blendPixel(self.composite_buf, off, layer.pixels, off);
-            }
-        }
-    }
-
-    if (!first_copied) {
-        @memset(self.composite_buf, 0);
-    }
+    self.flattenLayers();
 
     // Upload the flattened composite as a single image
     const new_img = try self.kitty.uploadRgba(self.composite_buf, self.width, self.height);
@@ -428,6 +441,38 @@ pub fn flush(self: *Compositor) !void {
         layer.dirty = false;
     }
     self.any_dirty = false;
+}
+
+/// Flatten all layers into composite_buf without uploading to the terminal.
+/// Used by the scene manager to snapshot a scene's rendered output for transitions.
+pub fn compositeOnly(self: *Compositor) void {
+    self.flattenLayers();
+}
+
+fn flattenLayers(self: *Compositor) void {
+    const byte_count = @as(usize, self.width) * @as(usize, self.height) * 4;
+
+    var first_copied = false;
+    for (&self.layers) |*layer| {
+        if (!layer.visible) continue;
+        if (!layer.has_content) continue;
+
+        if (!first_copied) {
+            @memcpy(self.composite_buf[0..byte_count], layer.pixels[0..byte_count]);
+            first_copied = true;
+        } else {
+            const pixel_count = byte_count / 4;
+            var i: usize = 0;
+            while (i < pixel_count) : (i += 1) {
+                const off = i * 4;
+                blendPixel(self.composite_buf, off, layer.pixels, off);
+            }
+        }
+    }
+
+    if (!first_copied) {
+        @memset(self.composite_buf, 0);
+    }
 }
 
 /// Free all kitty images from terminal memory.

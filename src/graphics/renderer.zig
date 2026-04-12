@@ -113,6 +113,11 @@ pub fn markAllPixelsDirty(self: *Renderer) void {
     pm.compositor.markAllDirty();
 }
 
+pub fn getCompositor(self: *Renderer) ?*Compositing {
+    const pm = self.pixel_mode orelse return null;
+    return pm.compositor;
+}
+
 /// Handle terminal resize: mark compositor dirty and invalidate sprite caches.
 pub fn onResize(self: *Renderer) void {
     self.markAllPixelsDirty();
@@ -131,6 +136,21 @@ fn invalidateAllTerminalImages(self: *Renderer) void {
             if (maybe_id) |id| pm.kitty_backend.freeImage(id);
         }
     }
+}
+
+pub fn getPixelAllocator(self: *Renderer) ?std.mem.Allocator {
+    const pm = self.pixel_mode orelse return null;
+    return pm.allocator;
+}
+
+pub fn pixelSetPixel(self: *Renderer, x: i32, y: i32, color: Color) void {
+    const pm = self.pixel_mode orelse return;
+    pm.compositor.setPixel(x, y, color);
+}
+
+pub fn pixelBlitBuffer(self: *Renderer, x: i32, y: i32, w: i32, h: i32, colors: []const u32) void {
+    const pm = self.pixel_mode orelse return;
+    pm.compositor.blitBuffer(x, y, w, h, colors);
 }
 
 pub fn pixelDrawRect(self: *Renderer, x: i32, y: i32, w: i32, h: i32, color: Color) void {

@@ -119,9 +119,125 @@ fn keyName(key: vaxis.Key) []const u8 {
     };
 }
 
+// --- Input State Tracker ---
+
+/// Tracks which keys are currently held, mouse position, and button state.
+/// Key names from keyName() are all comptime/static strings, safe as HashMap keys.
+pub const InputState = struct {
+    keys_down: std.StringHashMapUnmanaged(void),
+    mouse_x: i32,
+    mouse_y: i32,
+    mouse_left: bool,
+    mouse_right: bool,
+    mouse_middle: bool,
+    allocator: std.mem.Allocator,
+
+    pub fn init(allocator: std.mem.Allocator) InputState {
+        return .{
+            .keys_down = .{},
+            .mouse_x = 0,
+            .mouse_y = 0,
+            .mouse_left = false,
+            .mouse_right = false,
+            .mouse_middle = false,
+            .allocator = allocator,
+        };
+    }
+
+    pub fn deinit(self: *InputState) void {
+        self.keys_down.deinit(self.allocator);
+    }
+
+    pub fn processKeyEvent(self: *InputState, ev: KeyEvent) void {
+        switch (ev.action) {
+            .press => {
+                self.keys_down.put(self.allocator, ev.name, {}) catch {};
+            },
+            .release => {
+                _ = self.keys_down.remove(ev.name);
+            },
+            .repeat => {},
+        }
+    }
+
+    pub fn processMouseEvent(self: *InputState, ev: MouseEvent) void {
+        self.mouse_x = ev.x;
+        self.mouse_y = ev.y;
+        switch (ev.action) {
+            .press => switch (ev.button) {
+                .left => self.mouse_left = true,
+                .right => self.mouse_right = true,
+                .middle => self.mouse_middle = true,
+                else => {},
+            },
+            .release => switch (ev.button) {
+                .left => self.mouse_left = false,
+                .right => self.mouse_right = false,
+                .middle => self.mouse_middle = false,
+                else => {},
+            },
+            .move => {},
+        }
+    }
+
+    pub fn isKeyDown(self: *const InputState, key_name: []const u8) bool {
+        return self.keys_down.contains(key_name);
+    }
+};
+
+/// Gamepad-style abstraction mapped from keyboard keys.
+pub const GamepadState = struct {
+    up: bool,
+    down: bool,
+    left: bool,
+    right: bool,
+    a: bool,
+    b: bool,
+    start: bool,
+    select: bool,
+};
+
+pub fn getGamepadState(input: *const InputState) GamepadState {
+    return .{
+        .up = input.isKeyDown("up") or input.isKeyDown("w"),
+        .down = input.isKeyDown("down") or input.isKeyDown("s"),
+        .left = input.isKeyDown("left") or input.isKeyDown("a"),
+        .right = input.isKeyDown("right") or input.isKeyDown("d"),
+        .a = input.isKeyDown("z"),
+        .b = input.isKeyDown("x"),
+        .start = input.isKeyDown("return"),
+        .select = input.isKeyDown("escape"),
+    };
+}
+
 test "key translation" {
     const key = vaxis.Key{ .codepoint = 'a', .mods = .{} };
     const ev = translateKey(key, .press);
     try std.testing.expectEqualStrings("a", ev.name);
     try std.testing.expectEqual(KeyEvent.Action.press, ev.action);
+}
+
+test "input state tracks key presses" {
+    var state = InputState.init(std.testing.allocator);
+    defer state.deinit();
+
+    const press = translateKey(.{ .codepoint = 'a', .mods = .{} }, .press);
+    state.processKeyEvent(press);
+    try std.testing.expect(state.isKeyDown("a"));
+
+    const release = translateKey(.{ .codepoint = 'a', .mods = .{} }, .release);
+    state.processKeyEvent(release);
+    try std.testing.expect(!state.isKeyDown("a"));
+}
+
+test "gamepad state maps keys" {
+    var state = InputState.init(std.testing.allocator);
+    defer state.deinit();
+
+    state.processKeyEvent(translateKey(.{ .codepoint = vaxis.Key.left, .mods = .{} }, .press));
+    state.processKeyEvent(translateKey(.{ .codepoint = 'z', .mods = .{} }, .press));
+    const gp = getGamepadState(&state);
+    try std.testing.expect(gp.left);
+    try std.testing.expect(gp.a);
+    try std.testing.expect(!gp.right);
 }

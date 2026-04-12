@@ -49,19 +49,27 @@ local px_w, px_h = engine.graphics.get_pixel_size()
 
 Colors are hex integers: `0xFF0000` = red, `0x00FF00` = green, etc.
 
-## Graphics (Phase 1 — Sub-cell)
+## Graphics (Phase 1 — Pixel Drawing)
 
 ```lua
--- Sub-cell primitives (pixel coordinates)
-engine.graphics.draw_rect(x, y, w, h, color)      -- filled rect
-engine.graphics.draw_line(x1, y1, x2, y2, color)  -- line
-engine.graphics.draw_circle(cx, cy, r, color)      -- filled circle
+-- Pixel primitives (virtual pixel coordinates)
+engine.graphics.pixel.rect(x, y, w, h, color)      -- filled rect
+engine.graphics.pixel.line(x1, y1, x2, y2, color)  -- line
+engine.graphics.pixel.circle(cx, cy, r, color)      -- filled circle
+engine.graphics.pixel.set(x, y, color)              -- single pixel
+engine.graphics.pixel.clear()                       -- clear active layer
+
+-- Bulk pixel write (for full-screen effects, fractals, etc.)
+-- pixels is a flat table of w*h hex color integers, row-major order
+engine.graphics.pixel.buffer(pixels, x, y, w, h)
 
 -- Resolution
+engine.graphics.set_resolution(w, h)               -- set virtual resolution (default 320x180)
 local px_w, px_h = engine.graphics.get_resolution()
 
--- Layers
+-- Layers (0-7, drawn bottom to top with alpha blending)
 engine.graphics.set_layer(n)  -- subsequent draws go to layer n
+engine.graphics.clear_all()   -- clear all layers
 ```
 
 ## Sprites (Phase 2)
@@ -152,20 +160,59 @@ player.animation = nil
 Assigning the same animation table again is a no-op (does not restart the animation).
 Different animations can reference different spritesheets with different frame sizes.
 
-## Scene Management (Phase 3)
+## Scene Management (Phase 3 — Available Now)
+
+Scenes are Lua tables with optional callbacks. Register them in `engine.load()`,
+then use the scene stack to navigate.
 
 ```lua
-engine.scene.push("battle", { enemy = critter })
-engine.scene.pop()
-engine.scene.switch("hub")
-engine.scene.switch("battle", { transition = "fade", duration = 0.5 })
+-- Define a scene (typically in a separate file, loaded via require)
+local menu = {}
+function menu.load(data)   end  -- called on push/switch (data is optional)
+function menu.update(dt)   end  -- called every frame (active scene only)
+function menu.draw()       end  -- called every frame (active scene only)
+function menu.on_key(key, action)              end
+function menu.on_mouse(x, y, button, action)   end
+function menu.unload()     end  -- called on pop/switch away
+function menu.pause()      end  -- called when another scene is pushed on top
+function menu.resume(data) end  -- called when returning from a pushed scene
+return menu
+
+-- In main.lua:
+function engine.load()
+    engine.scene.register("menu", require("scenes.menu"))
+    engine.scene.register("game", require("scenes.game"))
+    engine.scene.push("menu")
+end
+
+-- Navigation
+engine.scene.push("game", optional_data)   -- push new scene, pause current
+engine.scene.pop(optional_data)            -- return to previous scene
+engine.scene.switch("menu")                -- replace current scene (instant)
+engine.scene.switch("menu", {              -- replace with transition
+    transition = "fade",                   -- "fade", "slide_left", "slide_right", "wipe"
+    duration = 0.5,                        -- seconds
+    data = optional_data,                  -- passed to new scene's load()
+})
 ```
 
-## Input (Phase 3)
+Games that never call `engine.scene.register` work unchanged (legacy mode).
+
+## Input (Phase 3 — Available Now)
 
 ```lua
-engine.input.is_key_down("left")  -- boolean
+-- Key state queries (continuous input, no event callbacks needed)
+engine.input.is_key_down("left")   -- true/false
+engine.input.is_key_down("a")      -- works with any key name from on_key
+
+-- Mouse state
 local x, y, buttons = engine.input.get_mouse()
+-- buttons = { left = bool, right = bool, middle = bool }
+
+-- Gamepad abstraction (mapped from keyboard)
+local gp = engine.input.get_gamepad()
+-- gp = { up, down, left, right, a, b, start, select }
+-- Mapping: arrows/WASD → dpad, z → a, x → b, return → start, escape → select
 ```
 
 ## Audio (Phase 4)

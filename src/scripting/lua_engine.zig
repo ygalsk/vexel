@@ -29,12 +29,36 @@ pub fn deinit(self: *LuaEngine) void {
 
 /// Load and execute the game's main.lua
 pub fn loadGame(self: *LuaEngine) !void {
+    // Set package.path to include the game directory for require()
+    self.setupPackagePath() catch {};
+
     const path = try std.fmt.allocPrint(self.allocator, "{s}/main.lua\x00", .{self.game_dir});
     defer self.allocator.free(path);
     const path_z: [:0]const u8 = path[0 .. path.len - 1 :0];
 
     try self.lua.doFile(path_z);
     self.cacheEngineRef();
+}
+
+fn setupPackagePath(self: *LuaEngine) !void {
+    const lua_type = self.lua.getGlobal("package") catch return;
+    if (lua_type != .table) {
+        self.lua.pop(1);
+        return;
+    }
+    // Get existing package.path
+    const existing_type = self.lua.getField(-1, "path");
+    const existing = if (existing_type == .string) (self.lua.toString(-1) catch "") else "";
+    self.lua.pop(1);
+
+    // Build new path: <game_dir>/?.lua;<game_dir>/?/init.lua;<existing>
+    const new_path = try std.fmt.allocPrint(self.allocator, "{s}/?.lua;{s}/?/init.lua;{s}\x00", .{ self.game_dir, self.game_dir, existing });
+    defer self.allocator.free(new_path);
+    const new_path_z: [:0]const u8 = new_path[0 .. new_path.len - 1 :0];
+
+    _ = self.lua.pushString(new_path_z);
+    self.lua.setField(-2, "path");
+    self.lua.pop(1); // pop package table
 }
 
 /// Call engine.load() if it exists

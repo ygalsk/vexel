@@ -87,6 +87,17 @@ pub fn build(b: *std.Build) void {
         },
     });
 
+    const scene_mod = b.createModule(.{
+        .root_source_file = b.path("src/engine/scene.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &.{
+            .{ .name = "zlua", .module = zlua_dep.module("zlua") },
+            .{ .name = "renderer", .module = renderer_mod },
+            .{ .name = "compositing", .module = compositing_mod },
+        },
+    });
+
     const lua_engine_mod = b.createModule(.{
         .root_source_file = b.path("src/scripting/lua_engine.zig"),
         .target = target,
@@ -116,6 +127,8 @@ pub fn build(b: *std.Build) void {
             .{ .name = "renderer", .module = renderer_mod },
             .{ .name = "image", .module = image_mod },
             .{ .name = "sprite_system", .module = sprite_system_mod },
+            .{ .name = "scene", .module = scene_mod },
+            .{ .name = "input", .module = input_mod },
         },
     });
 
@@ -133,6 +146,7 @@ pub fn build(b: *std.Build) void {
                 .{ .name = "renderer", .module = renderer_mod },
                 .{ .name = "image", .module = image_mod },
                 .{ .name = "input", .module = input_mod },
+                .{ .name = "scene", .module = scene_mod },
                 .{ .name = "lua_engine", .module = lua_engine_mod },
                 .{ .name = "lua_api", .module = lua_api_mod },
                 .{ .name = "sprite_system", .module = sprite_system_mod },
@@ -188,11 +202,18 @@ pub fn build(b: *std.Build) void {
             .{ .name = "renderer", .module = renderer_mod },
             .{ .name = "image", .module = image_mod },
         }},
+        .{ .path = "src/engine/scene.zig", .imports = &.{
+            .{ .name = "zlua", .module = zlua_dep.module("zlua") },
+            .{ .name = "renderer", .module = renderer_mod },
+            .{ .name = "compositing", .module = compositing_mod },
+        }},
         .{ .path = "src/scripting/lua_api.zig", .imports = &.{
             .{ .name = "zlua", .module = zlua_dep.module("zlua") },
             .{ .name = "renderer", .module = renderer_mod },
             .{ .name = "image", .module = image_mod },
             .{ .name = "sprite_system", .module = sprite_system_mod },
+            .{ .name = "scene", .module = scene_mod },
+            .{ .name = "input", .module = input_mod },
         }},
     };
 
