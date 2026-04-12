@@ -111,6 +111,32 @@ pub fn build(b: *std.Build) void {
         },
     });
 
+    // --- ECS modules ---
+    const ecs_entity_mod = b.createModule(.{
+        .root_source_file = b.path("src/ecs/entity.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
+    const ecs_component_store_mod = b.createModule(.{
+        .root_source_file = b.path("src/ecs/component_store.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &.{
+            .{ .name = "entity", .module = ecs_entity_mod },
+        },
+    });
+
+    const ecs_world_mod = b.createModule(.{
+        .root_source_file = b.path("src/ecs/world.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &.{
+            .{ .name = "entity", .module = ecs_entity_mod },
+            .{ .name = "component_store", .module = ecs_component_store_mod },
+        },
+    });
+
     const tilemap_mod = b.createModule(.{
         .root_source_file = b.path("src/graphics/tilemap.zig"),
         .target = target,
@@ -147,14 +173,13 @@ pub fn build(b: *std.Build) void {
         },
     });
 
-    const sprite_system_mod = b.createModule(.{
-        .root_source_file = b.path("src/scripting/sprite_system.zig"),
+    const lua_ecs_mod = b.createModule(.{
+        .root_source_file = b.path("src/scripting/lua_ecs.zig"),
         .target = target,
         .optimize = optimize,
         .imports = &.{
             .{ .name = "zlua", .module = zlua_dep.module("zlua") },
-            .{ .name = "renderer", .module = renderer_mod },
-            .{ .name = "image", .module = image_mod },
+            .{ .name = "ecs_world", .module = ecs_world_mod },
         },
     });
 
@@ -166,12 +191,13 @@ pub fn build(b: *std.Build) void {
             .{ .name = "zlua", .module = zlua_dep.module("zlua") },
             .{ .name = "renderer", .module = renderer_mod },
             .{ .name = "image", .module = image_mod },
-            .{ .name = "sprite_system", .module = sprite_system_mod },
             .{ .name = "scene", .module = scene_mod },
             .{ .name = "input", .module = input_mod },
             .{ .name = "timer", .module = timer_mod },
             .{ .name = "db", .module = db_mod },
             .{ .name = "tilemap", .module = tilemap_mod },
+            .{ .name = "lua_ecs", .module = lua_ecs_mod },
+            .{ .name = "ecs_world", .module = ecs_world_mod },
         },
     });
     if (audio_mod) |am| {
@@ -195,9 +221,9 @@ pub fn build(b: *std.Build) void {
                 .{ .name = "scene", .module = scene_mod },
                 .{ .name = "lua_engine", .module = lua_engine_mod },
                 .{ .name = "lua_api", .module = lua_api_mod },
-                .{ .name = "sprite_system", .module = sprite_system_mod },
                 .{ .name = "timer", .module = timer_mod },
                 .{ .name = "db", .module = db_mod },
+                .{ .name = "ecs_world", .module = ecs_world_mod },
             },
         }),
     });
@@ -224,6 +250,14 @@ pub fn build(b: *std.Build) void {
     const test_step = b.step("test", "Run unit tests");
 
     const test_modules = [_]struct { path: []const u8, imports: []const std.Build.Module.Import } {
+        .{ .path = "src/ecs/entity.zig", .imports = &.{} },
+        .{ .path = "src/ecs/component_store.zig", .imports = &.{
+            .{ .name = "entity", .module = ecs_entity_mod },
+        }},
+        .{ .path = "src/ecs/world.zig", .imports = &.{
+            .{ .name = "entity", .module = ecs_entity_mod },
+            .{ .name = "component_store", .module = ecs_component_store_mod },
+        }},
         .{ .path = "src/engine/input.zig", .imports = &.{
             .{ .name = "vaxis", .module = vaxis_dep.module("vaxis") },
         }},
@@ -251,11 +285,6 @@ pub fn build(b: *std.Build) void {
         .{ .path = "src/scripting/lua_engine.zig", .imports = &.{
             .{ .name = "zlua", .module = zlua_dep.module("zlua") },
         }},
-        .{ .path = "src/scripting/sprite_system.zig", .imports = &.{
-            .{ .name = "zlua", .module = zlua_dep.module("zlua") },
-            .{ .name = "renderer", .module = renderer_mod },
-            .{ .name = "image", .module = image_mod },
-        }},
         .{ .path = "src/engine/scene.zig", .imports = &.{
             .{ .name = "zlua", .module = zlua_dep.module("zlua") },
             .{ .name = "renderer", .module = renderer_mod },
@@ -274,13 +303,14 @@ pub fn build(b: *std.Build) void {
             .{ .name = "zlua", .module = zlua_dep.module("zlua") },
             .{ .name = "renderer", .module = renderer_mod },
             .{ .name = "image", .module = image_mod },
-            .{ .name = "sprite_system", .module = sprite_system_mod },
             .{ .name = "scene", .module = scene_mod },
             .{ .name = "input", .module = input_mod },
             .{ .name = "timer", .module = timer_mod },
             .{ .name = "db", .module = db_mod },
             .{ .name = "tilemap", .module = tilemap_mod },
             .{ .name = "audio", .module = audio_mod.? },
+            .{ .name = "lua_ecs", .module = lua_ecs_mod },
+            .{ .name = "ecs_world", .module = ecs_world_mod },
         }},
     };
 

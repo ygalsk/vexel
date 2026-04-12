@@ -11,7 +11,7 @@
 | 4 | Audio | Done |
 | 5 | Tilemap & Persistence | Done |
 | 6 | Robustness | Not started |
-| 7 | Performance | Partially started (1/8) |
+| 7 | Entity Component System | Done |
 | 8 | Documentation | Not started |
 | 9 | Codecritter Port | Not started |
 
@@ -89,22 +89,38 @@ Phase 1's original plan included sub-cell/sextant rendering. The implementation 
   - Dev-assigned compositor layers
 - Test game: `games/roguelike/` (procedural dungeon, save/load, tween camera)
 
+### Phase 7 — Entity Component System
+- Sparse-set ECS with generation-counted entity IDs
+- Built-in Zig components: Position, Velocity, SpriteComp, Animation, Collider, Tag
+- Lua-defined components in sparse-set stores (dense iteration, O(1) indexed access)
+- Built-in systems: movement (Position += Velocity * dt), animation ticking, sprite rendering
+- Lua API: `engine.world.spawn/despawn/set/get/remove/is_alive/each/count`
+- Iterator: `for entity, pos, vel in engine.world.each("position", "velocity") do`
+- Sprites are first-class ECS citizens (replaced old SpriteSystem)
+- Animation events fire Lua on_complete callbacks
+- Layer-sorted rendering (0-7)
+- Accepts VexelImage userdata or integer handles for sprite images
+- Test game: `games/ecs-demo/` (knight + spawnable fire skulls)
+
 ## Source Files
 
 ```
 src/main.zig                    — Entry point, main loop, event handling
 src/engine/input.zig            — Key/mouse event translation, input state tracker
 src/engine/scene.zig            — Scene manager (stack, transitions, legacy mode)
+src/engine/timer.zig            — Timer/tween system (one-shot, repeating, interpolation)
 src/graphics/renderer.zig       — High-level rendering facade
 src/graphics/kitty.zig          — Kitty graphics protocol (upload, free)
 src/graphics/compositing.zig    — Layer compositor (pixel buffer, blending)
 src/graphics/image.zig          — Image loading, caching, sprite sheets
 src/graphics/sprite_placer.zig  — Per-frame kitty image placements
+src/graphics/tilemap.zig        — Tilemap renderer (sprite sheet tiles, viewport culling)
+src/ecs/entity.zig              — Entity type (generation-counted IDs), EntityPool
+src/ecs/component_store.zig     — Generic ComponentStore(T), LuaComponentStore
+src/ecs/world.zig               — ECS World: entities, components, built-in systems
 src/scripting/lua_engine.zig    — Lua state management, lifecycle calls
 src/scripting/lua_api.zig       — Lua API bindings (engine.* table)
-src/scripting/sprite_system.zig — Retained sprite system, animations
+src/scripting/lua_ecs.zig       — ECS Lua bindings (engine.world.* table)
 src/audio/audio.zig             — Audio system (zaudio/miniaudio wrapper)
-src/engine/timer.zig            — Timer/tween system (one-shot, repeating, interpolation)
-src/graphics/tilemap.zig        — Tilemap renderer (sprite sheet tiles, viewport culling)
 src/persistence/db.zig          — SQLite wrapper (zqlite) + key-value save API
 ```

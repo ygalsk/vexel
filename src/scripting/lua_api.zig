@@ -2,7 +2,6 @@ const std = @import("std");
 const zlua = @import("zlua");
 const Lua = zlua.Lua;
 const Renderer = @import("renderer");
-const SpriteSystem = @import("sprite_system");
 const SceneManager = @import("scene");
 const input_mod = @import("input");
 const InputState = input_mod.InputState;
@@ -17,59 +16,45 @@ const db_mod_ = @import("db");
 const SaveDb = db_mod_.SaveDb;
 const PersistDb = db_mod_.Db;
 const tilemap = @import("tilemap");
+const lua_ecs = @import("lua_ecs");
+const ecs_world = @import("ecs_world");
+const EcsWorld = ecs_world.World;
 const METATABLE_IMAGE = "VexelImage";
 const METATABLE_SOUND = "VexelSound";
 const METATABLE_DB = "VexelDb";
 
-/// Userdata stored inside each Lua image handle (canonical definition in sprite_system.zig).
-pub const LuaImageHandle = SpriteSystem.LuaImageHandle;
+/// Userdata stored inside each Lua image handle.
+pub const LuaImageHandle = struct {
+    handle: Renderer.ImageHandle,
+    valid: bool,
+};
 
-/// Push a C closure with the renderer pointer as upvalue 1.
-fn pushRendererClosure(lua: *Lua, renderer: *Renderer, func: zlua.CFn) void {
-    lua.pushLightUserdata(renderer);
+/// Push a C closure with a pointer as upvalue 1.
+fn pushUpvalueClosure(lua: *Lua, ptr: anytype, func: zlua.CFn) void {
+    lua.pushLightUserdata(ptr);
     lua.pushClosure(func, 1);
 }
 
-fn pushSceneClosure(lua: *Lua, scene_mgr: *SceneManager, func: zlua.CFn) void {
-    lua.pushLightUserdata(scene_mgr);
-    lua.pushClosure(func, 1);
-}
-
-fn pushInputClosure(lua: *Lua, input_state: *InputState, func: zlua.CFn) void {
-    lua.pushLightUserdata(input_state);
-    lua.pushClosure(func, 1);
-}
-
-fn pushAudioClosure(lua: *Lua, audio_system: *AudioSystem, func: zlua.CFn) void {
-    lua.pushLightUserdata(audio_system);
-    lua.pushClosure(func, 1);
-}
-
-fn pushTimerClosure(lua: *Lua, timer_system: *TimerSystem, func: zlua.CFn) void {
-    lua.pushLightUserdata(timer_system);
-    lua.pushClosure(func, 1);
-}
-
-fn pushSaveClosure(lua: *Lua, save_db: *SaveDb, func: zlua.CFn) void {
-    lua.pushLightUserdata(save_db);
-    lua.pushClosure(func, 1);
+/// Extract a typed pointer from upvalue 1 of a C closure.
+fn getUpvalue(lua: *Lua, comptime T: type) *T {
+    const ptr = lua.toPointer(Lua.upvalueIndex(1)) catch unreachable;
+    return @ptrCast(@constCast(@alignCast(ptr)));
 }
 
 pub const EngineContext = struct {
     renderer: *Renderer,
-    sprite_system: *SpriteSystem,
     scene_mgr: *SceneManager,
     input_state: *InputState,
     audio_system: ?*AudioSystem,
     timer_system: *TimerSystem,
     save_db: *SaveDb,
+    world: ?*EcsWorld = null,
 };
 
 /// Register all engine.* API functions into the Lua state.
 /// Call this after LuaEngine.init() but before loadGame().
 pub fn register(lua: *Lua, ctx: EngineContext) void {
     const renderer = ctx.renderer;
-    const sprite_system = ctx.sprite_system;
     const scene_mgr = ctx.scene_mgr;
     const input_state = ctx.input_state;
     const audio_system = ctx.audio_system;
@@ -77,103 +62,96 @@ pub fn register(lua: *Lua, ctx: EngineContext) void {
     const save_db = ctx.save_db;
     // Create VexelImage metatable with __gc
     lua.newMetatable(METATABLE_IMAGE) catch {};
-    pushRendererClosure(lua, renderer, zlua.wrap(lImageGc));
+    pushUpvalueClosure(lua, renderer, zlua.wrap(lImageGc));
     lua.setField(-2, "__gc");
     lua.pop(1);
-
-    // Create VexelSprite metatable
-    SpriteSystem.registerMetatable(lua, sprite_system, renderer);
 
     // Create the `engine` global table
     lua.newTable();
 
-    // engine.sprite(image) -> retained sprite
-    SpriteSystem.pushSystemClosure(lua, sprite_system, renderer, zlua.wrap(SpriteSystem.lNewSprite));
-    lua.setField(-2, "sprite");
-
     // engine.graphics
     lua.newTable();
 
-    pushRendererClosure(lua, renderer, zlua.wrap(lDrawText));
+    pushUpvalueClosure(lua, renderer, zlua.wrap(lDrawText));
     lua.setField(-2, "draw_text");
-    pushRendererClosure(lua, renderer, zlua.wrap(lDrawRect));
+    pushUpvalueClosure(lua, renderer, zlua.wrap(lDrawRect));
     lua.setField(-2, "draw_rect");
-    pushRendererClosure(lua, renderer, zlua.wrap(lClear));
+    pushUpvalueClosure(lua, renderer, zlua.wrap(lClear));
     lua.setField(-2, "clear");
-    pushRendererClosure(lua, renderer, zlua.wrap(lGetSize));
+    pushUpvalueClosure(lua, renderer, zlua.wrap(lGetSize));
     lua.setField(-2, "get_size");
-    pushRendererClosure(lua, renderer, zlua.wrap(lGetPixelSize));
+    pushUpvalueClosure(lua, renderer, zlua.wrap(lGetPixelSize));
     lua.setField(-2, "get_pixel_size");
-    pushRendererClosure(lua, renderer, zlua.wrap(lSetResolution));
+    pushUpvalueClosure(lua, renderer, zlua.wrap(lSetResolution));
     lua.setField(-2, "set_resolution");
-    pushRendererClosure(lua, renderer, zlua.wrap(lGetResolution));
+    pushUpvalueClosure(lua, renderer, zlua.wrap(lGetResolution));
     lua.setField(-2, "get_resolution");
-    pushRendererClosure(lua, renderer, zlua.wrap(lSetLayer));
+    pushUpvalueClosure(lua, renderer, zlua.wrap(lSetLayer));
     lua.setField(-2, "set_layer");
-    pushRendererClosure(lua, renderer, zlua.wrap(lClearAll));
+    pushUpvalueClosure(lua, renderer, zlua.wrap(lClearAll));
     lua.setField(-2, "clear_all");
 
     // Image/sprite functions
-    pushRendererClosure(lua, renderer, zlua.wrap(lLoadImage));
+    pushUpvalueClosure(lua, renderer, zlua.wrap(lLoadImage));
     lua.setField(-2, "load_image");
-    pushRendererClosure(lua, renderer, zlua.wrap(lLoadSpriteSheet));
+    pushUpvalueClosure(lua, renderer, zlua.wrap(lLoadSpriteSheet));
     lua.setField(-2, "load_spritesheet");
-    pushRendererClosure(lua, renderer, zlua.wrap(lDrawSprite));
+    pushUpvalueClosure(lua, renderer, zlua.wrap(lDrawSprite));
     lua.setField(-2, "draw_sprite");
-    pushRendererClosure(lua, renderer, zlua.wrap(lDrawFrame));
+    pushUpvalueClosure(lua, renderer, zlua.wrap(lDrawFrame));
     lua.setField(-2, "draw_frame");
-    pushRendererClosure(lua, renderer, zlua.wrap(lUnloadImage));
+    pushUpvalueClosure(lua, renderer, zlua.wrap(lUnloadImage));
     lua.setField(-2, "unload_image");
-    pushRendererClosure(lua, renderer, zlua.wrap(lGetFrameCount));
+    pushUpvalueClosure(lua, renderer, zlua.wrap(lGetFrameCount));
     lua.setField(-2, "get_frame_count");
 
     // engine.graphics.pixel
     lua.newTable();
 
-    pushRendererClosure(lua, renderer, zlua.wrap(lPixelRect));
+    pushUpvalueClosure(lua, renderer, zlua.wrap(lPixelRect));
     lua.setField(-2, "rect");
 
-    pushRendererClosure(lua, renderer, zlua.wrap(lPixelLine));
+    pushUpvalueClosure(lua, renderer, zlua.wrap(lPixelLine));
     lua.setField(-2, "line");
 
-    pushRendererClosure(lua, renderer, zlua.wrap(lPixelCircle));
+    pushUpvalueClosure(lua, renderer, zlua.wrap(lPixelCircle));
     lua.setField(-2, "circle");
 
-    pushRendererClosure(lua, renderer, zlua.wrap(lPixelClear));
+    pushUpvalueClosure(lua, renderer, zlua.wrap(lPixelClear));
     lua.setField(-2, "clear");
 
-    pushRendererClosure(lua, renderer, zlua.wrap(lPixelSet));
+    pushUpvalueClosure(lua, renderer, zlua.wrap(lPixelSet));
     lua.setField(-2, "set");
 
-    pushRendererClosure(lua, renderer, zlua.wrap(lPixelBuffer));
+    pushUpvalueClosure(lua, renderer, zlua.wrap(lPixelBuffer));
     lua.setField(-2, "buffer");
 
     lua.setField(-2, "pixel");
 
-    pushRendererClosure(lua, renderer, zlua.wrap(lDrawTilemap));
+    pushUpvalueClosure(lua, renderer, zlua.wrap(lDrawTilemap));
     lua.setField(-2, "draw_tilemap");
 
     lua.setField(-2, "graphics");
 
     // engine.input
     lua.newTable();
-    pushInputClosure(lua, input_state, zlua.wrap(lInputIsKeyDown));
+    pushUpvalueClosure(lua, input_state, zlua.wrap(lInputIsKeyDown));
     lua.setField(-2, "is_key_down");
-    pushInputClosure(lua, input_state, zlua.wrap(lInputGetMouse));
+    pushUpvalueClosure(lua, input_state, zlua.wrap(lInputGetMouse));
     lua.setField(-2, "get_mouse");
-    pushInputClosure(lua, input_state, zlua.wrap(lInputGetGamepad));
+    pushUpvalueClosure(lua, input_state, zlua.wrap(lInputGetGamepad));
     lua.setField(-2, "get_gamepad");
     lua.setField(-2, "input");
 
     // engine.scene
     lua.newTable();
-    pushSceneClosure(lua, scene_mgr, zlua.wrap(lSceneRegister));
+    pushUpvalueClosure(lua, scene_mgr, zlua.wrap(lSceneRegister));
     lua.setField(-2, "register");
-    pushSceneClosure(lua, scene_mgr, zlua.wrap(lScenePush));
+    pushUpvalueClosure(lua, scene_mgr, zlua.wrap(lScenePush));
     lua.setField(-2, "push");
-    pushSceneClosure(lua, scene_mgr, zlua.wrap(lScenePop));
+    pushUpvalueClosure(lua, scene_mgr, zlua.wrap(lScenePop));
     lua.setField(-2, "pop");
-    pushSceneClosure(lua, scene_mgr, zlua.wrap(lSceneSwitch));
+    pushUpvalueClosure(lua, scene_mgr, zlua.wrap(lSceneSwitch));
     lua.setField(-2, "switch");
     lua.setField(-2, "scene");
 
@@ -181,34 +159,34 @@ pub fn register(lua: *Lua, ctx: EngineContext) void {
     if (audio_system) |audio| {
         // Create VexelSound metatable
         lua.newMetatable(METATABLE_SOUND) catch {};
-        pushAudioClosure(lua, audio, zlua.wrap(lSoundGc));
+        pushUpvalueClosure(lua, audio, zlua.wrap(lSoundGc));
         lua.setField(-2, "__gc");
-        pushAudioClosure(lua, audio, zlua.wrap(lSoundIndex));
+        pushUpvalueClosure(lua, audio, zlua.wrap(lSoundIndex));
         lua.setField(-2, "__index");
         lua.pop(1);
 
         lua.newTable();
-        pushAudioClosure(lua, audio, zlua.wrap(lAudioLoad));
+        pushUpvalueClosure(lua, audio, zlua.wrap(lAudioLoad));
         lua.setField(-2, "load");
-        pushAudioClosure(lua, audio, zlua.wrap(lAudioSetMasterVolume));
+        pushUpvalueClosure(lua, audio, zlua.wrap(lAudioSetMasterVolume));
         lua.setField(-2, "set_master_volume");
-        pushAudioClosure(lua, audio, zlua.wrap(lAudioStopAll));
+        pushUpvalueClosure(lua, audio, zlua.wrap(lAudioStopAll));
         lua.setField(-2, "stop_all");
         lua.setField(-2, "audio");
     }
 
     // engine.timer
     lua.newTable();
-    pushTimerClosure(lua, timer_system, zlua.wrap(lTimerAfter));
+    pushUpvalueClosure(lua, timer_system, zlua.wrap(lTimerAfter));
     lua.setField(-2, "after");
-    pushTimerClosure(lua, timer_system, zlua.wrap(lTimerEvery));
+    pushUpvalueClosure(lua, timer_system, zlua.wrap(lTimerEvery));
     lua.setField(-2, "every");
-    pushTimerClosure(lua, timer_system, zlua.wrap(lTimerCancel));
+    pushUpvalueClosure(lua, timer_system, zlua.wrap(lTimerCancel));
     lua.setField(-2, "cancel");
     lua.setField(-2, "timer");
 
     // engine.tween
-    pushTimerClosure(lua, timer_system, zlua.wrap(lTween));
+    pushUpvalueClosure(lua, timer_system, zlua.wrap(lTween));
     lua.setField(-2, "tween");
 
     // engine.db
@@ -220,17 +198,23 @@ pub fn register(lua: *Lua, ctx: EngineContext) void {
     lua.pop(1);
 
     lua.newTable();
-    pushSaveClosure(lua, save_db, zlua.wrap(lDbOpen));
+    pushUpvalueClosure(lua, save_db, zlua.wrap(lDbOpen));
     lua.setField(-2, "open");
     lua.setField(-2, "db");
 
     // engine.save
     lua.newTable();
-    pushSaveClosure(lua, save_db, zlua.wrap(lSaveSet));
+    pushUpvalueClosure(lua, save_db, zlua.wrap(lSaveSet));
     lua.setField(-2, "set");
-    pushSaveClosure(lua, save_db, zlua.wrap(lSaveGet));
+    pushUpvalueClosure(lua, save_db, zlua.wrap(lSaveGet));
     lua.setField(-2, "get");
     lua.setField(-2, "save");
+
+    // engine.world (ECS)
+    if (ctx.world) |world| {
+        lua_ecs.register(lua, world);
+        lua.setField(-2, "world");
+    }
 
     lua.pushFunction(zlua.wrap(lQuitGame));
     lua.setField(-2, "quit_game");
@@ -251,13 +235,8 @@ fn luaHexColor(lua: *Lua, idx: i32, default: u32) Renderer.Color {
     return luaOptionalColor(lua, idx) orelse Renderer.Color.fromHex(default);
 }
 
-fn getRenderer(lua: *Lua) *Renderer {
-    const ptr = lua.toPointer(Lua.upvalueIndex(1)) catch unreachable;
-    return @ptrCast(@constCast(@alignCast(ptr)));
-}
-
 fn lDrawText(lua: *Lua) i32 {
-    const renderer = getRenderer(lua);
+    const renderer = getUpvalue(lua, Renderer);
     const col: u16 = @intCast(lua.toInteger(1) catch 0);
     const row: u16 = @intCast(lua.toInteger(2) catch 0);
     const text = lua.toString(3) catch "?";
@@ -270,7 +249,7 @@ fn lDrawText(lua: *Lua) i32 {
 }
 
 fn lDrawRect(lua: *Lua) i32 {
-    const renderer = getRenderer(lua);
+    const renderer = getUpvalue(lua, Renderer);
     const col: u16 = @intCast(lua.toInteger(1) catch 0);
     const row: u16 = @intCast(lua.toInteger(2) catch 0);
     const w: u16 = @intCast(lua.toInteger(3) catch 1);
@@ -280,13 +259,13 @@ fn lDrawRect(lua: *Lua) i32 {
 }
 
 fn lClear(lua: *Lua) i32 {
-    const renderer = getRenderer(lua);
+    const renderer = getUpvalue(lua, Renderer);
     renderer.clear();
     return 0;
 }
 
 fn lGetSize(lua: *Lua) i32 {
-    const renderer = getRenderer(lua);
+    const renderer = getUpvalue(lua, Renderer);
     const info = renderer.getScreenInfo();
     lua.pushInteger(@intCast(info.cols));
     lua.pushInteger(@intCast(info.rows));
@@ -294,7 +273,7 @@ fn lGetSize(lua: *Lua) i32 {
 }
 
 fn lGetPixelSize(lua: *Lua) i32 {
-    const renderer = getRenderer(lua);
+    const renderer = getUpvalue(lua, Renderer);
     const info = renderer.getScreenInfo();
     lua.pushInteger(@intCast(info.x_pixel));
     lua.pushInteger(@intCast(info.y_pixel));
@@ -304,7 +283,7 @@ fn lGetPixelSize(lua: *Lua) i32 {
 // --- Pixel drawing functions ---
 
 fn lPixelRect(lua: *Lua) i32 {
-    const renderer = getRenderer(lua);
+    const renderer = getUpvalue(lua, Renderer);
     const x: i32 = @intCast(lua.toInteger(1) catch 0);
     const y: i32 = @intCast(lua.toInteger(2) catch 0);
     const w: i32 = @intCast(lua.toInteger(3) catch 1);
@@ -314,7 +293,7 @@ fn lPixelRect(lua: *Lua) i32 {
 }
 
 fn lPixelLine(lua: *Lua) i32 {
-    const renderer = getRenderer(lua);
+    const renderer = getUpvalue(lua, Renderer);
     const x1: i32 = @intCast(lua.toInteger(1) catch 0);
     const y1: i32 = @intCast(lua.toInteger(2) catch 0);
     const x2: i32 = @intCast(lua.toInteger(3) catch 0);
@@ -324,7 +303,7 @@ fn lPixelLine(lua: *Lua) i32 {
 }
 
 fn lPixelCircle(lua: *Lua) i32 {
-    const renderer = getRenderer(lua);
+    const renderer = getUpvalue(lua, Renderer);
     const cx: i32 = @intCast(lua.toInteger(1) catch 0);
     const cy: i32 = @intCast(lua.toInteger(2) catch 0);
     const r: i32 = @intCast(lua.toInteger(3) catch 1);
@@ -333,7 +312,7 @@ fn lPixelCircle(lua: *Lua) i32 {
 }
 
 fn lPixelSet(lua: *Lua) i32 {
-    const renderer = getRenderer(lua);
+    const renderer = getUpvalue(lua, Renderer);
     const x: i32 = @intCast(lua.toInteger(1) catch 0);
     const y: i32 = @intCast(lua.toInteger(2) catch 0);
     renderer.pixelSetPixel(x, y, luaHexColor(lua, 3, 0xFFFFFF));
@@ -341,7 +320,7 @@ fn lPixelSet(lua: *Lua) i32 {
 }
 
 fn lPixelBuffer(lua: *Lua) i32 {
-    const renderer = getRenderer(lua);
+    const renderer = getUpvalue(lua, Renderer);
     // Args: table, x, y, w, h
     if (lua.typeOf(1) != .table) {
         lua.raiseErrorStr("pixel.buffer: expected table as first argument", .{});
@@ -369,13 +348,13 @@ fn lPixelBuffer(lua: *Lua) i32 {
 }
 
 fn lPixelClear(lua: *Lua) i32 {
-    const renderer = getRenderer(lua);
+    const renderer = getUpvalue(lua, Renderer);
     renderer.pixelClearLayer();
     return 0;
 }
 
 fn lSetResolution(lua: *Lua) i32 {
-    const renderer = getRenderer(lua);
+    const renderer = getUpvalue(lua, Renderer);
     const w: u16 = @intCast(lua.toInteger(1) catch 320);
     const h: u16 = @intCast(lua.toInteger(2) catch 180);
     renderer.pixelSetResolution(w, h) catch {
@@ -385,7 +364,7 @@ fn lSetResolution(lua: *Lua) i32 {
 }
 
 fn lGetResolution(lua: *Lua) i32 {
-    const renderer = getRenderer(lua);
+    const renderer = getUpvalue(lua, Renderer);
     const res = renderer.pixelGetResolution();
     lua.pushInteger(@intCast(res.w));
     lua.pushInteger(@intCast(res.h));
@@ -393,14 +372,14 @@ fn lGetResolution(lua: *Lua) i32 {
 }
 
 fn lSetLayer(lua: *Lua) i32 {
-    const renderer = getRenderer(lua);
+    const renderer = getUpvalue(lua, Renderer);
     const layer: u8 = @intCast(lua.toInteger(1) catch 0);
     renderer.pixelSetLayer(layer);
     return 0;
 }
 
 fn lClearAll(lua: *Lua) i32 {
-    const renderer = getRenderer(lua);
+    const renderer = getUpvalue(lua, Renderer);
     renderer.pixelClearAll();
     return 0;
 }
@@ -410,7 +389,7 @@ fn lClearAll(lua: *Lua) i32 {
 /// engine.graphics.draw_tilemap(tileset, map_data, opts)
 /// opts: { width = N, cam_x = 0, cam_y = 0, layer = 0 }
 fn lDrawTilemap(lua: *Lua) i32 {
-    const renderer = getRenderer(lua);
+    const renderer = getUpvalue(lua, Renderer);
 
     // Arg 1: tileset image handle
     const ud = checkImageHandle(lua, 1);
@@ -497,7 +476,7 @@ fn checkImageHandle(lua: *Lua, arg: i32) *LuaImageHandle {
 }
 
 fn lLoadImage(lua: *Lua) i32 {
-    const renderer = getRenderer(lua);
+    const renderer = getUpvalue(lua, Renderer);
     const path = lua.toString(1) catch {
         lua.raiseErrorStr("load_image: expected string path", .{});
     };
@@ -509,7 +488,7 @@ fn lLoadImage(lua: *Lua) i32 {
 }
 
 fn lLoadSpriteSheet(lua: *Lua) i32 {
-    const renderer = getRenderer(lua);
+    const renderer = getUpvalue(lua, Renderer);
     const path = lua.toString(1) catch {
         lua.raiseErrorStr("load_spritesheet: expected string path", .{});
     };
@@ -527,7 +506,7 @@ fn lLoadSpriteSheet(lua: *Lua) i32 {
 }
 
 fn lDrawSprite(lua: *Lua) i32 {
-    const renderer = getRenderer(lua);
+    const renderer = getUpvalue(lua, Renderer);
     const ud = checkImageHandle(lua, 1);
     if (!ud.valid) return 0;
 
@@ -565,7 +544,7 @@ fn lDrawSprite(lua: *Lua) i32 {
 }
 
 fn lDrawFrame(lua: *Lua) i32 {
-    const renderer = getRenderer(lua);
+    const renderer = getUpvalue(lua, Renderer);
     const ud = checkImageHandle(lua, 1);
     if (!ud.valid) return 0;
 
@@ -583,7 +562,7 @@ fn lUnloadImage(lua: *Lua) i32 {
 }
 
 fn lGetFrameCount(lua: *Lua) i32 {
-    const renderer = getRenderer(lua);
+    const renderer = getUpvalue(lua, Renderer);
     const ud = checkImageHandle(lua, 1);
     if (!ud.valid) {
         lua.pushInteger(0);
@@ -600,20 +579,15 @@ fn lImageGc(lua: *Lua) i32 {
 
 fn releaseImageHandle(lua: *Lua, ud: *LuaImageHandle) void {
     if (!ud.valid) return;
-    const renderer = getRenderer(lua);
+    const renderer = getUpvalue(lua, Renderer);
     renderer.unloadImage(ud.handle);
     ud.valid = false;
 }
 
 // --- Input functions ---
 
-fn getInputState(lua: *Lua) *InputState {
-    const ptr = lua.toPointer(Lua.upvalueIndex(1)) catch unreachable;
-    return @ptrCast(@constCast(@alignCast(ptr)));
-}
-
 fn lInputIsKeyDown(lua: *Lua) i32 {
-    const input_state = getInputState(lua);
+    const input_state = getUpvalue(lua, InputState);
     const key = lua.toString(1) catch {
         lua.pushBoolean(false);
         return 1;
@@ -623,7 +597,7 @@ fn lInputIsKeyDown(lua: *Lua) i32 {
 }
 
 fn lInputGetMouse(lua: *Lua) i32 {
-    const input_state = getInputState(lua);
+    const input_state = getUpvalue(lua, InputState);
     lua.pushInteger(input_state.mouse_x);
     lua.pushInteger(input_state.mouse_y);
     lua.newTable();
@@ -637,7 +611,7 @@ fn lInputGetMouse(lua: *Lua) i32 {
 }
 
 fn lInputGetGamepad(lua: *Lua) i32 {
-    const input_state = getInputState(lua);
+    const input_state = getUpvalue(lua, InputState);
     const gp = input_mod.getGamepadState(input_state);
     lua.newTable();
     lua.pushBoolean(gp.up);
@@ -661,13 +635,8 @@ fn lInputGetGamepad(lua: *Lua) i32 {
 
 // --- Scene functions ---
 
-fn getSceneManager(lua: *Lua) *SceneManager {
-    const ptr = lua.toPointer(Lua.upvalueIndex(1)) catch unreachable;
-    return @ptrCast(@constCast(@alignCast(ptr)));
-}
-
 fn lSceneRegister(lua: *Lua) i32 {
-    const scene_mgr = getSceneManager(lua);
+    const scene_mgr = getUpvalue(lua, SceneManager);
     const name = lua.toString(1) catch {
         lua.raiseErrorStr("scene.register: expected string name", .{});
     };
@@ -686,7 +655,7 @@ fn lSceneRegister(lua: *Lua) i32 {
 }
 
 fn lScenePush(lua: *Lua) i32 {
-    const scene_mgr = getSceneManager(lua);
+    const scene_mgr = getUpvalue(lua, SceneManager);
     const name = lua.toString(1) catch {
         lua.raiseErrorStr("scene.push: expected string name", .{});
     };
@@ -703,7 +672,7 @@ fn lScenePush(lua: *Lua) i32 {
 }
 
 fn lScenePop(lua: *Lua) i32 {
-    const scene_mgr = getSceneManager(lua);
+    const scene_mgr = getUpvalue(lua, SceneManager);
     var data_ref: i32 = zlua.ref_no;
     if (lua.typeOf(1) != .none and lua.typeOf(1) != .nil) {
         lua.pushValue(1);
@@ -716,7 +685,7 @@ fn lScenePop(lua: *Lua) i32 {
 }
 
 fn lSceneSwitch(lua: *Lua) i32 {
-    const scene_mgr = getSceneManager(lua);
+    const scene_mgr = getUpvalue(lua, SceneManager);
     const name = lua.toString(1) catch {
         lua.raiseErrorStr("scene.switch: expected string name", .{});
     };
@@ -763,14 +732,9 @@ fn lQuitGame(lua: *Lua) i32 {
 
 // --- Timer/Tween functions ---
 
-fn getTimerSystem(lua: *Lua) *TimerSystem {
-    const ptr = lua.toPointer(Lua.upvalueIndex(1)) catch unreachable;
-    return @ptrCast(@constCast(@alignCast(ptr)));
-}
-
 /// engine.timer.after(seconds, callback) -> handle
 fn lTimerAfter(lua: *Lua) i32 {
-    const timer_sys = getTimerSystem(lua);
+    const timer_sys = getUpvalue(lua, TimerSystem);
     const seconds: f64 = @floatCast(lua.toNumber(1) catch {
         lua.raiseErrorStr("timer.after: expected number for seconds", .{});
     });
@@ -791,7 +755,7 @@ fn lTimerAfter(lua: *Lua) i32 {
 
 /// engine.timer.every(seconds, callback) -> handle
 fn lTimerEvery(lua: *Lua) i32 {
-    const timer_sys = getTimerSystem(lua);
+    const timer_sys = getUpvalue(lua, TimerSystem);
     const seconds: f64 = @floatCast(lua.toNumber(1) catch {
         lua.raiseErrorStr("timer.every: expected number for seconds", .{});
     });
@@ -812,7 +776,7 @@ fn lTimerEvery(lua: *Lua) i32 {
 
 /// engine.timer.cancel(handle)
 fn lTimerCancel(lua: *Lua) i32 {
-    const timer_sys = getTimerSystem(lua);
+    const timer_sys = getUpvalue(lua, TimerSystem);
     const id: u32 = @intCast(lua.toInteger(1) catch {
         lua.raiseErrorStr("timer.cancel: expected integer handle", .{});
     });
@@ -822,7 +786,7 @@ fn lTimerCancel(lua: *Lua) i32 {
 
 /// engine.tween(target, props, duration, easing?, on_complete?) -> handle
 fn lTween(lua: *Lua) i32 {
-    const timer_sys = getTimerSystem(lua);
+    const timer_sys = getUpvalue(lua, TimerSystem);
 
     // Arg 1: target table
     if (lua.typeOf(1) != .table) {
@@ -925,18 +889,13 @@ const LuaDbHandle = struct {
     open: bool,
 };
 
-fn getSaveDb(lua: *Lua) *SaveDb {
-    const ptr = lua.toPointer(Lua.upvalueIndex(1)) catch unreachable;
-    return @ptrCast(@constCast(@alignCast(ptr)));
-}
-
 fn checkDbHandle(lua: *Lua, arg: i32) *LuaDbHandle {
     return lua.checkUserdata(LuaDbHandle, arg, METATABLE_DB);
 }
 
 /// engine.db.open(path) -> db userdata
 fn lDbOpen(lua: *Lua) i32 {
-    const save_db = getSaveDb(lua);
+    const save_db = getUpvalue(lua, SaveDb);
     const rel_path = lua.toString(1) catch {
         lua.raiseErrorStr("db.open: expected string path", .{});
     };
@@ -1108,7 +1067,7 @@ fn lDbClose(lua: *Lua) i32 {
 
 /// engine.save.set(key, value)
 fn lSaveSet(lua: *Lua) i32 {
-    const save_db = getSaveDb(lua);
+    const save_db = getUpvalue(lua, SaveDb);
     const key = lua.toString(1) catch {
         lua.raiseErrorStr("save.set: expected string key", .{});
     };
@@ -1138,7 +1097,7 @@ fn lSaveSet(lua: *Lua) i32 {
 
 /// engine.save.get(key) -> value or nil
 fn lSaveGet(lua: *Lua) i32 {
-    const save_db = getSaveDb(lua);
+    const save_db = getUpvalue(lua, SaveDb);
     const key = lua.toString(1) catch {
         lua.raiseErrorStr("save.get: expected string key", .{});
     };
@@ -1161,14 +1120,9 @@ fn lSaveGet(lua: *Lua) i32 {
 
 // --- Audio functions ---
 
-fn getAudioSystem(lua: *Lua) *AudioSystem {
-    const ptr = lua.toPointer(Lua.upvalueIndex(1)) catch unreachable;
-    return @ptrCast(@constCast(@alignCast(ptr)));
-}
-
 /// engine.audio.load(path) or engine.audio.load(path, {stream=true})
 fn lAudioLoad(lua: *Lua) i32 {
-    const audio = getAudioSystem(lua);
+    const audio = getUpvalue(lua, AudioSystem);
     const rel_path = lua.toString(1) catch {
         lua.raiseErrorStr("audio.load: expected string path", .{});
     };
@@ -1201,7 +1155,7 @@ fn lAudioLoad(lua: *Lua) i32 {
 
 /// engine.audio.set_master_volume(v)
 fn lAudioSetMasterVolume(lua: *Lua) i32 {
-    const audio = getAudioSystem(lua);
+    const audio = getUpvalue(lua, AudioSystem);
     const vol: f32 = @floatCast(lua.toNumber(1) catch 1.0);
     audio.setMasterVolume(vol);
     return 0;
@@ -1209,7 +1163,7 @@ fn lAudioSetMasterVolume(lua: *Lua) i32 {
 
 /// engine.audio.stop_all()
 fn lAudioStopAll(lua: *Lua) i32 {
-    const audio = getAudioSystem(lua);
+    const audio = getUpvalue(lua, AudioSystem);
     audio.stopAll();
     return 0;
 }
@@ -1228,7 +1182,7 @@ fn checkSoundHandle(lua: *Lua, arg: i32) *LuaSoundHandle {
 fn lSoundGc(lua: *Lua) i32 {
     const ud = checkSoundHandle(lua, 1);
     if (!ud.valid) return 0;
-    const audio = getAudioSystem(lua);
+    const audio = getUpvalue(lua, AudioSystem);
     audio.unloadSound(ud.id);
     ud.valid = false;
     return 0;
@@ -1251,7 +1205,7 @@ fn lSoundIndex(lua: *Lua) i32 {
 
     if (methods.get(key)) |func| {
         // Push as closure with audio system upvalue
-        const audio = getAudioSystem(lua);
+        const audio = getUpvalue(lua, AudioSystem);
         lua.pushLightUserdata(audio);
         lua.pushClosure(func, 1);
         return 1;
@@ -1261,7 +1215,7 @@ fn lSoundIndex(lua: *Lua) i32 {
 
 /// sound:play() or sound:play({loop=true, volume=0.8, pan=-0.5})
 fn lSoundPlay(lua: *Lua) i32 {
-    const audio = getAudioSystem(lua);
+    const audio = getUpvalue(lua, AudioSystem);
     const ud = checkSoundHandle(lua, 1);
     if (!ud.valid) return 0;
 
@@ -1287,7 +1241,7 @@ fn lSoundPlay(lua: *Lua) i32 {
 
 /// sound:stop()
 fn lSoundStop(lua: *Lua) i32 {
-    const audio = getAudioSystem(lua);
+    const audio = getUpvalue(lua, AudioSystem);
     const ud = checkSoundHandle(lua, 1);
     if (!ud.valid) return 0;
     audio.stop(ud.id);
@@ -1296,7 +1250,7 @@ fn lSoundStop(lua: *Lua) i32 {
 
 /// sound:pause()
 fn lSoundPause(lua: *Lua) i32 {
-    const audio = getAudioSystem(lua);
+    const audio = getUpvalue(lua, AudioSystem);
     const ud = checkSoundHandle(lua, 1);
     if (!ud.valid) return 0;
     audio.pause(ud.id);
@@ -1305,7 +1259,7 @@ fn lSoundPause(lua: *Lua) i32 {
 
 /// sound:resume()
 fn lSoundResume(lua: *Lua) i32 {
-    const audio = getAudioSystem(lua);
+    const audio = getUpvalue(lua, AudioSystem);
     const ud = checkSoundHandle(lua, 1);
     if (!ud.valid) return 0;
     audio.resume_(ud.id);
@@ -1314,7 +1268,7 @@ fn lSoundResume(lua: *Lua) i32 {
 
 /// sound:set_volume(v)
 fn lSoundSetVolume(lua: *Lua) i32 {
-    const audio = getAudioSystem(lua);
+    const audio = getUpvalue(lua, AudioSystem);
     const ud = checkSoundHandle(lua, 1);
     if (!ud.valid) return 0;
     const vol: f32 = @floatCast(lua.toNumber(2) catch 1.0);
@@ -1324,7 +1278,7 @@ fn lSoundSetVolume(lua: *Lua) i32 {
 
 /// sound:set_pan(p)
 fn lSoundSetPan(lua: *Lua) i32 {
-    const audio = getAudioSystem(lua);
+    const audio = getUpvalue(lua, AudioSystem);
     const ud = checkSoundHandle(lua, 1);
     if (!ud.valid) return 0;
     const pan: f32 = @floatCast(lua.toNumber(2) catch 0.0);
@@ -1334,7 +1288,7 @@ fn lSoundSetPan(lua: *Lua) i32 {
 
 /// sound:fade_in(duration_ms)
 fn lSoundFadeIn(lua: *Lua) i32 {
-    const audio = getAudioSystem(lua);
+    const audio = getUpvalue(lua, AudioSystem);
     const ud = checkSoundHandle(lua, 1);
     if (!ud.valid) return 0;
     const ms: u32 = @intCast(lua.toInteger(2) catch 1000);
@@ -1344,7 +1298,7 @@ fn lSoundFadeIn(lua: *Lua) i32 {
 
 /// sound:fade_out(duration_ms)
 fn lSoundFadeOut(lua: *Lua) i32 {
-    const audio = getAudioSystem(lua);
+    const audio = getUpvalue(lua, AudioSystem);
     const ud = checkSoundHandle(lua, 1);
     if (!ud.valid) return 0;
     const ms: u32 = @intCast(lua.toInteger(2) catch 1000);

@@ -4,12 +4,15 @@ const lua_engine_mod = @import("lua_engine");
 const lua_api = @import("lua_api");
 const Renderer = @import("renderer");
 const ImageManager = @import("image");
-const SpriteSystem = @import("sprite_system");
 const input_mod = @import("input");
 const SceneManager = @import("scene");
 const AudioSystem = @import("audio").AudioSystem;
 const TimerSystem = @import("timer").TimerSystem;
 const SaveDb = @import("db").SaveDb;
+const zlua = @import("zlua");
+const ecs_world_mod = @import("ecs_world");
+const EcsWorld = ecs_world_mod.World;
+const AnimationEvent = ecs_world_mod.AnimationEvent;
 
 const posix = std.posix;
 
@@ -72,6 +75,25 @@ fn fatalLuaError(
     const msg = lua_eng.lua.toString(-1) catch "unknown error";
     stderrPrint("Lua error in {s}: {s} ({any})\n", .{ context, msg, err });
     std.process.exit(1);
+}
+
+fn handleKey(
+    input_state: *input_mod.InputState,
+    scene_mgr: *SceneManager,
+    lua_eng: *lua_engine_mod,
+    key: vaxis.Key,
+    action: input_mod.KeyEvent.Action,
+    has_scenes: bool,
+) void {
+    const ev = input_mod.translateKey(key, action);
+    input_state.processKeyEvent(ev);
+    if (has_scenes) {
+        scene_mgr.onKey(ev.name, @tagName(ev.action));
+    } else {
+        lua_eng.callOnKey(ev.name, @tagName(ev.action)) catch |err| {
+            logLuaError(lua_eng, "engine.on_key()", err);
+        };
+    }
 }
 
 pub fn main() !void {
@@ -143,8 +165,6 @@ pub fn main() !void {
     defer image_mgr.deinit();
     renderer.setImageManager(&image_mgr);
 
-    var sprite_system = SpriteSystem.init(allocator);
-    defer sprite_system.deinit();
 
     var input_state = input_mod.InputState.init(allocator);
     defer input_state.deinit();
@@ -167,15 +187,18 @@ pub fn main() !void {
     var save_db = SaveDb.init(allocator, game_dir);
     defer save_db.deinit();
 
+    var ecs_world = EcsWorld.init(allocator);
+    defer ecs_world.deinit();
+
     const audio_ptr: ?*AudioSystem = if (audio_system.available) &audio_system else null;
     lua_api.register(lua_eng.lua, .{
         .renderer = &renderer,
-        .sprite_system = &sprite_system,
         .scene_mgr = &scene_mgr,
         .input_state = &input_state,
         .audio_system = audio_ptr,
         .timer_system = &timer_system,
         .save_db = &save_db,
+        .world = &ecs_world,
     });
 
     lua_eng.loadGame() catch |err| {
@@ -200,6 +223,9 @@ pub fn main() !void {
 
     const has_scenes = scene_mgr.hasScenes();
 
+    var frame_arena = std.heap.ArenaAllocator.init(allocator);
+    defer frame_arena.deinit();
+
     var timer = try std.time.Timer.start();
     var running = true;
 
@@ -216,26 +242,10 @@ pub fn main() !void {
                         running = false;
                         break;
                     }
-                    const ev = input_mod.translateKey(key, .press);
-                    input_state.processKeyEvent(ev);
-                    if (has_scenes) {
-                        scene_mgr.onKey(ev.name, @tagName(ev.action));
-                    } else {
-                        lua_eng.callOnKey(ev.name, @tagName(ev.action)) catch |err| {
-                            logLuaError(&lua_eng, "engine.on_key()", err);
-                        };
-                    }
+                    handleKey(&input_state, &scene_mgr, &lua_eng, key, .press, has_scenes);
                 },
                 .key_release => |key| {
-                    const ev = input_mod.translateKey(key, .release);
-                    input_state.processKeyEvent(ev);
-                    if (has_scenes) {
-                        scene_mgr.onKey(ev.name, @tagName(ev.action));
-                    } else {
-                        lua_eng.callOnKey(ev.name, @tagName(ev.action)) catch |err| {
-                            logLuaError(&lua_eng, "engine.on_key()", err);
-                        };
-                    }
+                    handleKey(&input_state, &scene_mgr, &lua_eng, key, .release, has_scenes);
                 },
                 .mouse => |mouse| {
                     const ev = input_mod.translateMouse(mouse);
@@ -272,10 +282,42 @@ pub fn main() !void {
             };
         }
         timer_system.tick(dt);
-        sprite_system.updateAnimations(@floatCast(dt), lua_eng.lua);
+        ecs_world.updateMovement(@floatCast(dt));
+
+        // Reset frame arena for per-frame allocations
+        _ = frame_arena.reset(.retain_capacity);
+        const frame_alloc = frame_arena.allocator();
+
+        // Tick ECS animations and fire Lua callbacks for completed ones
+        var anim_events: std.ArrayList(AnimationEvent) = .{};
+        ecs_world.tickAnimations(@floatCast(dt), frame_alloc, &anim_events);
+        for (anim_events.items) |event| {
+            if (event.on_complete_ref != ecs_world_mod.ref_none) {
+                _ = lua_eng.lua.rawGetIndex(zlua.registry_index, event.on_complete_ref);
+                lua_eng.lua.protectedCall(.{ .args = 0, .results = 0 }) catch {};
+            }
+        }
+
         renderer.clear();
         renderer.clearSprites();
-        sprite_system.renderAll(&renderer);
+
+        // Render ECS sprites sorted by layer (single pass)
+        var sprite_entries: std.ArrayList(EcsWorld.SpriteRenderEntry) = .{};
+        ecs_world.collectSprites(frame_alloc, &sprite_entries);
+        std.sort.pdq(EcsWorld.SpriteRenderEntry, sprite_entries.items, {}, struct {
+            fn lessThan(_: void, a: EcsWorld.SpriteRenderEntry, b: EcsWorld.SpriteRenderEntry) bool {
+                return a.layer < b.layer;
+            }
+        }.lessThan);
+        for (sprite_entries.items) |entry| {
+            renderer.pixelSetLayer(entry.layer);
+            renderer.drawSprite(entry.image_handle, entry.x, entry.y, .{
+                .frame = entry.frame,
+                .flip_x = entry.flip_x,
+                .flip_y = entry.flip_y,
+                .scale = entry.scale,
+            });
+        }
         if (has_scenes) {
             scene_mgr.draw();
         } else {

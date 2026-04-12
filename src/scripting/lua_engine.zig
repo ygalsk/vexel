@@ -32,9 +32,8 @@ pub fn loadGame(self: *LuaEngine) !void {
     // Set package.path to include the game directory for require()
     self.setupPackagePath() catch {};
 
-    const path = try std.fmt.allocPrint(self.allocator, "{s}/main.lua\x00", .{self.game_dir});
-    defer self.allocator.free(path);
-    const path_z: [:0]const u8 = path[0 .. path.len - 1 :0];
+    const path_z = try std.fmt.allocPrintSentinel(self.allocator, "{s}/main.lua", .{self.game_dir}, 0);
+    defer self.allocator.free(path_z);
 
     try self.lua.doFile(path_z);
     self.cacheEngineRef();
@@ -52,9 +51,8 @@ fn setupPackagePath(self: *LuaEngine) !void {
     self.lua.pop(1);
 
     // Build new path: <game_dir>/?.lua;<game_dir>/?/init.lua;<existing>
-    const new_path = try std.fmt.allocPrint(self.allocator, "{s}/?.lua;{s}/?/init.lua;{s}\x00", .{ self.game_dir, self.game_dir, existing });
-    defer self.allocator.free(new_path);
-    const new_path_z: [:0]const u8 = new_path[0 .. new_path.len - 1 :0];
+    const new_path_z = try std.fmt.allocPrintSentinel(self.allocator, "{s}/?.lua;{s}/?/init.lua;{s}", .{ self.game_dir, self.game_dir, existing }, 0);
+    defer self.allocator.free(new_path_z);
 
     _ = self.lua.pushString(new_path_z);
     self.lua.setField(-2, "path");

@@ -368,17 +368,8 @@ fn callSceneCallback(self: *SceneManager, table_ref: i32, func_name: [:0]const u
 }
 
 fn callSceneCallbackWithNumber(self: *SceneManager, table_ref: i32, func_name: [:0]const u8, value: f64) void {
-    _ = self.lua.rawGetIndex(zlua.registry_index, table_ref);
-    const field_type = self.lua.getField(-1, func_name);
-    if (field_type != .function) {
-        self.lua.pop(2);
-        return;
-    }
-    self.lua.remove(-2); // remove scene table
     self.lua.pushNumber(@floatCast(value));
-    self.lua.protectedCall(.{ .args = 1, .results = 0 }) catch {
-        self.logSceneError(func_name);
-    };
+    self.callSceneCallback(table_ref, func_name, 1);
 }
 
 // --- Transition blending ---

@@ -180,11 +180,6 @@ pub const AudioSystem = struct {
         if (rel_path.len > 0 and rel_path[0] == '/') {
             return try self.allocator.dupeZ(u8, rel_path);
         }
-        const dir_len = self.game_dir.len;
-        const needs_sep = dir_len > 0 and self.game_dir[dir_len - 1] != '/';
-        const sep: []const u8 = if (needs_sep) "/" else "";
-        // allocPrint with \x00 to get null-terminated string, matching project convention
-        const full = try std.fmt.allocPrint(self.allocator, "{s}{s}{s}\x00", .{ self.game_dir, sep, rel_path });
-        return full[0 .. full.len - 1 :0];
+        return try std.fs.path.joinZ(self.allocator, &.{ self.game_dir, rel_path });
     }
 };
