@@ -1,0 +1,29 @@
+.{
+    .name = .vexel,
+    .version = "0.1.0",
+    .fingerprint = 0xba246e3acef53a52,
+    .minimum_zig_version = "0.15.2",
+    .dependencies = .{
+        .vaxis = .{
+            .url = "git+https://github.com/rockorager/libvaxis",
+            .hash = "vaxis-0.5.1-BWNV_JJOCQAtdJyLvrYCKbKIhX9q3liQkKMAzujWS4HJ",
+        },
+        .zqlite = .{
+            .url = "git+https://github.com/karlseguin/zqlite.zig#05a88d6758753e1c63fdd45b211dde2057094b0c",
+            .hash = "zqlite-0.0.1-RWLaYz6bmAAT7E_jxopXf-j5Ea8VQldnxsd6TU8sa0Bb",
+        },
+        .zlua = .{
+            .url = "git+https://github.com/natecraddock/ziglua#zig-0.15.2",
+            .hash = "zlua-0.1.0-hGRpCxFDBQBTLH7HYIvzCfvr_8xFE6kqLzLFxkcgdWNl",
+        },
+        .zigimg = .{
+            .url = "git+https://github.com/zigimg/zigimg",
+            .hash = "zigimg-0.1.0-8_eo2qWHFwA-S24SH7x7NplPii0EbIQiUfDrimgA6rzN",
+        },
+    },
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+    },
+}
