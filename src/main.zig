@@ -7,6 +7,9 @@ const ImageManager = @import("image");
 const SpriteSystem = @import("sprite_system");
 const input_mod = @import("input");
 const SceneManager = @import("scene");
+const AudioSystem = @import("audio").AudioSystem;
+
+pub const audio_available = true;
 
 const Winsize = vaxis.Winsize;
 const IoWriter = std.io.Writer;
@@ -104,13 +107,20 @@ pub fn main() !void {
     var input_state = input_mod.InputState.init(allocator);
     defer input_state.deinit();
 
+    var audio_system = AudioSystem.init(allocator, game_dir);
+    defer audio_system.deinit();
+    if (!audio_system.available) {
+        stderrPrint("Warning: audio device not available, audio disabled\n", .{});
+    }
+
     var lua_eng = try lua_engine_mod.init(allocator, game_dir);
     defer lua_eng.deinit();
 
     var scene_mgr = SceneManager.init(allocator, lua_eng.lua, &renderer);
     defer scene_mgr.deinit();
 
-    lua_api.register(lua_eng.lua, &renderer, &sprite_system, &scene_mgr, &input_state);
+    const audio_ptr: ?*AudioSystem = if (audio_system.available) &audio_system else null;
+    lua_api.register(lua_eng.lua, &renderer, &sprite_system, &scene_mgr, &input_state, audio_ptr);
 
     lua_eng.loadGame() catch |err| {
         handleLuaError(&vx, writer, &lua_eng, "loadGame", err);
@@ -122,6 +132,8 @@ pub fn main() !void {
 
     // After load, switch to placer mode for per-frame sprites (avoids full compositor re-upload)
     renderer.sprite_mode = .placer;
+
+    const has_scenes = scene_mgr.hasScenes();
 
     var timer = try std.time.Timer.start();
     var running = true;
@@ -138,17 +150,35 @@ pub fn main() !void {
                     }
                     const ev = input_mod.translateKey(key, .press);
                     input_state.processKeyEvent(ev);
-                    scene_mgr.onKey(ev.name, @tagName(ev.action));
+                    if (has_scenes) {
+                        scene_mgr.onKey(ev.name, @tagName(ev.action));
+                    } else {
+                        lua_eng.callOnKey(ev.name, @tagName(ev.action)) catch |err| {
+                            handleLuaError(&vx, writer, &lua_eng, "engine.on_key()", err);
+                        };
+                    }
                 },
                 .key_release => |key| {
                     const ev = input_mod.translateKey(key, .release);
                     input_state.processKeyEvent(ev);
-                    scene_mgr.onKey(ev.name, @tagName(ev.action));
+                    if (has_scenes) {
+                        scene_mgr.onKey(ev.name, @tagName(ev.action));
+                    } else {
+                        lua_eng.callOnKey(ev.name, @tagName(ev.action)) catch |err| {
+                            handleLuaError(&vx, writer, &lua_eng, "engine.on_key()", err);
+                        };
+                    }
                 },
                 .mouse => |mouse| {
                     const ev = input_mod.translateMouse(mouse);
                     input_state.processMouseEvent(ev);
-                    scene_mgr.onMouse(ev.x, ev.y, ev.button.name(), ev.action.name());
+                    if (has_scenes) {
+                        scene_mgr.onMouse(ev.x, ev.y, ev.button.name(), ev.action.name());
+                    } else {
+                        lua_eng.callOnMouse(ev.x, ev.y, ev.button.name(), ev.action.name()) catch |err| {
+                            handleLuaError(&vx, writer, &lua_eng, "engine.on_mouse()", err);
+                        };
+                    }
                 },
                 .winsize => |ws| {
                     vx.resize(allocator, writer, ws) catch {};
@@ -165,13 +195,25 @@ pub fn main() !void {
         const dt_ns = timer.lap();
         const dt: f64 = @as(f64, @floatFromInt(dt_ns)) / 1_000_000_000.0;
 
-        // Call update + draw via scene manager (handles legacy mode for existing games)
-        scene_mgr.update(dt);
+        // Call update + draw (route to scene manager or lua engine directly)
+        if (has_scenes) {
+            scene_mgr.update(dt);
+        } else {
+            lua_eng.callUpdate(dt) catch |err| {
+                handleLuaError(&vx, writer, &lua_eng, "engine.update()", err);
+            };
+        }
         sprite_system.updateAnimations(@floatCast(dt), lua_eng.lua);
         renderer.clear();
         renderer.clearSprites();
         sprite_system.renderAll(&renderer);
-        scene_mgr.draw();
+        if (has_scenes) {
+            scene_mgr.draw();
+        } else {
+            lua_eng.callDraw() catch |err| {
+                handleLuaError(&vx, writer, &lua_eng, "engine.draw()", err);
+            };
+        }
 
         // Flush pixel layers to terminal via kitty graphics
         renderer.flushPixels() catch {};

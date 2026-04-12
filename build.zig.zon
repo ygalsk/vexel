@@ -20,6 +20,10 @@
             .url = "git+https://github.com/zigimg/zigimg",
             .hash = "zigimg-0.1.0-8_eo2qWHFwA-S24SH7x7NplPii0EbIQiUfDrimgA6rzN",
         },
+        .zaudio = .{
+            .url = "git+https://github.com/zig-gamedev/zaudio",
+            .hash = "zaudio-0.11.0-dev-_M-91uMxQQAWK02Oofoq8EFtqHwcSrJ-ISYEkcPJvViz",
+        },
     },
     .paths = .{
         "build.zig",

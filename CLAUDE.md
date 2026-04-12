@@ -1,6 +1,6 @@
 # Vexel
 
-Terminal game engine. Zig 0.15.2 + libvaxis + ziglua (Lua 5.4) + zqlite.
+Terminal game engine. Zig 0.15.2 + libvaxis + ziglua (Lua 5.4) + zqlite + zaudio (miniaudio).
 
 ## Build
 ```

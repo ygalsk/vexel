@@ -15,7 +15,7 @@ src/
     tilemap.zig       — (Phase 5) Tilemap rendering and scrolling
     
   audio/
-    audio.zig         — (Phase 4) miniaudio wrapper: load, play, stop, volume, channels
+    audio.zig         — miniaudio wrapper via zaudio: device management, sound slots, playback
     
   scripting/
     lua_engine.zig    — Lua state lifecycle, game loading, callback dispatch
@@ -68,6 +68,7 @@ Kitty protocol maps layers directly to z-index placements. Synchronized output (
 ```
 init:
     detect terminal capabilities (kitty graphics, keyboard protocol)
+    init audio system (graceful fallback if no device)
     init Lua state + sandbox
     load game/main.lua
     call engine.load()

@@ -82,6 +82,8 @@ pub fn initPixelMode(self: *Renderer, allocator: std.mem.Allocator, writer: *std
     const placer = try allocator.create(SpritePlacer);
     placer.* = SpritePlacer.init(allocator);
 
+    comp.setTerminalSize(self.screen_info.x_pixel, self.screen_info.y_pixel);
+
     self.pixel_mode = .{
         .allocator = allocator,
         .kitty_backend = kitty,
@@ -118,8 +120,11 @@ pub fn getCompositor(self: *Renderer) ?*Compositing {
     return pm.compositor;
 }
 
-/// Handle terminal resize: mark compositor dirty and invalidate sprite caches.
+/// Handle terminal resize: update compositor scale and invalidate sprite caches.
 pub fn onResize(self: *Renderer) void {
+    if (self.pixel_mode) |pm| {
+        pm.compositor.setTerminalSize(self.screen_info.x_pixel, self.screen_info.y_pixel);
+    }
     self.markAllPixelsDirty();
     self.invalidateAllTerminalImages();
 }

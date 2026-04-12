@@ -215,18 +215,37 @@ local gp = engine.input.get_gamepad()
 -- Mapping: arrows/WASD → dpad, z → a, x → b, return → start, escape → select
 ```
 
-## Audio (Phase 4)
+## Audio (Phase 4 — Available Now)
 
 ```lua
-local music = engine.audio.load("assets/battle_theme.ogg")
-music:play({ loop = true, volume = 0.7 })
-music:stop()
+-- Load sounds (paths relative to game directory)
+local music = engine.audio.load("assets/theme.wav", { stream = true })  -- streaming for large files
+local sfx = engine.audio.load("assets/hit.wav")                         -- preloaded for low latency
 
-local sfx = engine.audio.load("assets/hit.wav")
-sfx:play()
+-- Playback
+music:play({ loop = true, volume = 0.7, pan = 0.0 })  -- all opts are optional
+sfx:play()                                              -- play with defaults
+sfx:stop()
+sfx:pause()
+sfx:resume()
 
+-- Volume and panning
+sfx:set_volume(0.5)       -- 0.0 to 1.0+
+sfx:set_pan(-0.5)         -- -1.0 (left) to 1.0 (right), 0.0 = center
+
+-- Fade effects
+music:fade_in(2000)        -- fade in over 2 seconds
+music:fade_out(1000)       -- fade out over 1 second
+
+-- Master volume (affects all sounds)
 engine.audio.set_master_volume(0.8)
+
+-- Stop everything
+engine.audio.stop_all()
 ```
+
+Sound handles are automatically cleaned up by Lua's garbage collector.
+If no audio device is available (SSH, containers), audio is silently disabled.
 
 ## Persistence (Phase 5)
 

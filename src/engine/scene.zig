@@ -46,7 +46,6 @@ renderer: *Renderer,
 registry: std.StringHashMapUnmanaged(SceneEntry),
 stack: std.ArrayListUnmanaged([]const u8), // stack of scene names
 transition: ?Transition,
-legacy_mode: bool,
 cached_active_ref: i32, // cached registry ref for top of stack (zlua.ref_no = invalid)
 
 // --- Public API ---
@@ -59,7 +58,6 @@ pub fn init(allocator: std.mem.Allocator, lua: *Lua, renderer: *Renderer) SceneM
         .registry = .{},
         .stack = .{},
         .transition = null,
-        .legacy_mode = true,
         .cached_active_ref = zlua.ref_no,
     };
 }
@@ -96,7 +94,10 @@ pub fn registerScene(self: *SceneManager, name: []const u8, table_ref: i32) !voi
             .table_ref = table_ref,
         });
     }
-    self.legacy_mode = false;
+}
+
+pub fn hasScenes(self: *const SceneManager) bool {
+    return self.registry.count() > 0;
 }
 
 pub fn pushScene(self: *SceneManager, name: []const u8, data_ref: i32) !void {
@@ -234,11 +235,6 @@ pub fn update(self: *SceneManager, dt: f64) void {
         return;
     }
 
-    if (self.legacy_mode) {
-        self.callLegacyUpdate(dt);
-        return;
-    }
-
     if (self.currentSceneRef()) |ref| {
         self.callSceneCallbackWithNumber(ref, "update", dt);
     }
@@ -264,11 +260,6 @@ pub fn draw(self: *SceneManager) void {
         return;
     }
 
-    if (self.legacy_mode) {
-        self.callLegacyDraw();
-        return;
-    }
-
     if (self.currentSceneRef()) |ref| {
         self.callSceneCallback(ref, "draw", 0);
     }
@@ -277,11 +268,6 @@ pub fn draw(self: *SceneManager) void {
 pub fn onKey(self: *SceneManager, key_name: []const u8, action: []const u8) void {
     // Block input during transitions
     if (self.transition != null) return;
-
-    if (self.legacy_mode) {
-        self.callLegacyOnKey(key_name, action);
-        return;
-    }
 
     if (self.currentSceneRef()) |ref| {
         _ = self.lua.rawGetIndex(zlua.registry_index, ref);
@@ -299,11 +285,6 @@ pub fn onKey(self: *SceneManager, key_name: []const u8, action: []const u8) void
 
 pub fn onMouse(self: *SceneManager, x: i32, y: i32, button: []const u8, action: []const u8) void {
     if (self.transition != null) return;
-
-    if (self.legacy_mode) {
-        self.callLegacyOnMouse(x, y, button, action);
-        return;
-    }
 
     if (self.currentSceneRef()) |ref| {
         _ = self.lua.rawGetIndex(zlua.registry_index, ref);
@@ -380,54 +361,6 @@ fn callSceneCallbackWithNumber(self: *SceneManager, table_ref: i32, func_name: [
     self.lua.remove(-2); // remove scene table
     self.lua.pushNumber(@floatCast(value));
     self.lua.protectedCall(.{ .args = 1, .results = 0 }) catch {};
-}
-
-// --- Legacy mode dispatch (existing games without scenes) ---
-
-fn callLegacyUpdate(self: *SceneManager, dt: f64) void {
-    if (self.getLegacyFunc("update")) {
-        self.lua.pushNumber(@floatCast(dt));
-        self.lua.protectedCall(.{ .args = 1, .results = 0 }) catch {};
-    }
-}
-
-fn callLegacyDraw(self: *SceneManager) void {
-    if (self.getLegacyFunc("draw")) {
-        self.lua.protectedCall(.{ .args = 0, .results = 0 }) catch {};
-    }
-}
-
-fn callLegacyOnKey(self: *SceneManager, key_name: []const u8, action: []const u8) void {
-    if (self.getLegacyFunc("on_key")) {
-        _ = self.lua.pushString(key_name);
-        _ = self.lua.pushString(action);
-        self.lua.protectedCall(.{ .args = 2, .results = 0 }) catch {};
-    }
-}
-
-fn callLegacyOnMouse(self: *SceneManager, x: i32, y: i32, button: []const u8, action: []const u8) void {
-    if (self.getLegacyFunc("on_mouse")) {
-        self.lua.pushInteger(x);
-        self.lua.pushInteger(y);
-        _ = self.lua.pushString(button);
-        _ = self.lua.pushString(action);
-        self.lua.protectedCall(.{ .args = 4, .results = 0 }) catch {};
-    }
-}
-
-fn getLegacyFunc(self: *SceneManager, name: [:0]const u8) bool {
-    const lua_type = self.lua.getGlobal("engine") catch return false;
-    if (lua_type != .table) {
-        self.lua.pop(1);
-        return false;
-    }
-    const field_type = self.lua.getField(-1, name);
-    if (field_type != .function) {
-        self.lua.pop(2);
-        return false;
-    }
-    self.lua.remove(-2); // remove engine table, leave function
-    return true;
 }
 
 // --- Transition blending ---

@@ -26,6 +26,10 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
+    const audio_enabled = b.option(bool, "audio", "Enable audio support (requires audio device)") orelse true;
+
+    const zaudio_dep = if (audio_enabled) b.dependency("zaudio", .{}) else null;
+
     // --- Engine modules ---
     const kitty_mod = b.createModule(.{
         .root_source_file = b.path("src/graphics/kitty.zig"),
@@ -98,6 +102,15 @@ pub fn build(b: *std.Build) void {
         },
     });
 
+    const audio_mod = if (zaudio_dep) |dep| b.createModule(.{
+        .root_source_file = b.path("src/audio/audio.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &.{
+            .{ .name = "zaudio", .module = dep.module("root") },
+        },
+    }) else null;
+
     const lua_engine_mod = b.createModule(.{
         .root_source_file = b.path("src/scripting/lua_engine.zig"),
         .target = target,
@@ -131,6 +144,9 @@ pub fn build(b: *std.Build) void {
             .{ .name = "input", .module = input_mod },
         },
     });
+    if (audio_mod) |am| {
+        lua_api_mod.addImport("audio", am);
+    }
 
     // --- Executable ---
     const exe = b.addExecutable(.{
@@ -153,7 +169,13 @@ pub fn build(b: *std.Build) void {
             },
         }),
     });
+    if (audio_mod) |am| {
+        exe.root_module.addImport("audio", am);
+    }
     exe.link_gc_sections = true;
+    if (zaudio_dep) |dep| {
+        exe.linkLibrary(dep.artifact("miniaudio"));
+    }
 
     b.installArtifact(exe);
 
@@ -214,6 +236,7 @@ pub fn build(b: *std.Build) void {
             .{ .name = "sprite_system", .module = sprite_system_mod },
             .{ .name = "scene", .module = scene_mod },
             .{ .name = "input", .module = input_mod },
+            .{ .name = "audio", .module = audio_mod.? },
         }},
     };
 

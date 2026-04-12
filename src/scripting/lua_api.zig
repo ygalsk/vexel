@@ -6,7 +6,13 @@ const SpriteSystem = @import("sprite_system");
 const SceneManager = @import("scene");
 const input_mod = @import("input");
 const InputState = input_mod.InputState;
+const audio_mod_ = @import("audio");
+const AudioSystem = audio_mod_.AudioSystem;
+const SoundId = audio_mod_.SoundId;
+const AudioLoadOpts = audio_mod_.LoadOpts;
+const AudioPlayOpts = audio_mod_.PlayOpts;
 const METATABLE_IMAGE = "VexelImage";
+const METATABLE_SOUND = "VexelSound";
 
 /// Userdata stored inside each Lua image handle (canonical definition in sprite_system.zig).
 pub const LuaImageHandle = SpriteSystem.LuaImageHandle;
@@ -27,9 +33,14 @@ fn pushInputClosure(lua: *Lua, input_state: *InputState, func: zlua.CFn) void {
     lua.pushClosure(func, 1);
 }
 
+fn pushAudioClosure(lua: *Lua, audio_system: *AudioSystem, func: zlua.CFn) void {
+    lua.pushLightUserdata(audio_system);
+    lua.pushClosure(func, 1);
+}
+
 /// Register all engine.* API functions into the Lua state.
 /// Call this after LuaEngine.init() but before loadGame().
-pub fn register(lua: *Lua, renderer: *Renderer, sprite_system: *SpriteSystem, scene_mgr: *SceneManager, input_state: *InputState) void {
+pub fn register(lua: *Lua, renderer: *Renderer, sprite_system: *SpriteSystem, scene_mgr: *SceneManager, input_state: *InputState, audio_system: ?*AudioSystem) void {
     // Create VexelImage metatable with __gc
     lua.newMetatable(METATABLE_IMAGE) catch {};
     pushRendererClosure(lua, renderer, zlua.wrap(lImageGc));
@@ -127,6 +138,26 @@ pub fn register(lua: *Lua, renderer: *Renderer, sprite_system: *SpriteSystem, sc
     pushSceneClosure(lua, scene_mgr, zlua.wrap(lSceneSwitch));
     lua.setField(-2, "switch");
     lua.setField(-2, "scene");
+
+    // engine.audio
+    if (audio_system) |audio| {
+        // Create VexelSound metatable
+        lua.newMetatable(METATABLE_SOUND) catch {};
+        pushAudioClosure(lua, audio, zlua.wrap(lSoundGc));
+        lua.setField(-2, "__gc");
+        pushAudioClosure(lua, audio, zlua.wrap(lSoundIndex));
+        lua.setField(-2, "__index");
+        lua.pop(1);
+
+        lua.newTable();
+        pushAudioClosure(lua, audio, zlua.wrap(lAudioLoad));
+        lua.setField(-2, "load");
+        pushAudioClosure(lua, audio, zlua.wrap(lAudioSetMasterVolume));
+        lua.setField(-2, "set_master_volume");
+        pushAudioClosure(lua, audio, zlua.wrap(lAudioStopAll));
+        lua.setField(-2, "stop_all");
+        lua.setField(-2, "audio");
+    }
 
     lua.pushFunction(zlua.wrap(lQuitGame));
     lua.setField(-2, "quit_game");
@@ -578,6 +609,199 @@ fn lQuitGame(lua: *Lua) i32 {
     lua.pushBoolean(true);
     lua.setField(-2, "should_quit");
     lua.pop(1);
+    return 0;
+}
+
+// --- Audio functions ---
+
+fn getAudioSystem(lua: *Lua) *AudioSystem {
+    const ptr = lua.toPointer(Lua.upvalueIndex(1)) catch unreachable;
+    return @ptrCast(@constCast(@alignCast(ptr)));
+}
+
+/// engine.audio.load(path) or engine.audio.load(path, {stream=true})
+fn lAudioLoad(lua: *Lua) i32 {
+    const audio = getAudioSystem(lua);
+    const rel_path = lua.toString(1) catch {
+        lua.raiseErrorStr("audio.load: expected string path", .{});
+    };
+
+    var opts = AudioLoadOpts{};
+    if (lua.typeOf(2) == .table) {
+        if (lua.getField(2, "stream") == .boolean) {
+            opts.stream = lua.toBoolean(-1);
+        }
+        lua.pop(1);
+    }
+
+    // Resolve path relative to game dir
+    const abs_path = audio.resolvePath(rel_path) catch {
+        lua.raiseErrorStr("audio.load: failed to resolve path '%s'", .{rel_path.ptr});
+    };
+    defer audio.allocator.free(abs_path);
+
+    const id = audio.loadSound(abs_path, opts) catch {
+        lua.raiseErrorStr("audio.load: failed to load '%s'", .{rel_path.ptr});
+    };
+
+    // Create userdata with sound ID
+    const ud = lua.newUserdata(LuaSoundHandle, 0);
+    ud.* = .{ .id = id, .valid = true };
+    _ = lua.getField(zlua.registry_index, METATABLE_SOUND);
+    lua.setMetatable(-2);
+    return 1;
+}
+
+/// engine.audio.set_master_volume(v)
+fn lAudioSetMasterVolume(lua: *Lua) i32 {
+    const audio = getAudioSystem(lua);
+    const vol: f32 = @floatCast(lua.toNumber(1) catch 1.0);
+    audio.setMasterVolume(vol);
+    return 0;
+}
+
+/// engine.audio.stop_all()
+fn lAudioStopAll(lua: *Lua) i32 {
+    const audio = getAudioSystem(lua);
+    audio.stopAll();
+    return 0;
+}
+
+/// Userdata for sound handles
+const LuaSoundHandle = struct {
+    id: SoundId,
+    valid: bool,
+};
+
+fn checkSoundHandle(lua: *Lua, arg: i32) *LuaSoundHandle {
+    return lua.checkUserdata(LuaSoundHandle, arg, METATABLE_SOUND);
+}
+
+/// __gc metamethod — release the sound on garbage collection
+fn lSoundGc(lua: *Lua) i32 {
+    const ud = checkSoundHandle(lua, 1);
+    if (!ud.valid) return 0;
+    const audio = getAudioSystem(lua);
+    audio.unloadSound(ud.id);
+    ud.valid = false;
+    return 0;
+}
+
+/// __index metamethod — dispatch sound methods
+fn lSoundIndex(lua: *Lua) i32 {
+    const key = lua.toString(2) catch return 0;
+
+    const methods = std.StaticStringMap(zlua.CFn).initComptime(.{
+        .{ "play", zlua.wrap(lSoundPlay) },
+        .{ "stop", zlua.wrap(lSoundStop) },
+        .{ "pause", zlua.wrap(lSoundPause) },
+        .{ "resume", zlua.wrap(lSoundResume) },
+        .{ "set_volume", zlua.wrap(lSoundSetVolume) },
+        .{ "set_pan", zlua.wrap(lSoundSetPan) },
+        .{ "fade_in", zlua.wrap(lSoundFadeIn) },
+        .{ "fade_out", zlua.wrap(lSoundFadeOut) },
+    });
+
+    if (methods.get(key)) |func| {
+        // Push as closure with audio system upvalue
+        const audio = getAudioSystem(lua);
+        lua.pushLightUserdata(audio);
+        lua.pushClosure(func, 1);
+        return 1;
+    }
+    return 0;
+}
+
+/// sound:play() or sound:play({loop=true, volume=0.8, pan=-0.5})
+fn lSoundPlay(lua: *Lua) i32 {
+    const audio = getAudioSystem(lua);
+    const ud = checkSoundHandle(lua, 1);
+    if (!ud.valid) return 0;
+
+    var opts = AudioPlayOpts{};
+    if (lua.typeOf(2) == .table) {
+        if (lua.getField(2, "loop") == .boolean) {
+            opts.loop = lua.toBoolean(-1);
+        }
+        lua.pop(1);
+        if (lua.getField(2, "volume") == .number) {
+            opts.volume = @floatCast(lua.toNumber(-1) catch 1.0);
+        }
+        lua.pop(1);
+        if (lua.getField(2, "pan") == .number) {
+            opts.pan = @floatCast(lua.toNumber(-1) catch 0.0);
+        }
+        lua.pop(1);
+    }
+
+    audio.play(ud.id, opts);
+    return 0;
+}
+
+/// sound:stop()
+fn lSoundStop(lua: *Lua) i32 {
+    const audio = getAudioSystem(lua);
+    const ud = checkSoundHandle(lua, 1);
+    if (!ud.valid) return 0;
+    audio.stop(ud.id);
+    return 0;
+}
+
+/// sound:pause()
+fn lSoundPause(lua: *Lua) i32 {
+    const audio = getAudioSystem(lua);
+    const ud = checkSoundHandle(lua, 1);
+    if (!ud.valid) return 0;
+    audio.pause(ud.id);
+    return 0;
+}
+
+/// sound:resume()
+fn lSoundResume(lua: *Lua) i32 {
+    const audio = getAudioSystem(lua);
+    const ud = checkSoundHandle(lua, 1);
+    if (!ud.valid) return 0;
+    audio.resume_(ud.id);
+    return 0;
+}
+
+/// sound:set_volume(v)
+fn lSoundSetVolume(lua: *Lua) i32 {
+    const audio = getAudioSystem(lua);
+    const ud = checkSoundHandle(lua, 1);
+    if (!ud.valid) return 0;
+    const vol: f32 = @floatCast(lua.toNumber(2) catch 1.0);
+    audio.setVolume(ud.id, vol);
+    return 0;
+}
+
+/// sound:set_pan(p)
+fn lSoundSetPan(lua: *Lua) i32 {
+    const audio = getAudioSystem(lua);
+    const ud = checkSoundHandle(lua, 1);
+    if (!ud.valid) return 0;
+    const pan: f32 = @floatCast(lua.toNumber(2) catch 0.0);
+    audio.setPan(ud.id, pan);
+    return 0;
+}
+
+/// sound:fade_in(duration_ms)
+fn lSoundFadeIn(lua: *Lua) i32 {
+    const audio = getAudioSystem(lua);
+    const ud = checkSoundHandle(lua, 1);
+    if (!ud.valid) return 0;
+    const ms: u32 = @intCast(lua.toInteger(2) catch 1000);
+    audio.fadeIn(ud.id, ms);
+    return 0;
+}
+
+/// sound:fade_out(duration_ms)
+fn lSoundFadeOut(lua: *Lua) i32 {
+    const audio = getAudioSystem(lua);
+    const ud = checkSoundHandle(lua, 1);
+    if (!ud.valid) return 0;
+    const ms: u32 = @intCast(lua.toInteger(2) catch 1000);
+    audio.fadeOut(ud.id, ms);
     return 0;
 }
 

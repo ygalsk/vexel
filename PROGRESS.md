@@ -8,7 +8,7 @@
 | 1 | Kitty Graphics + Pixel Rendering | Done (adapted) |
 | 2 | Image & Sprite Support | Done |
 | 3 | Input & Scene Management | Done |
-| 4 | Audio | Not started |
+| 4 | Audio | Done |
 | 5 | Tilemap & Persistence | Not started |
 | 6 | Polish & Codecritter Port | Partially started (1/17) |
 
@@ -57,6 +57,20 @@ Phase 1's original plan included sub-cell/sextant rendering. The implementation 
 - Lua `require()` support from game directories
 - Test game: `games/scenes/` (menu → dragon flight → pause)
 
+### Phase 4 — Audio
+- miniaudio integration via zaudio (zig-gamedev) with high-level `ma_engine` API
+- Audio device init/deinit with graceful fallback when no device available
+- Load WAV, OGG, MP3 files (preloaded or streaming)
+- Slot-based sound handle management with free list recycling
+- Playback control: play, stop, pause, resume with per-sound options
+- Volume control per sound and master volume
+- Stereo panning (-1.0 left to 1.0 right)
+- Fade in/out with millisecond duration
+- Sound handles as Lua userdata with GC finalizers
+- Optional build flag: `-Daudio=false` disables audio compilation
+- Game-relative path resolution for asset loading
+- Test game: `games/rhythm/` (4-lane rhythm game with music + SFX)
+
 ## Source Files
 
 ```
@@ -71,4 +85,5 @@ src/graphics/sprite_placer.zig  — Per-frame kitty image placements
 src/scripting/lua_engine.zig    — Lua state management, lifecycle calls
 src/scripting/lua_api.zig       — Lua API bindings (engine.* table)
 src/scripting/sprite_system.zig — Retained sprite system, animations
+src/audio/audio.zig             — Audio system (zaudio/miniaudio wrapper)
 ```
