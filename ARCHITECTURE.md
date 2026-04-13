@@ -92,4 +92,4 @@ cleanup:
 
 ## Lua Game API
 
-See [LUA_API.md](LUA_API.md) for the full Lua-facing API surface.
+See [.claude/rules/vexel-engine.md](.claude/rules/vexel-engine.md) for the full Lua API reference.

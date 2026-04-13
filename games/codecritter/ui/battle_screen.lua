@@ -23,14 +23,12 @@ local types    = require("data.types")
 local moves    = require("data.moves")
 local items    = require("data.items")
 local species  = require("data.species")
-local registry = require("sprite.registry")
 
 local scene = {}
 
 -- Battle state
 local state
 local seq           -- animation sequencer
-local sheets = {}   -- species_id -> {handle, cfg}
 
 -- Virtual resolution
 local W, H = 640, 360
@@ -39,21 +37,80 @@ local W, H = 640, 360
 local L = {}
 
 -----------------------------------------------------------------------
--- Helpers
+-- Animation templates — picked by frame count at load time
 -----------------------------------------------------------------------
 
-local function load_sprite(species_id)
-  if sheets[species_id] then return sheets[species_id] end
-  local cfg = registry.get(species_id)
-  if cfg.path then
-    local ok, handle = pcall(engine.graphics.load_spritesheet, cfg.path, cfg.frame_w, cfg.frame_h)
-    if ok then
-      sheets[species_id] = { handle = handle, cfg = cfg }
-      return sheets[species_id]
-    end
+local ANIM_TEMPLATES = {
+  [11] = { -- base forms
+    idle   = { frames = {0,1,2,3},   speed = 0.4,  },
+    attack = { frames = {4,5,6},     speed = 0.12, },
+    hit    = { frames = {7,8},       speed = 0.15, },
+    faint  = { frames = {9,10},      speed = 0.3,  },
+  },
+  [12] = { -- mid evolutions
+    idle   = { frames = {0,1,2,3,4},  speed = 0.4,  },
+    attack = { frames = {5,6,7},      speed = 0.12, },
+    hit    = { frames = {8,9},        speed = 0.15, },
+    faint  = { frames = {10,11},      speed = 0.3,  },
+  },
+  [14] = { -- final forms
+    idle   = { frames = {0,1,2,3,4,5}, speed = 0.4,  },
+    attack = { frames = {6,7,8},       speed = 0.12, },
+    hit    = { frames = {9,10},        speed = 0.15, },
+    faint  = { frames = {11,12,13},    speed = 0.3,  },
+  },
+}
+local PLACEHOLDER_TEMPLATE = {
+  idle   = { frames = {0,1}, speed = 0.5,  },
+  attack = { frames = {0},   speed = 0.1,  },
+  hit    = { frames = {1},   speed = 0.1,  },
+  faint  = { frames = {1},   speed = 0.1,  },
+}
+
+local function get_template(sheet)
+  return ANIM_TEMPLATES[engine.graphics.get_frame_count(sheet)] or PLACEHOLDER_TEMPLATE
+end
+
+-----------------------------------------------------------------------
+-- ECS sprite management
+-----------------------------------------------------------------------
+
+-- Per-critter sprite state: { entity, sheet, template }
+local player_sprite = nil
+local enemy_sprite  = nil
+local minion_sprite = nil
+
+local function spawn_critter_sprite(species_id, x, y, flip_x)
+  local path = "assets/sprites/" .. species_id .. ".png"
+  local ok, sheet = pcall(engine.graphics.load_spritesheet, path, 32, 32)
+  if not ok then return nil end
+  local tmpl = get_template(sheet)
+  local e = engine.world.spawn()
+  engine.world.set(e, "position", { x = x, y = y })
+  engine.world.set(e, "sprite", { image = sheet, layer = 1, scale = 2, flip_x = flip_x or false })
+  engine.world.set(e, "animation", { frames = tmpl.idle.frames, speed = tmpl.idle.speed, loop = true })
+  return { entity = e, sheet = sheet, template = tmpl }
+end
+
+local function despawn_critter_sprite(cs)
+  if not cs then return end
+  if cs.entity and engine.world.is_alive(cs.entity) then
+    engine.world.despawn(cs.entity)
   end
-  sheets[species_id] = { handle = nil, cfg = cfg }
-  return sheets[species_id]
+  if cs.sheet then pcall(engine.graphics.unload_image, cs.sheet) end
+end
+
+local function play_critter_anim(cs, anim_name, on_done)
+  if not cs or not cs.entity then return end
+  local a = cs.template[anim_name]
+  if not a then return end
+  local is_idle = (anim_name == "idle")
+  engine.world.set(cs.entity, "animation", {
+    frames = a.frames, speed = a.speed, loop = is_idle,
+    on_complete = is_idle and nil or (on_done or function()
+      play_critter_anim(cs, "idle")
+    end),
+  })
 end
 
 local function add_msg(text, color)
@@ -75,43 +132,6 @@ local function find_next_alive(party, skip_idx)
   return nil
 end
 
------------------------------------------------------------------------
--- Sprite animation state
------------------------------------------------------------------------
-
-local player_anim = { frame = 0, timer = 0, name = "idle" }
-local enemy_anim  = { frame = 0, timer = 0, name = "idle" }
-
-local function update_sprite_anim(sa, species_id, dt)
-  local cfg = registry.get(species_id)
-  local a = cfg.animations[sa.name] or cfg.animations.idle
-  if not a or #a.frames == 0 then return end
-  sa.timer = sa.timer + dt
-  if a.speed > 0 and sa.timer >= a.speed then
-    sa.timer = sa.timer - a.speed
-    sa.frame = sa.frame + 1
-    if sa.frame >= #a.frames then
-      if a.loop then
-        sa.frame = 0
-      else
-        sa.frame = #a.frames - 1
-        if not a.stay_on_last then
-          sa.name = "idle"
-          sa.frame = 0
-          sa.timer = 0
-        end
-      end
-    end
-  end
-end
-
-local function get_sprite_frame(sa, species_id)
-  local cfg = registry.get(species_id)
-  local a = cfg.animations[sa.name] or cfg.animations.idle
-  if not a or #a.frames == 0 then return 0 end
-  local idx = math.min(sa.frame + 1, #a.frames)
-  return a.frames[idx]
-end
 
 -----------------------------------------------------------------------
 -- Menu actions
@@ -152,10 +172,7 @@ local function push_attack_steps(s, attacker, move_id, defender, attacker_name, 
   -- Trigger attacker's attack animation
   anim.push(s, function()
     if attacker.hp <= 0 or defender.hp <= 0 then return end
-    local anim_state = is_player and player_anim or enemy_anim
-    anim_state.name = "attack"
-    anim_state.frame = 0
-    anim_state.timer = 0
+    play_critter_anim(is_player and player_sprite or enemy_sprite, "attack")
   end, 0.4)
 
   anim.push(s, function()
@@ -181,15 +198,7 @@ local function push_attack_steps(s, attacker, move_id, defender, attacker_name, 
     target.hp = math.max(0, target.hp - result.damage)
 
     -- Trigger hit animation
-    if is_player then
-      enemy_anim.name = "hit"
-      enemy_anim.frame = 0
-      enemy_anim.timer = 0
-    else
-      player_anim.name = "hit"
-      player_anim.frame = 0
-      player_anim.timer = 0
-    end
+    play_critter_anim(is_player and enemy_sprite or player_sprite, "hit")
     if result.self_targeted then
       add_msg(attacker_name .. " used " .. m.name .. " — hit self! " .. result.damage .. " dmg")
     else
@@ -227,9 +236,7 @@ local function begin_victory_sequence()
 
   anim.push(seq, function()
     add_msg(state.enemy.name .. " fainted!", 0xFF6644)
-    enemy_anim.name = "faint"
-    enemy_anim.frame = 0
-    enemy_anim.timer = 0
+    play_critter_anim(enemy_sprite, "faint", function() end) -- stay on last frame
   end, 1.0)
 
   anim.push(seq, function()
@@ -244,11 +251,9 @@ local function begin_victory_sequence()
         add_msg(winner.name .. " evolved into " .. new_sp.name .. "!", 0xFF88FF)
         winner.name = new_sp.name
         winner.critter_type = new_sp.critter_type
-        -- Reload sprite
-        load_sprite(winner.species_id)
-        player_anim.name = "idle"
-        player_anim.frame = 0
-        player_anim.timer = 0
+        -- Reload sprite for evolved form
+        despawn_critter_sprite(player_sprite)
+        player_sprite = spawn_critter_sprite(winner.species_id, L.player_sprite_x, L.player_sprite_y, false)
       end
       winner.evolved = nil
     end
@@ -265,9 +270,7 @@ local function begin_defeat_sequence()
   seq = anim.new()
   anim.push(seq, function()
     add_msg(active_player().name .. " fainted!", 0xFF4444)
-    player_anim.name = "faint"
-    player_anim.frame = 0
-    player_anim.timer = 0
+    play_critter_anim(player_sprite, "faint", function() end) -- stay on last frame
   end, 1.0)
   anim.push(seq, function()
     add_msg("You blacked out...", 0xFF4444)
@@ -292,8 +295,8 @@ local function check_end_conditions()
         end, 0.8)
         anim.push(seq, function()
           state.enemy = state.boss_team[state.boss_idx]
-          load_sprite(state.enemy.species_id)
-          enemy_anim = { frame = 0, timer = 0, name = "idle" }
+          despawn_critter_sprite(enemy_sprite)
+          enemy_sprite = spawn_critter_sprite(state.enemy.species_id, L.enemy_sprite_x, L.enemy_sprite_y, true)
           add_msg(state.enemy.name .. " enters the battle!")
         end, 0.8)
         anim.push(seq, function()
@@ -312,8 +315,8 @@ local function check_end_conditions()
         end, 0.8)
         anim.push(seq, function()
           state.enemy = state.swarm[state.swarm_idx]
-          load_sprite(state.enemy.species_id)
-          enemy_anim = { frame = 0, timer = 0, name = "idle" }
+          despawn_critter_sprite(enemy_sprite)
+          enemy_sprite = spawn_critter_sprite(state.enemy.species_id, L.enemy_sprite_x, L.enemy_sprite_y, true)
           add_msg(string.format("[SWARM] %d of %d — %s appeared!",
             state.swarm_idx, #state.swarm, state.enemy.name))
         end, 0.8)
@@ -337,8 +340,8 @@ local function check_end_conditions()
       anim.push(seq, function()
         state.active_idx = next_idx
         local new_p = active_player()
-        load_sprite(new_p.species_id)
-        player_anim = { frame = 0, timer = 0, name = "idle" }
+        despawn_critter_sprite(player_sprite)
+        player_sprite = spawn_critter_sprite(new_p.species_id, L.player_sprite_x, L.player_sprite_y, false)
         add_msg("Go, " .. new_p.name .. "!")
       end, 0.8)
       anim.push(seq, function()
@@ -511,8 +514,8 @@ local function handle_submenu_input(key)
         anim.push(seq, function()
           state.active_idx = idx
           local p = active_player()
-          load_sprite(p.species_id)
-          player_anim = { frame = 0, timer = 0, name = "idle" }
+          despawn_critter_sprite(player_sprite)
+          player_sprite = spawn_critter_sprite(p.species_id, L.player_sprite_x, L.player_sprite_y, false)
           add_msg("Go, " .. p.name .. "!")
         end, 0.8)
         -- Enemy attacks after swap
@@ -628,6 +631,8 @@ function scene.load(data)
     enemy_sprite_y = widgets.row_px(math.floor(enemy_h * 0.3)),
     player_sprite_x = math.floor(W * 0.18),
     player_sprite_y = widgets.row_px(enemy_h + math.floor(player_h * 0.3)),
+    minion_sprite_x = math.floor(W * 0.65) - 80,
+    minion_sprite_y = widgets.row_px(math.floor(enemy_h * 0.3)) + 20,
   }
 
   state = {
@@ -662,15 +667,17 @@ function scene.load(data)
     state.enemy = state.swarm[1]
   end
 
-  -- Load sprites for all critters in this battle
-  load_sprite(active_player().species_id)
-  load_sprite(state.enemy.species_id)
-  if state.minion then load_sprite(state.minion.species_id) end
-  for _, c in ipairs(state.boss_team) do load_sprite(c.species_id) end
-  for _, c in ipairs(state.swarm) do load_sprite(c.species_id) end
+  -- Clean up any stale sprites from a prior load
+  despawn_critter_sprite(player_sprite)
+  despawn_critter_sprite(enemy_sprite)
+  despawn_critter_sprite(minion_sprite)
 
-  player_anim = { frame = 0, timer = 0, name = "idle" }
-  enemy_anim  = { frame = 0, timer = 0, name = "idle" }
+  -- Spawn ECS sprites for active critters
+  player_sprite = spawn_critter_sprite(active_player().species_id, L.player_sprite_x, L.player_sprite_y, false)
+  enemy_sprite = spawn_critter_sprite(state.enemy.species_id, L.enemy_sprite_x, L.enemy_sprite_y, true)
+  if state.minion then
+    minion_sprite = spawn_critter_sprite(state.minion.species_id, L.minion_sprite_x, L.minion_sprite_y, true)
+  end
 
   -- Play battle music
   if state.encounter_type == "boss_team" or state.encounter_type == "boss_minion" then
@@ -701,10 +708,6 @@ function scene.load(data)
 end
 
 function scene.update(dt)
-  -- Update sprite animations
-  update_sprite_anim(player_anim, active_player().species_id, dt)
-  update_sprite_anim(enemy_anim, state.enemy.species_id, dt)
-
   -- Update sequencer
   if seq then anim.update(seq, dt) end
 
@@ -744,35 +747,17 @@ function scene.draw()
   engine.graphics.pixel.rect(0, divider_y, W, 1, 0x333355)
   engine.graphics.pixel.rect(0, action_y, W, 1, 0x333355)
 
-  ---------------------------------------------------------------
-  -- Layer 1: critter sprites (pixel space)
-  ---------------------------------------------------------------
-  engine.graphics.set_layer(1)
-
-  local ps = sheets[p.species_id]
-  if ps and ps.handle then
-    engine.graphics.draw_sprite(ps.handle, L.player_sprite_x, L.player_sprite_y,
-      { frame = get_sprite_frame(player_anim, p.species_id), scale = ps.cfg.scale })
-  else
-    engine.graphics.pixel.rect(L.player_sprite_x, L.player_sprite_y, 64, 32,
+  -- Layer 1: critter sprites rendered automatically by ECS
+  -- Fallback colored rectangles if sprite failed to load
+  if not player_sprite then
+    engine.graphics.set_layer(1)
+    engine.graphics.pixel.rect(L.player_sprite_x, L.player_sprite_y, 64, 64,
       widgets.type_colors[p.critter_type] or 0x808080)
   end
-
-  local es = sheets[e.species_id]
-  if es and es.handle then
-    engine.graphics.draw_sprite(es.handle, L.enemy_sprite_x, L.enemy_sprite_y,
-      { frame = get_sprite_frame(enemy_anim, e.species_id), flip_x = true, scale = es.cfg.scale })
-  else
-    engine.graphics.pixel.rect(L.enemy_sprite_x, L.enemy_sprite_y, 64, 32,
+  if not enemy_sprite then
+    engine.graphics.set_layer(1)
+    engine.graphics.pixel.rect(L.enemy_sprite_x, L.enemy_sprite_y, 64, 64,
       widgets.type_colors[e.critter_type] or 0x808080)
-  end
-
-  if state.encounter_type == "boss_minion" and state.minion then
-    local ms = sheets[state.minion.species_id]
-    if ms and ms.handle then
-      engine.graphics.draw_sprite(ms.handle, L.enemy_sprite_x - 80, L.enemy_sprite_y + 20,
-        { frame = 0, flip_x = true, scale = ms.cfg.scale })
-    end
   end
 
   ---------------------------------------------------------------
@@ -927,13 +912,12 @@ end
 
 function scene.unload()
   music.stop()
-  -- Unload critter sprites
-  for id, s in pairs(sheets) do
-    if s.handle then
-      pcall(engine.graphics.unload_image, s.handle)
-    end
-  end
-  sheets = {}
+  despawn_critter_sprite(player_sprite)
+  despawn_critter_sprite(enemy_sprite)
+  despawn_critter_sprite(minion_sprite)
+  player_sprite = nil
+  enemy_sprite = nil
+  minion_sprite = nil
 end
 
 return scene

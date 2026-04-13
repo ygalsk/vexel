@@ -16,6 +16,7 @@
 | 9 | Codecritter Port | Not started |
 
 ## Recent
+- Simplify: consolidated Lua API docs into single source of truth (.claude/rules/vexel-engine.md), deleted registry.lua in favor of frame-count-based ANIM_TEMPLATES, migrated battle_screen sprites from manual animation to ECS, fixed placeholder anim speed=0 bug, eliminated dead on_complete closures for idle anims
 - Simplify battle UI: removed dead widgets (message_log, archetype_badge), hoisted per-frame table allocations (status_icon, rarity_stars), extracted menu background helper and minion labels constant
 
 ## What's Built
