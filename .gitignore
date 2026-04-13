@@ -1,5 +1,5 @@
 .zig-cache/
 zig-out/
 assets/
-graphify-out/.graphify_cache/
+graphify-out/cache/
 graphify-out/.graphify_python
