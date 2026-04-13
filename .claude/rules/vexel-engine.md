@@ -14,7 +14,7 @@ Lua game code -> Renderer API -> 8-layer compositor -> Kitty protocol -> termina
 - Main loop: `engine.load() -> [poll input -> engine.update(dt) -> engine.draw() -> composite -> flush]`
 
 ```bash
-zig build run -- games/mygame/    # game dir must contain main.lua
+zig build run -- examples/bounce/    # game dir must contain main.lua
 ```
 
 ## Lifecycle Callbacks

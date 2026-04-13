@@ -4,15 +4,19 @@
 
 ```
 src/
+  root.zig            — Library entry point: re-exports public engine types
+  bin/
+    main.zig          — Standalone binary: parse args, load game dir, run main loop
+
   engine/
     input.zig         — Key/mouse event translation from vaxis to engine types
     timer.zig         — Timer/tween system: one-shot, repeating, interpolation with easing
     
   graphics/
     renderer.zig      — Kitty-based rendering: text, rects, clear, screen info
-    kitty.zig         — (Phase 1) Kitty graphics protocol: upload, place, animate, z-index
-    image.zig         — (Phase 2) Image loading (PNG via zigimg), sprite sheets, atlas
-    compositing.zig   — (Phase 1) Layer compositing, alpha blending, dirty-rect tracking
+    kitty.zig         — Kitty graphics protocol: upload, place, animate, z-index
+    image.zig         — Image loading (PNG via zigimg), sprite sheets, atlas
+    compositing.zig   — Layer compositing, alpha blending, dirty-rect tracking
     tilemap.zig       — Tilemap rendering: viewport culling, smooth scrolling
     
   audio/
@@ -22,10 +26,13 @@ src/
     lua_engine.zig    — Lua state lifecycle, game loading, callback dispatch
     lua_api.zig       — Register engine.* functions into Lua (graphics, input, etc.)
     
+  ecs/
+    entity.zig        — Entity type (generation-counted IDs), EntityPool
+    component_store.zig — Generic ComponentStore(T), LuaComponentStore
+    world.zig         — ECS World: entities, components, built-in systems
+
   persistence/
     db.zig            — SQLite wrapper (zqlite) + key-value save API
-
-  main.zig            — Standalone binary: parse args, load game dir, run main loop
 ```
 
 ## Rendering Pipeline

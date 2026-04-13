@@ -4,7 +4,7 @@ Terminal game engine. Zig 0.15.2 + libvaxis + ziglua (Lua 5.4) + zqlite + zaudio
 ## Build
 ```
 zig build                        # compile
-zig build run -- games/hello/   # run hello world test game
+zig build run -- examples/bounce/   # run an example game
 zig build test                   # unit tests
 ```
 

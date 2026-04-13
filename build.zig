@@ -204,11 +204,33 @@ pub fn build(b: *std.Build) void {
         lua_api_mod.addImport("audio", am);
     }
 
+    // --- Library module (for downstream Zig projects) ---
+    const vexel_mod = b.addModule("vexel", .{
+        .root_source_file = b.path("src/root.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &.{
+            .{ .name = "renderer", .module = renderer_mod },
+            .{ .name = "image", .module = image_mod },
+            .{ .name = "input", .module = input_mod },
+            .{ .name = "scene", .module = scene_mod },
+            .{ .name = "lua_engine", .module = lua_engine_mod },
+            .{ .name = "lua_api", .module = lua_api_mod },
+            .{ .name = "timer", .module = timer_mod },
+            .{ .name = "db", .module = db_mod },
+            .{ .name = "ecs_world", .module = ecs_world_mod },
+        },
+    });
+    // Audio is optional — only wire it if enabled
+    if (audio_mod) |am| {
+        vexel_mod.addImport("audio", am);
+    }
+
     // --- Executable ---
     const exe = b.addExecutable(.{
         .name = "vexel",
         .root_module = b.createModule(.{
-            .root_source_file = b.path("src/main.zig"),
+            .root_source_file = b.path("src/bin/main.zig"),
             .target = target,
             .optimize = optimize,
             .imports = &.{
