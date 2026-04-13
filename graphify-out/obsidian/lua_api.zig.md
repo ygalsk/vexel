@@ -1,0 +1,87 @@
+---
+source_file: "src/scripting/lua_api.zig"
+type: "code"
+community: "Lua API Bindings & Engine Glue"
+location: "L1"
+tags:
+  - graphify/code
+  - graphify/EXTRACTED
+  - community/Lua_API_Bindings_&_Engine_Glue
+---
+
+# lua_api.zig
+
+## Connections
+- [[EngineContext]] - `contains` [EXTRACTED]
+- [[LuaDbHandle]] - `contains` [EXTRACTED]
+- [[LuaImageHandle]] - `contains` [EXTRACTED]
+- [[LuaSoundHandle]] - `contains` [EXTRACTED]
+- [[bindLuaParams()]] - `contains` [EXTRACTED]
+- [[checkDbHandle()]] - `contains` [EXTRACTED]
+- [[checkImageHandle()]] - `contains` [EXTRACTED]
+- [[checkSoundHandle()]] - `contains` [EXTRACTED]
+- [[getUpvalue()]] - `contains` [EXTRACTED]
+- [[lAudioLoad()]] - `contains` [EXTRACTED]
+- [[lAudioSetMasterVolume()]] - `contains` [EXTRACTED]
+- [[lAudioStopAll()]] - `contains` [EXTRACTED]
+- [[lClear()]] - `contains` [EXTRACTED]
+- [[lClearAll()]] - `contains` [EXTRACTED]
+- [[lDbClose()]] - `contains` [EXTRACTED]
+- [[lDbExec()]] - `contains` [EXTRACTED]
+- [[lDbGc()]] - `contains` [EXTRACTED]
+- [[lDbIndex()]] - `contains` [EXTRACTED]
+- [[lDbOpen()]] - `contains` [EXTRACTED]
+- [[lDbQuery()]] - `contains` [EXTRACTED]
+- [[lDrawFrame()]] - `contains` [EXTRACTED]
+- [[lDrawRect()]] - `contains` [EXTRACTED]
+- [[lDrawSprite()]] - `contains` [EXTRACTED]
+- [[lDrawText()]] - `contains` [EXTRACTED]
+- [[lDrawTilemap()]] - `contains` [EXTRACTED]
+- [[lGetFrameCount()]] - `contains` [EXTRACTED]
+- [[lGetPixelSize()]] - `contains` [EXTRACTED]
+- [[lGetResolution()]] - `contains` [EXTRACTED]
+- [[lGetSize()]] - `contains` [EXTRACTED]
+- [[lImageGc()]] - `contains` [EXTRACTED]
+- [[lInputGetGamepad()]] - `contains` [EXTRACTED]
+- [[lInputGetMouse()]] - `contains` [EXTRACTED]
+- [[lInputIsKeyDown()]] - `contains` [EXTRACTED]
+- [[lLoadImage()]] - `contains` [EXTRACTED]
+- [[lLoadSpriteSheet()]] - `contains` [EXTRACTED]
+- [[lPixelBuffer()]] - `contains` [EXTRACTED]
+- [[lPixelCircle()]] - `contains` [EXTRACTED]
+- [[lPixelClear()]] - `contains` [EXTRACTED]
+- [[lPixelLine()]] - `contains` [EXTRACTED]
+- [[lPixelRect()]] - `contains` [EXTRACTED]
+- [[lPixelSet()]] - `contains` [EXTRACTED]
+- [[lQuitGame()]] - `contains` [EXTRACTED]
+- [[lSaveGet()]] - `contains` [EXTRACTED]
+- [[lSaveSet()]] - `contains` [EXTRACTED]
+- [[lScenePop()]] - `contains` [EXTRACTED]
+- [[lScenePush()]] - `contains` [EXTRACTED]
+- [[lSceneRegister()]] - `contains` [EXTRACTED]
+- [[lSceneSwitch()]] - `contains` [EXTRACTED]
+- [[lSetLayer()]] - `contains` [EXTRACTED]
+- [[lSetResolution()]] - `contains` [EXTRACTED]
+- [[lSoundFadeIn()]] - `contains` [EXTRACTED]
+- [[lSoundFadeOut()]] - `contains` [EXTRACTED]
+- [[lSoundGc()]] - `contains` [EXTRACTED]
+- [[lSoundIndex()]] - `contains` [EXTRACTED]
+- [[lSoundPause()]] - `contains` [EXTRACTED]
+- [[lSoundPlay()]] - `contains` [EXTRACTED]
+- [[lSoundResume()]] - `contains` [EXTRACTED]
+- [[lSoundSetPan()]] - `contains` [EXTRACTED]
+- [[lSoundSetVolume()]] - `contains` [EXTRACTED]
+- [[lSoundStop()]] - `contains` [EXTRACTED]
+- [[lTimerAfter()]] - `contains` [EXTRACTED]
+- [[lTimerCancel()]] - `contains` [EXTRACTED]
+- [[lTimerEvery()]] - `contains` [EXTRACTED]
+- [[lTween()]] - `contains` [EXTRACTED]
+- [[lUnloadImage()]] - `contains` [EXTRACTED]
+- [[luaHexColor()]] - `contains` [EXTRACTED]
+- [[luaOptionalColor()]] - `contains` [EXTRACTED]
+- [[pushImageUserdata()]] - `contains` [EXTRACTED]
+- [[pushUpvalueClosure()]] - `contains` [EXTRACTED]
+- [[register()]] - `contains` [EXTRACTED]
+- [[releaseImageHandle()]] - `contains` [EXTRACTED]
+
+#graphify/code #graphify/EXTRACTED #community/Lua_API_Bindings_&_Engine_Glue
