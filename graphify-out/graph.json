@@ -100,7 +100,7 @@
       "source_file": "build.zig",
       "source_location": "L1",
       "id": "build_zig",
-      "community": 45
+      "community": 48
     },
     {
       "label": "build()",
@@ -108,7 +108,7 @@
       "source_file": "build.zig",
       "source_location": "L3",
       "id": "build_build",
-      "community": 45
+      "community": 48
     },
     {
       "label": "main.zig",
@@ -116,7 +116,7 @@
       "source_file": "src/main.zig",
       "source_location": "L1",
       "id": "src_main_zig",
-      "community": 21
+      "community": 23
     },
     {
       "label": "Event",
@@ -124,7 +124,7 @@
       "source_file": "src/main.zig",
       "source_location": "L22",
       "id": "main_event",
-      "community": 21
+      "community": 23
     },
     {
       "label": "panic()",
@@ -132,7 +132,7 @@
       "source_file": "src/main.zig",
       "source_location": "L38",
       "id": "main_panic",
-      "community": 21
+      "community": 23
     },
     {
       "label": "signalHandler()",
@@ -140,7 +140,7 @@
       "source_file": "src/main.zig",
       "source_location": "L47",
       "id": "main_signalhandler",
-      "community": 21
+      "community": 23
     },
     {
       "label": "stderrPrint()",
@@ -148,7 +148,7 @@
       "source_file": "src/main.zig",
       "source_location": "L51",
       "id": "main_stderrprint",
-      "community": 21
+      "community": 23
     },
     {
       "label": "logLuaError()",
@@ -156,7 +156,7 @@
       "source_file": "src/main.zig",
       "source_location": "L57",
       "id": "main_logluaerror",
-      "community": 21
+      "community": 23
     },
     {
       "label": "fatalLuaError()",
@@ -164,7 +164,7 @@
       "source_file": "src/main.zig",
       "source_location": "L67",
       "id": "main_fatalluaerror",
-      "community": 21
+      "community": 23
     },
     {
       "label": "handleKey()",
@@ -172,7 +172,7 @@
       "source_file": "src/main.zig",
       "source_location": "L80",
       "id": "main_handlekey",
-      "community": 21
+      "community": 23
     },
     {
       "label": "main()",
@@ -180,7 +180,7 @@
       "source_file": "src/main.zig",
       "source_location": "L99",
       "id": "main_main",
-      "community": 21
+      "community": 23
     },
     {
       "label": "input.zig",
@@ -188,7 +188,7 @@
       "source_file": "src/engine/input.zig",
       "source_location": "L1",
       "id": "src_engine_input_zig",
-      "community": 15
+      "community": 17
     },
     {
       "label": "KeyEvent",
@@ -196,7 +196,7 @@
       "source_file": "src/engine/input.zig",
       "source_location": "L5",
       "id": "input_keyevent",
-      "community": 15
+      "community": 17
     },
     {
       "label": "Action",
@@ -204,7 +204,7 @@
       "source_file": "src/engine/input.zig",
       "source_location": "L12",
       "id": "input_action",
-      "community": 15
+      "community": 17
     },
     {
       "label": "MouseEvent",
@@ -212,7 +212,7 @@
       "source_file": "src/engine/input.zig",
       "source_location": "L16",
       "id": "input_mouseevent",
-      "community": 15
+      "community": 17
     },
     {
       "label": "Button",
@@ -220,7 +220,7 @@
       "source_file": "src/engine/input.zig",
       "source_location": "L22",
       "id": "input_button",
-      "community": 15
+      "community": 17
     },
     {
       "label": "translateKey()",
@@ -228,7 +228,7 @@
       "source_file": "src/engine/input.zig",
       "source_location": "L46",
       "id": "input_translatekey",
-      "community": 15
+      "community": 17
     },
     {
       "label": "translateMouse()",
@@ -236,7 +236,7 @@
       "source_file": "src/engine/input.zig",
       "source_location": "L57",
       "id": "input_translatemouse",
-      "community": 15
+      "community": 17
     },
     {
       "label": "keyName()",
@@ -244,7 +244,7 @@
       "source_file": "src/engine/input.zig",
       "source_location": "L79",
       "id": "input_keyname",
-      "community": 15
+      "community": 17
     },
     {
       "label": "InputState",
@@ -252,7 +252,7 @@
       "source_file": "src/engine/input.zig",
       "source_location": "L126",
       "id": "input_inputstate",
-      "community": 15
+      "community": 17
     },
     {
       "label": ".init()",
@@ -260,7 +260,7 @@
       "source_file": "src/engine/input.zig",
       "source_location": "L135",
       "id": "input_inputstate_init",
-      "community": 15
+      "community": 17
     },
     {
       "label": ".deinit()",
@@ -268,7 +268,7 @@
       "source_file": "src/engine/input.zig",
       "source_location": "L147",
       "id": "input_inputstate_deinit",
-      "community": 15
+      "community": 17
     },
     {
       "label": ".processKeyEvent()",
@@ -276,7 +276,7 @@
       "source_file": "src/engine/input.zig",
       "source_location": "L151",
       "id": "input_inputstate_processkeyevent",
-      "community": 15
+      "community": 17
     },
     {
       "label": ".processMouseEvent()",
@@ -284,7 +284,7 @@
       "source_file": "src/engine/input.zig",
       "source_location": "L163",
       "id": "input_inputstate_processmouseevent",
-      "community": 15
+      "community": 17
     },
     {
       "label": ".isKeyDown()",
@@ -292,7 +292,7 @@
       "source_file": "src/engine/input.zig",
       "source_location": "L183",
       "id": "input_inputstate_iskeydown",
-      "community": 15
+      "community": 17
     },
     {
       "label": "GamepadState",
@@ -300,7 +300,7 @@
       "source_file": "src/engine/input.zig",
       "source_location": "L189",
       "id": "input_gamepadstate",
-      "community": 15
+      "community": 17
     },
     {
       "label": "getGamepadState()",
@@ -308,7 +308,7 @@
       "source_file": "src/engine/input.zig",
       "source_location": "L200",
       "id": "input_getgamepadstate",
-      "community": 15
+      "community": 17
     },
     {
       "label": "timer.zig",
@@ -692,7 +692,7 @@
       "source_file": "src/graphics/sprite_placer.zig",
       "source_location": "L1",
       "id": "src_graphics_sprite_placer_zig",
-      "community": 23
+      "community": 25
     },
     {
       "label": "SpritePlacement",
@@ -700,7 +700,7 @@
       "source_file": "src/graphics/sprite_placer.zig",
       "source_location": "L6",
       "id": "sprite_placer_spriteplacement",
-      "community": 23
+      "community": 25
     },
     {
       "label": "init()",
@@ -708,7 +708,7 @@
       "source_file": "src/graphics/sprite_placer.zig",
       "source_location": "L29",
       "id": "sprite_placer_init",
-      "community": 23
+      "community": 25
     },
     {
       "label": "deinit()",
@@ -716,7 +716,7 @@
       "source_file": "src/graphics/sprite_placer.zig",
       "source_location": "L36",
       "id": "sprite_placer_deinit",
-      "community": 23
+      "community": 25
     },
     {
       "label": "clear()",
@@ -724,7 +724,7 @@
       "source_file": "src/graphics/sprite_placer.zig",
       "source_location": "L41",
       "id": "sprite_placer_clear",
-      "community": 23
+      "community": 25
     },
     {
       "label": "addPlacement()",
@@ -732,7 +732,7 @@
       "source_file": "src/graphics/sprite_placer.zig",
       "source_location": "L46",
       "id": "sprite_placer_addplacement",
-      "community": 23
+      "community": 25
     },
     {
       "label": "flush()",
@@ -740,7 +740,7 @@
       "source_file": "src/graphics/sprite_placer.zig",
       "source_location": "L51",
       "id": "sprite_placer_flush",
-      "community": 23
+      "community": 25
     },
     {
       "label": "kitty.zig",
@@ -748,7 +748,7 @@
       "source_file": "src/graphics/kitty.zig",
       "source_location": "L1",
       "id": "src_graphics_kitty_zig",
-      "community": 24
+      "community": 26
     },
     {
       "label": "init()",
@@ -756,7 +756,7 @@
       "source_file": "src/graphics/kitty.zig",
       "source_location": "L11",
       "id": "kitty_init",
-      "community": 24
+      "community": 26
     },
     {
       "label": "deinit()",
@@ -764,7 +764,7 @@
       "source_file": "src/graphics/kitty.zig",
       "source_location": "L24",
       "id": "kitty_deinit",
-      "community": 24
+      "community": 26
     },
     {
       "label": "isSupported()",
@@ -772,7 +772,7 @@
       "source_file": "src/graphics/kitty.zig",
       "source_location": "L29",
       "id": "kitty_issupported",
-      "community": 24
+      "community": 26
     },
     {
       "label": "uploadRgba()",
@@ -780,7 +780,7 @@
       "source_file": "src/graphics/kitty.zig",
       "source_location": "L35",
       "id": "kitty_uploadrgba",
-      "community": 24
+      "community": 26
     },
     {
       "label": "freeImage()",
@@ -788,7 +788,7 @@
       "source_file": "src/graphics/kitty.zig",
       "source_location": "L47",
       "id": "kitty_freeimage",
-      "community": 24
+      "community": 26
     },
     {
       "label": "compositing.zig",
@@ -1588,7 +1588,7 @@
       "source_file": "src/graphics/tilemap.zig",
       "source_location": "L1",
       "id": "src_graphics_tilemap_zig",
-      "community": 39
+      "community": 42
     },
     {
       "label": "DrawTilemapOpts",
@@ -1596,7 +1596,7 @@
       "source_file": "src/graphics/tilemap.zig",
       "source_location": "L4",
       "id": "tilemap_drawtilemapopts",
-      "community": 39
+      "community": 42
     },
     {
       "label": "renderTilemap()",
@@ -1604,7 +1604,7 @@
       "source_file": "src/graphics/tilemap.zig",
       "source_location": "L14",
       "id": "tilemap_rendertilemap",
-      "community": 39
+      "community": 42
     },
     {
       "label": "lua_api.zig",
@@ -2412,7 +2412,7 @@
       "source_file": "src/scripting/lua_engine.zig",
       "source_location": "L1",
       "id": "src_scripting_lua_engine_zig",
-      "community": 16
+      "community": 18
     },
     {
       "label": "init()",
@@ -2420,7 +2420,7 @@
       "source_file": "src/scripting/lua_engine.zig",
       "source_location": "L12",
       "id": "lua_engine_init",
-      "community": 16
+      "community": 18
     },
     {
       "label": "deinit()",
@@ -2428,7 +2428,7 @@
       "source_file": "src/scripting/lua_engine.zig",
       "source_location": "L23",
       "id": "lua_engine_deinit",
-      "community": 16
+      "community": 18
     },
     {
       "label": "loadGame()",
@@ -2436,7 +2436,7 @@
       "source_file": "src/scripting/lua_engine.zig",
       "source_location": "L31",
       "id": "lua_engine_loadgame",
-      "community": 16
+      "community": 18
     },
     {
       "label": "setupPackagePath()",
@@ -2444,7 +2444,7 @@
       "source_file": "src/scripting/lua_engine.zig",
       "source_location": "L42",
       "id": "lua_engine_setuppackagepath",
-      "community": 16
+      "community": 18
     },
     {
       "label": "callLoad()",
@@ -2452,7 +2452,7 @@
       "source_file": "src/scripting/lua_engine.zig",
       "source_location": "L63",
       "id": "lua_engine_callload",
-      "community": 16
+      "community": 18
     },
     {
       "label": "callUpdate()",
@@ -2460,7 +2460,7 @@
       "source_file": "src/scripting/lua_engine.zig",
       "source_location": "L68",
       "id": "lua_engine_callupdate",
-      "community": 16
+      "community": 18
     },
     {
       "label": "callDraw()",
@@ -2468,7 +2468,7 @@
       "source_file": "src/scripting/lua_engine.zig",
       "source_location": "L76",
       "id": "lua_engine_calldraw",
-      "community": 16
+      "community": 18
     },
     {
       "label": "callOnKey()",
@@ -2476,7 +2476,7 @@
       "source_file": "src/scripting/lua_engine.zig",
       "source_location": "L81",
       "id": "lua_engine_callonkey",
-      "community": 16
+      "community": 18
     },
     {
       "label": "callOnMouse()",
@@ -2484,7 +2484,7 @@
       "source_file": "src/scripting/lua_engine.zig",
       "source_location": "L90",
       "id": "lua_engine_callonmouse",
-      "community": 16
+      "community": 18
     },
     {
       "label": "callQuit()",
@@ -2492,7 +2492,7 @@
       "source_file": "src/scripting/lua_engine.zig",
       "source_location": "L101",
       "id": "lua_engine_callquit",
-      "community": 16
+      "community": 18
     },
     {
       "label": "shouldQuit()",
@@ -2500,7 +2500,7 @@
       "source_file": "src/scripting/lua_engine.zig",
       "source_location": "L105",
       "id": "lua_engine_shouldquit",
-      "community": 16
+      "community": 18
     },
     {
       "label": "cacheEngineRef()",
@@ -2508,7 +2508,7 @@
       "source_file": "src/scripting/lua_engine.zig",
       "source_location": "L118",
       "id": "lua_engine_cacheengineref",
-      "community": 16
+      "community": 18
     },
     {
       "label": "pushEngineTable()",
@@ -2516,7 +2516,7 @@
       "source_file": "src/scripting/lua_engine.zig",
       "source_location": "L134",
       "id": "lua_engine_pushenginetable",
-      "community": 16
+      "community": 18
     },
     {
       "label": "callEngineFunc()",
@@ -2524,7 +2524,7 @@
       "source_file": "src/scripting/lua_engine.zig",
       "source_location": "L148",
       "id": "lua_engine_callenginefunc",
-      "community": 16
+      "community": 18
     },
     {
       "label": "getEngineFunc()",
@@ -2532,7 +2532,7 @@
       "source_file": "src/scripting/lua_engine.zig",
       "source_location": "L154",
       "id": "lua_engine_getenginefunc",
-      "community": 16
+      "community": 18
     },
     {
       "label": "audio.zig",
@@ -2708,7 +2708,7 @@
       "source_file": "src/persistence/db.zig",
       "source_location": "L1",
       "id": "src_persistence_db_zig",
-      "community": 19
+      "community": 21
     },
     {
       "label": "Db",
@@ -2716,7 +2716,7 @@
       "source_file": "src/persistence/db.zig",
       "source_location": "L6",
       "id": "db_db",
-      "community": 19
+      "community": 21
     },
     {
       "label": ".open()",
@@ -2724,7 +2724,7 @@
       "source_file": "src/persistence/db.zig",
       "source_location": "L9",
       "id": "db_db_open",
-      "community": 19
+      "community": 21
     },
     {
       "label": ".close()",
@@ -2732,7 +2732,7 @@
       "source_file": "src/persistence/db.zig",
       "source_location": "L15",
       "id": "db_db_close",
-      "community": 19
+      "community": 21
     },
     {
       "label": ".execNoArgs()",
@@ -2740,7 +2740,7 @@
       "source_file": "src/persistence/db.zig",
       "source_location": "L19",
       "id": "db_db_execnoargs",
-      "community": 19
+      "community": 21
     },
     {
       "label": "SaveDb",
@@ -2748,7 +2748,7 @@
       "source_file": "src/persistence/db.zig",
       "source_location": "L24",
       "id": "db_savedb",
-      "community": 19
+      "community": 21
     },
     {
       "label": ".init()",
@@ -2756,7 +2756,7 @@
       "source_file": "src/persistence/db.zig",
       "source_location": "L29",
       "id": "db_savedb_init",
-      "community": 19
+      "community": 21
     },
     {
       "label": ".deinit()",
@@ -2764,7 +2764,7 @@
       "source_file": "src/persistence/db.zig",
       "source_location": "L37",
       "id": "db_savedb_deinit",
-      "community": 19
+      "community": 21
     },
     {
       "label": ".ensureOpen()",
@@ -2772,7 +2772,7 @@
       "source_file": "src/persistence/db.zig",
       "source_location": "L43",
       "id": "db_savedb_ensureopen",
-      "community": 19
+      "community": 21
     },
     {
       "label": ".set()",
@@ -2780,7 +2780,7 @@
       "source_file": "src/persistence/db.zig",
       "source_location": "L60",
       "id": "db_savedb_set",
-      "community": 19
+      "community": 21
     },
     {
       "label": ".get()",
@@ -2788,7 +2788,7 @@
       "source_file": "src/persistence/db.zig",
       "source_location": "L68",
       "id": "db_savedb_get",
-      "community": 19
+      "community": 21
     },
     {
       "label": "component_store.zig",
@@ -2796,7 +2796,7 @@
       "source_file": "src/ecs/component_store.zig",
       "source_location": "L1",
       "id": "src_ecs_component_store_zig",
-      "community": 40
+      "community": 43
     },
     {
       "label": "ComponentStore()",
@@ -2804,7 +2804,7 @@
       "source_file": "src/ecs/component_store.zig",
       "source_location": "L7",
       "id": "component_store_componentstore",
-      "community": 40
+      "community": 43
     },
     {
       "label": "Vec2",
@@ -2812,7 +2812,7 @@
       "source_file": "src/ecs/component_store.zig",
       "source_location": "L109",
       "id": "component_store_vec2",
-      "community": 40
+      "community": 43
     },
     {
       "label": "entity.zig",
@@ -2820,7 +2820,7 @@
       "source_file": "src/ecs/entity.zig",
       "source_location": "L1",
       "id": "src_ecs_entity_zig",
-      "community": 17
+      "community": 19
     },
     {
       "label": "Entity",
@@ -2828,7 +2828,7 @@
       "source_file": "src/ecs/entity.zig",
       "source_location": "L5",
       "id": "entity_entity",
-      "community": 17
+      "community": 19
     },
     {
       "label": ".isNil()",
@@ -2836,7 +2836,7 @@
       "source_file": "src/ecs/entity.zig",
       "source_location": "L12",
       "id": "entity_entity_isnil",
-      "community": 17
+      "community": 19
     },
     {
       "label": ".toU64()",
@@ -2844,7 +2844,7 @@
       "source_file": "src/ecs/entity.zig",
       "source_location": "L16",
       "id": "entity_entity_tou64",
-      "community": 17
+      "community": 19
     },
     {
       "label": ".fromU64()",
@@ -2852,7 +2852,7 @@
       "source_file": "src/ecs/entity.zig",
       "source_location": "L20",
       "id": "entity_entity_fromu64",
-      "community": 17
+      "community": 19
     },
     {
       "label": ".eql()",
@@ -2860,7 +2860,7 @@
       "source_file": "src/ecs/entity.zig",
       "source_location": "L24",
       "id": "entity_entity_eql",
-      "community": 17
+      "community": 19
     },
     {
       "label": "EntityPool",
@@ -2868,7 +2868,7 @@
       "source_file": "src/ecs/entity.zig",
       "source_location": "L30",
       "id": "entity_entitypool",
-      "community": 17
+      "community": 19
     },
     {
       "label": ".init()",
@@ -2876,7 +2876,7 @@
       "source_file": "src/ecs/entity.zig",
       "source_location": "L37",
       "id": "entity_entitypool_init",
-      "community": 17
+      "community": 19
     },
     {
       "label": ".deinit()",
@@ -2884,7 +2884,7 @@
       "source_file": "src/ecs/entity.zig",
       "source_location": "L46",
       "id": "entity_entitypool_deinit",
-      "community": 17
+      "community": 19
     },
     {
       "label": ".create()",
@@ -2892,7 +2892,7 @@
       "source_file": "src/ecs/entity.zig",
       "source_location": "L52",
       "id": "entity_entitypool_create",
-      "community": 17
+      "community": 19
     },
     {
       "label": ".destroy()",
@@ -2900,7 +2900,7 @@
       "source_file": "src/ecs/entity.zig",
       "source_location": "L68",
       "id": "entity_entitypool_destroy",
-      "community": 17
+      "community": 19
     },
     {
       "label": ".isAlive()",
@@ -2908,7 +2908,7 @@
       "source_file": "src/ecs/entity.zig",
       "source_location": "L77",
       "id": "entity_entitypool_isalive",
-      "community": 17
+      "community": 19
     },
     {
       "label": ".count()",
@@ -2916,7 +2916,7 @@
       "source_file": "src/ecs/entity.zig",
       "source_location": "L84",
       "id": "entity_entitypool_count",
-      "community": 17
+      "community": 19
     },
     {
       "label": "world.zig",
@@ -3276,7 +3276,7 @@
       "source_file": "games/scenes/scenes/menu.lua",
       "source_location": "L1",
       "id": "games_scenes_scenes_menu_lua",
-      "community": 25
+      "community": 27
     },
     {
       "label": "menu.load()",
@@ -3284,7 +3284,7 @@
       "source_file": "games/scenes/scenes/menu.lua",
       "source_location": "L8",
       "id": "menu_menu_load",
-      "community": 25
+      "community": 27
     },
     {
       "label": "menu.update()",
@@ -3292,7 +3292,7 @@
       "source_file": "games/scenes/scenes/menu.lua",
       "source_location": "L15",
       "id": "menu_menu_update",
-      "community": 25
+      "community": 27
     },
     {
       "label": "menu.draw()",
@@ -3300,7 +3300,7 @@
       "source_file": "games/scenes/scenes/menu.lua",
       "source_location": "L23",
       "id": "menu_menu_draw",
-      "community": 25
+      "community": 27
     },
     {
       "label": "menu.on_key()",
@@ -3308,7 +3308,7 @@
       "source_file": "games/scenes/scenes/menu.lua",
       "source_location": "L45",
       "id": "menu_menu_on_key",
-      "community": 25
+      "community": 27
     },
     {
       "label": "menu.unload()",
@@ -3316,7 +3316,7 @@
       "source_file": "games/scenes/scenes/menu.lua",
       "source_location": "L58",
       "id": "menu_menu_unload",
-      "community": 25
+      "community": 27
     },
     {
       "label": "game.lua",
@@ -3324,7 +3324,7 @@
       "source_file": "games/scenes/scenes/game.lua",
       "source_location": "L1",
       "id": "games_scenes_scenes_game_lua",
-      "community": 22
+      "community": 24
     },
     {
       "label": "game.load()",
@@ -3332,7 +3332,7 @@
       "source_file": "games/scenes/scenes/game.lua",
       "source_location": "L14",
       "id": "game_game_load",
-      "community": 22
+      "community": 24
     },
     {
       "label": "game.update()",
@@ -3340,7 +3340,7 @@
       "source_file": "games/scenes/scenes/game.lua",
       "source_location": "L24",
       "id": "game_game_update",
-      "community": 22
+      "community": 24
     },
     {
       "label": "game.draw()",
@@ -3348,7 +3348,7 @@
       "source_file": "games/scenes/scenes/game.lua",
       "source_location": "L47",
       "id": "game_game_draw",
-      "community": 22
+      "community": 24
     },
     {
       "label": "game.on_key()",
@@ -3356,7 +3356,7 @@
       "source_file": "games/scenes/scenes/game.lua",
       "source_location": "L64",
       "id": "game_game_on_key",
-      "community": 22
+      "community": 24
     },
     {
       "label": "game.pause()",
@@ -3364,7 +3364,7 @@
       "source_file": "games/scenes/scenes/game.lua",
       "source_location": "L72",
       "id": "game_game_pause",
-      "community": 22
+      "community": 24
     },
     {
       "label": "game.resume()",
@@ -3372,7 +3372,7 @@
       "source_file": "games/scenes/scenes/game.lua",
       "source_location": "L76",
       "id": "game_game_resume",
-      "community": 22
+      "community": 24
     },
     {
       "label": "game.unload()",
@@ -3380,7 +3380,7 @@
       "source_file": "games/scenes/scenes/game.lua",
       "source_location": "L80",
       "id": "game_game_unload",
-      "community": 22
+      "community": 24
     },
     {
       "label": "pause.lua",
@@ -3388,7 +3388,7 @@
       "source_file": "games/scenes/scenes/pause.lua",
       "source_location": "L1",
       "id": "games_scenes_scenes_pause_lua",
-      "community": 29
+      "community": 32
     },
     {
       "label": "pause.load()",
@@ -3396,7 +3396,7 @@
       "source_file": "games/scenes/scenes/pause.lua",
       "source_location": "L7",
       "id": "pause_pause_load",
-      "community": 29
+      "community": 32
     },
     {
       "label": "pause.draw()",
@@ -3404,7 +3404,7 @@
       "source_file": "games/scenes/scenes/pause.lua",
       "source_location": "L12",
       "id": "pause_pause_draw",
-      "community": 29
+      "community": 32
     },
     {
       "label": "pause.update()",
@@ -3412,7 +3412,7 @@
       "source_file": "games/scenes/scenes/pause.lua",
       "source_location": "L27",
       "id": "pause_pause_update",
-      "community": 29
+      "community": 32
     },
     {
       "label": "pause.on_key()",
@@ -3420,7 +3420,7 @@
       "source_file": "games/scenes/scenes/pause.lua",
       "source_location": "L35",
       "id": "pause_pause_on_key",
-      "community": 29
+      "community": 32
     },
     {
       "label": "main.lua",
@@ -3479,348 +3479,12 @@
       "community": 13
     },
     {
-      "label": "music.lua",
-      "file_type": "code",
-      "source_file": "games/codecritter/audio/music.lua",
-      "source_location": "L1",
-      "id": "games_codecritter_audio_music_lua",
-      "community": 41
-    },
-    {
-      "label": "M.play()",
-      "file_type": "code",
-      "source_file": "games/codecritter/audio/music.lua",
-      "source_location": "L21",
-      "id": "music_m_play",
-      "community": 41
-    },
-    {
-      "label": "M.stop()",
-      "file_type": "code",
-      "source_file": "games/codecritter/audio/music.lua",
-      "source_location": "L36",
-      "id": "music_m_stop",
-      "community": 41
-    },
-    {
-      "label": "ai.lua",
-      "file_type": "code",
-      "source_file": "games/codecritter/battle/ai.lua",
-      "source_location": "L1",
-      "id": "games_codecritter_battle_ai_lua",
-      "community": 46
-    },
-    {
-      "label": "M.choose_move()",
-      "file_type": "code",
-      "source_file": "games/codecritter/battle/ai.lua",
-      "source_location": "L6",
-      "id": "ai_m_choose_move",
-      "community": 46
-    },
-    {
-      "label": "engine.lua",
-      "file_type": "code",
-      "source_file": "games/codecritter/battle/engine.lua",
-      "source_location": "L1",
-      "id": "games_codecritter_battle_engine_lua",
-      "community": 26
-    },
-    {
-      "label": "M.calc_damage()",
-      "file_type": "code",
-      "source_file": "games/codecritter/battle/engine.lua",
-      "source_location": "L7",
-      "id": "engine_m_calc_damage",
-      "community": 26
-    },
-    {
-      "label": "M.eff_label()",
-      "file_type": "code",
-      "source_file": "games/codecritter/battle/engine.lua",
-      "source_location": "L15",
-      "id": "engine_m_eff_label",
-      "community": 26
-    },
-    {
-      "label": "M.process_attack()",
-      "file_type": "code",
-      "source_file": "games/codecritter/battle/engine.lua",
-      "source_location": "L23",
-      "id": "engine_m_process_attack",
-      "community": 26
-    },
-    {
-      "label": "M.try_catch()",
-      "file_type": "code",
-      "source_file": "games/codecritter/battle/engine.lua",
-      "source_location": "L73",
-      "id": "engine_m_try_catch",
-      "community": 26
-    },
-    {
-      "label": "M.award_xp()",
-      "file_type": "code",
-      "source_file": "games/codecritter/battle/engine.lua",
-      "source_location": "L86",
-      "id": "engine_m_award_xp",
-      "community": 26
-    },
-    {
-      "label": "status.lua",
-      "file_type": "code",
-      "source_file": "games/codecritter/battle/status.lua",
-      "source_location": "L1",
-      "id": "games_codecritter_battle_status_lua",
-      "community": 27
-    },
-    {
-      "label": "M.apply()",
-      "file_type": "code",
-      "source_file": "games/codecritter/battle/status.lua",
-      "source_location": "L71",
-      "id": "status_m_apply",
-      "community": 27
-    },
-    {
-      "label": "M.apply_turn_start()",
-      "file_type": "code",
-      "source_file": "games/codecritter/battle/status.lua",
-      "source_location": "L85",
-      "id": "status_m_apply_turn_start",
-      "community": 27
-    },
-    {
-      "label": "M.tick()",
-      "file_type": "code",
-      "source_file": "games/codecritter/battle/status.lua",
-      "source_location": "L92",
-      "id": "status_m_tick",
-      "community": 27
-    },
-    {
-      "label": "M.clear()",
-      "file_type": "code",
-      "source_file": "games/codecritter/battle/status.lua",
-      "source_location": "L108",
-      "id": "status_m_clear",
-      "community": 27
-    },
-    {
-      "label": "M.describe()",
-      "file_type": "code",
-      "source_file": "games/codecritter/battle/status.lua",
-      "source_location": "L117",
-      "id": "status_m_describe",
-      "community": 27
-    },
-    {
-      "label": "stats.lua",
-      "file_type": "code",
-      "source_file": "games/codecritter/critter/stats.lua",
-      "source_location": "L1",
-      "id": "games_codecritter_critter_stats_lua",
-      "community": 28
-    },
-    {
-      "label": "M.stat_at_level()",
-      "file_type": "code",
-      "source_file": "games/codecritter/critter/stats.lua",
-      "source_location": "L4",
-      "id": "stats_m_stat_at_level",
-      "community": 28
-    },
-    {
-      "label": "M.make_instance()",
-      "file_type": "code",
-      "source_file": "games/codecritter/critter/stats.lua",
-      "source_location": "L9",
-      "id": "stats_m_make_instance",
-      "community": 28
-    },
-    {
-      "label": "M.recalc_stats()",
-      "file_type": "code",
-      "source_file": "games/codecritter/critter/stats.lua",
-      "source_location": "L39",
-      "id": "stats_m_recalc_stats",
-      "community": 28
-    },
-    {
-      "label": "M.apply_scar()",
-      "file_type": "code",
-      "source_file": "games/codecritter/critter/stats.lua",
-      "source_location": "L52",
-      "id": "stats_m_apply_scar",
-      "community": 28
-    },
-    {
-      "label": "M.heal()",
-      "file_type": "code",
-      "source_file": "games/codecritter/critter/stats.lua",
-      "source_location": "L60",
-      "id": "stats_m_heal",
-      "community": 28
-    },
-    {
-      "label": "biomes.lua",
-      "file_type": "code",
-      "source_file": "games/codecritter/data/biomes.lua",
-      "source_location": "L1",
-      "id": "games_codecritter_data_biomes_lua",
-      "community": 47
-    },
-    {
-      "label": "M.get()",
-      "file_type": "code",
-      "source_file": "games/codecritter/data/biomes.lua",
-      "source_location": "L446",
-      "id": "biomes_m_get",
-      "community": 47
-    },
-    {
-      "label": "items.lua",
-      "file_type": "code",
-      "source_file": "games/codecritter/data/items.lua",
-      "source_location": "L1",
-      "id": "games_codecritter_data_items_lua",
-      "community": 42
-    },
-    {
-      "label": "M.get()",
-      "file_type": "code",
-      "source_file": "games/codecritter/data/items.lua",
-      "source_location": "L34",
-      "id": "items_m_get",
-      "community": 42
-    },
-    {
-      "label": "M.is_catch_tool()",
-      "file_type": "code",
-      "source_file": "games/codecritter/data/items.lua",
-      "source_location": "L38",
-      "id": "items_m_is_catch_tool",
-      "community": 42
-    },
-    {
-      "label": "moves.lua",
-      "file_type": "code",
-      "source_file": "games/codecritter/data/moves.lua",
-      "source_location": "L1",
-      "id": "games_codecritter_data_moves_lua",
-      "community": 48
-    },
-    {
-      "label": "M.get()",
-      "file_type": "code",
-      "source_file": "games/codecritter/data/moves.lua",
-      "source_location": "L80",
-      "id": "moves_m_get",
-      "community": 48
-    },
-    {
-      "label": "species.lua",
-      "file_type": "code",
-      "source_file": "games/codecritter/data/species.lua",
-      "source_location": "L1",
-      "id": "games_codecritter_data_species_lua",
-      "community": 49
-    },
-    {
-      "label": "M.get()",
-      "file_type": "code",
-      "source_file": "games/codecritter/data/species.lua",
-      "source_location": "L335",
-      "id": "species_m_get",
-      "community": 49
-    },
-    {
-      "label": "types.lua",
-      "file_type": "code",
-      "source_file": "games/codecritter/data/types.lua",
-      "source_location": "L1",
-      "id": "games_codecritter_data_types_lua",
-      "community": 50
-    },
-    {
-      "label": "M.effectiveness()",
-      "file_type": "code",
-      "source_file": "games/codecritter/data/types.lua",
-      "source_location": "L21",
-      "id": "types_m_effectiveness",
-      "community": 50
-    },
-    {
-      "label": "registry.lua",
-      "file_type": "code",
-      "source_file": "games/codecritter/sprite/registry.lua",
-      "source_location": "L1",
-      "id": "games_codecritter_sprite_registry_lua",
-      "community": 43
-    },
-    {
-      "label": "entry()",
-      "file_type": "code",
-      "source_file": "games/codecritter/sprite/registry.lua",
-      "source_location": "L13",
-      "id": "registry_entry",
-      "community": 43
-    },
-    {
-      "label": "M.get()",
-      "file_type": "code",
-      "source_file": "games/codecritter/sprite/registry.lua",
-      "source_location": "L96",
-      "id": "registry_m_get",
-      "community": 43
-    },
-    {
-      "label": "anim.lua",
-      "file_type": "code",
-      "source_file": "games/codecritter/ui/anim.lua",
-      "source_location": "L1",
-      "id": "games_codecritter_ui_anim_lua",
-      "community": 30
-    },
-    {
-      "label": "M.new()",
-      "file_type": "code",
-      "source_file": "games/codecritter/ui/anim.lua",
-      "source_location": "L6",
-      "id": "anim_m_new",
-      "community": 30
-    },
-    {
-      "label": "M.push()",
-      "file_type": "code",
-      "source_file": "games/codecritter/ui/anim.lua",
-      "source_location": "L10",
-      "id": "anim_m_push",
-      "community": 30
-    },
-    {
-      "label": "M.update()",
-      "file_type": "code",
-      "source_file": "games/codecritter/ui/anim.lua",
-      "source_location": "L14",
-      "id": "anim_m_update",
-      "community": 30
-    },
-    {
-      "label": "M.skip()",
-      "file_type": "code",
-      "source_file": "games/codecritter/ui/anim.lua",
-      "source_location": "L31",
-      "id": "anim_m_skip",
-      "community": 30
-    },
-    {
       "label": "ui_sprites.lua",
       "file_type": "code",
       "source_file": "games/codecritter/ui/ui_sprites.lua",
       "source_location": "L1",
       "id": "games_codecritter_ui_ui_sprites_lua",
-      "community": 36
+      "community": 39
     },
     {
       "label": "M.load()",
@@ -3828,7 +3492,7 @@
       "source_file": "games/codecritter/ui/ui_sprites.lua",
       "source_location": "L7",
       "id": "ui_sprites_m_load",
-      "community": 36
+      "community": 39
     },
     {
       "label": "M.get()",
@@ -3836,7 +3500,7 @@
       "source_file": "games/codecritter/ui/ui_sprites.lua",
       "source_location": "L34",
       "id": "ui_sprites_m_get",
-      "community": 36
+      "community": 39
     },
     {
       "label": "M.unload()",
@@ -3844,7 +3508,47 @@
       "source_file": "games/codecritter/ui/ui_sprites.lua",
       "source_location": "L38",
       "id": "ui_sprites_m_unload",
-      "community": 36
+      "community": 39
+    },
+    {
+      "label": "anim.lua",
+      "file_type": "code",
+      "source_file": "games/codecritter/ui/anim.lua",
+      "source_location": "L1",
+      "id": "games_codecritter_ui_anim_lua",
+      "community": 33
+    },
+    {
+      "label": "M.new()",
+      "file_type": "code",
+      "source_file": "games/codecritter/ui/anim.lua",
+      "source_location": "L6",
+      "id": "anim_m_new",
+      "community": 33
+    },
+    {
+      "label": "M.push()",
+      "file_type": "code",
+      "source_file": "games/codecritter/ui/anim.lua",
+      "source_location": "L10",
+      "id": "anim_m_push",
+      "community": 33
+    },
+    {
+      "label": "M.update()",
+      "file_type": "code",
+      "source_file": "games/codecritter/ui/anim.lua",
+      "source_location": "L14",
+      "id": "anim_m_update",
+      "community": 33
+    },
+    {
+      "label": "M.skip()",
+      "file_type": "code",
+      "source_file": "games/codecritter/ui/anim.lua",
+      "source_location": "L31",
+      "id": "anim_m_skip",
+      "community": 33
     },
     {
       "label": "widgets.lua",
@@ -3852,7 +3556,7 @@
       "source_file": "games/codecritter/ui/widgets.lua",
       "source_location": "L1",
       "id": "games_codecritter_ui_widgets_lua",
-      "community": 14
+      "community": 16
     },
     {
       "label": "M.init()",
@@ -3860,127 +3564,127 @@
       "source_file": "games/codecritter/ui/widgets.lua",
       "source_location": "L11",
       "id": "widgets_m_init",
-      "community": 14
+      "community": 16
     },
     {
-      "label": "px_to_col()",
+      "label": "M.cols()",
       "file_type": "code",
       "source_file": "games/codecritter/ui/widgets.lua",
       "source_location": "L18",
-      "id": "widgets_px_to_col",
-      "community": 14
+      "id": "widgets_m_cols",
+      "community": 16
     },
     {
-      "label": "px_to_row()",
+      "label": "M.rows()",
       "file_type": "code",
       "source_file": "games/codecritter/ui/widgets.lua",
       "source_location": "L19",
-      "id": "widgets_px_to_row",
-      "community": 14
+      "id": "widgets_m_rows",
+      "community": 16
     },
     {
-      "label": "first_row_in()",
+      "label": "M.col_px()",
       "file_type": "code",
       "source_file": "games/codecritter/ui/widgets.lua",
       "source_location": "L22",
-      "id": "widgets_first_row_in",
-      "community": 14
+      "id": "widgets_m_col_px",
+      "community": 16
     },
     {
-      "label": "M.hp_bar()",
+      "label": "M.row_px()",
       "file_type": "code",
       "source_file": "games/codecritter/ui/widgets.lua",
-      "source_location": "L36",
-      "id": "widgets_m_hp_bar",
-      "community": 14
+      "source_location": "L23",
+      "id": "widgets_m_row_px",
+      "community": 16
     },
     {
-      "label": "M.type_badge()",
+      "label": "M.px_col()",
       "file_type": "code",
       "source_file": "games/codecritter/ui/widgets.lua",
-      "source_location": "L51",
-      "id": "widgets_m_type_badge",
-      "community": 14
+      "source_location": "L24",
+      "id": "widgets_m_px_col",
+      "community": 16
     },
     {
-      "label": "M.panel()",
+      "label": "M.px_row()",
       "file_type": "code",
       "source_file": "games/codecritter/ui/widgets.lua",
-      "source_location": "L58",
-      "id": "widgets_m_panel",
-      "community": 14
+      "source_location": "L25",
+      "id": "widgets_m_px_row",
+      "community": 16
     },
     {
-      "label": "M.status_icon()",
+      "label": "M.cell_h()",
       "file_type": "code",
       "source_file": "games/codecritter/ui/widgets.lua",
-      "source_location": "L78",
-      "id": "widgets_m_status_icon",
-      "community": 14
+      "source_location": "L26",
+      "id": "widgets_m_cell_h",
+      "community": 16
+    },
+    {
+      "label": "M.virt_w()",
+      "file_type": "code",
+      "source_file": "games/codecritter/ui/widgets.lua",
+      "source_location": "L27",
+      "id": "widgets_m_virt_w",
+      "community": 16
+    },
+    {
+      "label": "M.fill_cells()",
+      "file_type": "code",
+      "source_file": "games/codecritter/ui/widgets.lua",
+      "source_location": "L56",
+      "id": "widgets_m_fill_cells",
+      "community": 16
     },
     {
       "label": "M.text()",
       "file_type": "code",
       "source_file": "games/codecritter/ui/widgets.lua",
-      "source_location": "L87",
+      "source_location": "L62",
       "id": "widgets_m_text",
-      "community": 14
+      "community": 16
     },
     {
-      "label": "M.panel_text()",
+      "label": "M.info_panel()",
       "file_type": "code",
       "source_file": "games/codecritter/ui/widgets.lua",
-      "source_location": "L92",
-      "id": "widgets_m_panel_text",
-      "community": 14
-    },
-    {
-      "label": "M.panel_row_y()",
-      "file_type": "code",
-      "source_file": "games/codecritter/ui/widgets.lua",
-      "source_location": "L99",
-      "id": "widgets_m_panel_row_y",
-      "community": 14
-    },
-    {
-      "label": "M.hp_bar_sprite()",
-      "file_type": "code",
-      "source_file": "games/codecritter/ui/widgets.lua",
-      "source_location": "L110",
-      "id": "widgets_m_hp_bar_sprite",
-      "community": 14
-    },
-    {
-      "label": "M.button_sprite()",
-      "file_type": "code",
-      "source_file": "games/codecritter/ui/widgets.lua",
-      "source_location": "L135",
-      "id": "widgets_m_button_sprite",
-      "community": 14
-    },
-    {
-      "label": "M.boss_badge()",
-      "file_type": "code",
-      "source_file": "games/codecritter/ui/widgets.lua",
-      "source_location": "L144",
-      "id": "widgets_m_boss_badge",
-      "community": 14
-    },
-    {
-      "label": "M.rarity_stars()",
-      "file_type": "code",
-      "source_file": "games/codecritter/ui/widgets.lua",
-      "source_location": "L155",
-      "id": "widgets_m_rarity_stars",
-      "community": 14
+      "source_location": "L75",
+      "id": "widgets_m_info_panel",
+      "community": 16
     },
     {
       "label": "M.message_panel()",
       "file_type": "code",
       "source_file": "games/codecritter/ui/widgets.lua",
-      "source_location": "L168",
+      "source_location": "L133",
       "id": "widgets_m_message_panel",
-      "community": 14
+      "community": 16
+    },
+    {
+      "label": "M.menu_bar()",
+      "file_type": "code",
+      "source_file": "games/codecritter/ui/widgets.lua",
+      "source_location": "L153",
+      "id": "widgets_m_menu_bar",
+      "community": 16
+    },
+    {
+      "label": "M.submenu_list()",
+      "file_type": "code",
+      "source_file": "games/codecritter/ui/widgets.lua",
+      "source_location": "L171",
+      "id": "widgets_m_submenu_list",
+      "community": 16
+    },
+    {
+      "label": "M.move_menu()",
+      "file_type": "code",
+      "source_file": "games/codecritter/ui/widgets.lua",
+      "source_location": "L206",
+      "id": "widgets_m_move_menu",
+      "community": 16
     },
     {
       "label": "battle_screen.lua",
@@ -3991,18 +3695,10 @@
       "community": 10
     },
     {
-      "label": "draw_menu_bg()",
-      "file_type": "code",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L53",
-      "id": "battle_screen_draw_menu_bg",
-      "community": 10
-    },
-    {
       "label": "load_sprite()",
       "file_type": "code",
       "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L62",
+      "source_location": "L45",
       "id": "battle_screen_load_sprite",
       "community": 10
     },
@@ -4010,7 +3706,7 @@
       "label": "add_msg()",
       "file_type": "code",
       "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L76",
+      "source_location": "L59",
       "id": "battle_screen_add_msg",
       "community": 10
     },
@@ -4018,7 +3714,7 @@
       "label": "active_player()",
       "file_type": "code",
       "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L80",
+      "source_location": "L63",
       "id": "battle_screen_active_player",
       "community": 10
     },
@@ -4026,7 +3722,7 @@
       "label": "get_enemy()",
       "file_type": "code",
       "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L84",
+      "source_location": "L67",
       "id": "battle_screen_get_enemy",
       "community": 10
     },
@@ -4034,7 +3730,7 @@
       "label": "find_next_alive()",
       "file_type": "code",
       "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L88",
+      "source_location": "L71",
       "id": "battle_screen_find_next_alive",
       "community": 10
     },
@@ -4042,7 +3738,7 @@
       "label": "update_sprite_anim()",
       "file_type": "code",
       "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L102",
+      "source_location": "L85",
       "id": "battle_screen_update_sprite_anim",
       "community": 10
     },
@@ -4050,7 +3746,7 @@
       "label": "get_sprite_frame()",
       "file_type": "code",
       "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L121",
+      "source_location": "L108",
       "id": "battle_screen_get_sprite_frame",
       "community": 10
     },
@@ -4058,7 +3754,7 @@
       "label": "enter_submenu()",
       "file_type": "code",
       "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L137",
+      "source_location": "L124",
       "id": "battle_screen_enter_submenu",
       "community": 10
     },
@@ -4066,7 +3762,7 @@
       "label": "exit_submenu()",
       "file_type": "code",
       "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L143",
+      "source_location": "L130",
       "id": "battle_screen_exit_submenu",
       "community": 10
     },
@@ -4074,7 +3770,7 @@
       "label": "push_attack_steps()",
       "file_type": "code",
       "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L152",
+      "source_location": "L139",
       "id": "battle_screen_push_attack_steps",
       "community": 10
     },
@@ -4082,7 +3778,7 @@
       "label": "push_status_tick_steps()",
       "file_type": "code",
       "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L210",
+      "source_location": "L206",
       "id": "battle_screen_push_status_tick_steps",
       "community": 10
     },
@@ -4090,7 +3786,7 @@
       "label": "begin_victory_sequence()",
       "file_type": "code",
       "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L227",
+      "source_location": "L223",
       "id": "battle_screen_begin_victory_sequence",
       "community": 10
     },
@@ -4098,7 +3794,7 @@
       "label": "begin_defeat_sequence()",
       "file_type": "code",
       "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L268",
+      "source_location": "L264",
       "id": "battle_screen_begin_defeat_sequence",
       "community": 10
     },
@@ -4106,7 +3802,7 @@
       "label": "check_end_conditions()",
       "file_type": "code",
       "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L284",
+      "source_location": "L280",
       "id": "battle_screen_check_end_conditions",
       "community": 10
     },
@@ -4114,7 +3810,7 @@
       "label": "resolve_turn()",
       "file_type": "code",
       "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L360",
+      "source_location": "L356",
       "id": "battle_screen_resolve_turn",
       "community": 10
     },
@@ -4122,7 +3818,7 @@
       "label": "handle_action_input()",
       "file_type": "code",
       "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L389",
+      "source_location": "L385",
       "id": "battle_screen_handle_action_input",
       "community": 10
     },
@@ -4130,7 +3826,7 @@
       "label": "handle_submenu_input()",
       "file_type": "code",
       "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L407",
+      "source_location": "L403",
       "id": "battle_screen_handle_submenu_input",
       "community": 10
     },
@@ -4138,7 +3834,7 @@
       "label": "scene.load()",
       "file_type": "code",
       "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L603",
+      "source_location": "L599",
       "id": "battle_screen_scene_load",
       "community": 10
     },
@@ -4146,7 +3842,7 @@
       "label": "scene.update()",
       "file_type": "code",
       "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L676",
+      "source_location": "L703",
       "id": "battle_screen_scene_update",
       "community": 10
     },
@@ -4154,7 +3850,7 @@
       "label": "scene.draw()",
       "file_type": "code",
       "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L697",
+      "source_location": "L724",
       "id": "battle_screen_scene_draw",
       "community": 10
     },
@@ -4162,7 +3858,7 @@
       "label": "scene.on_key()",
       "file_type": "code",
       "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L974",
+      "source_location": "L902",
       "id": "battle_screen_scene_on_key",
       "community": 10
     },
@@ -4170,9 +3866,641 @@
       "label": "scene.unload()",
       "file_type": "code",
       "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L1000",
+      "source_location": "L928",
       "id": "battle_screen_scene_unload",
       "community": 10
+    },
+    {
+      "label": "music.lua",
+      "file_type": "code",
+      "source_file": "games/codecritter/audio/music.lua",
+      "source_location": "L1",
+      "id": "games_codecritter_audio_music_lua",
+      "community": 44
+    },
+    {
+      "label": "M.play()",
+      "file_type": "code",
+      "source_file": "games/codecritter/audio/music.lua",
+      "source_location": "L21",
+      "id": "music_m_play",
+      "community": 44
+    },
+    {
+      "label": "M.stop()",
+      "file_type": "code",
+      "source_file": "games/codecritter/audio/music.lua",
+      "source_location": "L36",
+      "id": "music_m_stop",
+      "community": 44
+    },
+    {
+      "label": "ai.lua",
+      "file_type": "code",
+      "source_file": "games/codecritter/battle/ai.lua",
+      "source_location": "L1",
+      "id": "games_codecritter_battle_ai_lua",
+      "community": 49
+    },
+    {
+      "label": "M.choose_move()",
+      "file_type": "code",
+      "source_file": "games/codecritter/battle/ai.lua",
+      "source_location": "L6",
+      "id": "ai_m_choose_move",
+      "community": 49
+    },
+    {
+      "label": "engine.lua",
+      "file_type": "code",
+      "source_file": "games/codecritter/battle/engine.lua",
+      "source_location": "L1",
+      "id": "games_codecritter_battle_engine_lua",
+      "community": 28
+    },
+    {
+      "label": "M.calc_damage()",
+      "file_type": "code",
+      "source_file": "games/codecritter/battle/engine.lua",
+      "source_location": "L7",
+      "id": "engine_m_calc_damage",
+      "community": 28
+    },
+    {
+      "label": "M.eff_label()",
+      "file_type": "code",
+      "source_file": "games/codecritter/battle/engine.lua",
+      "source_location": "L15",
+      "id": "engine_m_eff_label",
+      "community": 28
+    },
+    {
+      "label": "M.process_attack()",
+      "file_type": "code",
+      "source_file": "games/codecritter/battle/engine.lua",
+      "source_location": "L23",
+      "id": "engine_m_process_attack",
+      "community": 28
+    },
+    {
+      "label": "M.try_catch()",
+      "file_type": "code",
+      "source_file": "games/codecritter/battle/engine.lua",
+      "source_location": "L73",
+      "id": "engine_m_try_catch",
+      "community": 28
+    },
+    {
+      "label": "M.award_xp()",
+      "file_type": "code",
+      "source_file": "games/codecritter/battle/engine.lua",
+      "source_location": "L86",
+      "id": "engine_m_award_xp",
+      "community": 28
+    },
+    {
+      "label": "status.lua",
+      "file_type": "code",
+      "source_file": "games/codecritter/battle/status.lua",
+      "source_location": "L1",
+      "id": "games_codecritter_battle_status_lua",
+      "community": 29
+    },
+    {
+      "label": "M.apply()",
+      "file_type": "code",
+      "source_file": "games/codecritter/battle/status.lua",
+      "source_location": "L71",
+      "id": "status_m_apply",
+      "community": 29
+    },
+    {
+      "label": "M.apply_turn_start()",
+      "file_type": "code",
+      "source_file": "games/codecritter/battle/status.lua",
+      "source_location": "L85",
+      "id": "status_m_apply_turn_start",
+      "community": 29
+    },
+    {
+      "label": "M.tick()",
+      "file_type": "code",
+      "source_file": "games/codecritter/battle/status.lua",
+      "source_location": "L92",
+      "id": "status_m_tick",
+      "community": 29
+    },
+    {
+      "label": "M.clear()",
+      "file_type": "code",
+      "source_file": "games/codecritter/battle/status.lua",
+      "source_location": "L108",
+      "id": "status_m_clear",
+      "community": 29
+    },
+    {
+      "label": "M.describe()",
+      "file_type": "code",
+      "source_file": "games/codecritter/battle/status.lua",
+      "source_location": "L117",
+      "id": "status_m_describe",
+      "community": 29
+    },
+    {
+      "label": "stats.lua",
+      "file_type": "code",
+      "source_file": "games/codecritter/critter/stats.lua",
+      "source_location": "L1",
+      "id": "games_codecritter_critter_stats_lua",
+      "community": 30
+    },
+    {
+      "label": "M.stat_at_level()",
+      "file_type": "code",
+      "source_file": "games/codecritter/critter/stats.lua",
+      "source_location": "L4",
+      "id": "stats_m_stat_at_level",
+      "community": 30
+    },
+    {
+      "label": "M.make_instance()",
+      "file_type": "code",
+      "source_file": "games/codecritter/critter/stats.lua",
+      "source_location": "L9",
+      "id": "stats_m_make_instance",
+      "community": 30
+    },
+    {
+      "label": "M.recalc_stats()",
+      "file_type": "code",
+      "source_file": "games/codecritter/critter/stats.lua",
+      "source_location": "L39",
+      "id": "stats_m_recalc_stats",
+      "community": 30
+    },
+    {
+      "label": "M.apply_scar()",
+      "file_type": "code",
+      "source_file": "games/codecritter/critter/stats.lua",
+      "source_location": "L52",
+      "id": "stats_m_apply_scar",
+      "community": 30
+    },
+    {
+      "label": "M.heal()",
+      "file_type": "code",
+      "source_file": "games/codecritter/critter/stats.lua",
+      "source_location": "L60",
+      "id": "stats_m_heal",
+      "community": 30
+    },
+    {
+      "label": "biomes.lua",
+      "file_type": "code",
+      "source_file": "games/codecritter/data/biomes.lua",
+      "source_location": "L1",
+      "id": "games_codecritter_data_biomes_lua",
+      "community": 50
+    },
+    {
+      "label": "M.get()",
+      "file_type": "code",
+      "source_file": "games/codecritter/data/biomes.lua",
+      "source_location": "L446",
+      "id": "biomes_m_get",
+      "community": 50
+    },
+    {
+      "label": "items.lua",
+      "file_type": "code",
+      "source_file": "games/codecritter/data/items.lua",
+      "source_location": "L1",
+      "id": "games_codecritter_data_items_lua",
+      "community": 45
+    },
+    {
+      "label": "M.get()",
+      "file_type": "code",
+      "source_file": "games/codecritter/data/items.lua",
+      "source_location": "L34",
+      "id": "items_m_get",
+      "community": 45
+    },
+    {
+      "label": "M.is_catch_tool()",
+      "file_type": "code",
+      "source_file": "games/codecritter/data/items.lua",
+      "source_location": "L38",
+      "id": "items_m_is_catch_tool",
+      "community": 45
+    },
+    {
+      "label": "moves.lua",
+      "file_type": "code",
+      "source_file": "games/codecritter/data/moves.lua",
+      "source_location": "L1",
+      "id": "games_codecritter_data_moves_lua",
+      "community": 51
+    },
+    {
+      "label": "M.get()",
+      "file_type": "code",
+      "source_file": "games/codecritter/data/moves.lua",
+      "source_location": "L80",
+      "id": "moves_m_get",
+      "community": 51
+    },
+    {
+      "label": "species.lua",
+      "file_type": "code",
+      "source_file": "games/codecritter/data/species.lua",
+      "source_location": "L1",
+      "id": "games_codecritter_data_species_lua",
+      "community": 52
+    },
+    {
+      "label": "M.get()",
+      "file_type": "code",
+      "source_file": "games/codecritter/data/species.lua",
+      "source_location": "L335",
+      "id": "species_m_get",
+      "community": 52
+    },
+    {
+      "label": "types.lua",
+      "file_type": "code",
+      "source_file": "games/codecritter/data/types.lua",
+      "source_location": "L1",
+      "id": "games_codecritter_data_types_lua",
+      "community": 53
+    },
+    {
+      "label": "M.effectiveness()",
+      "file_type": "code",
+      "source_file": "games/codecritter/data/types.lua",
+      "source_location": "L21",
+      "id": "types_m_effectiveness",
+      "community": 53
+    },
+    {
+      "label": "registry.lua",
+      "file_type": "code",
+      "source_file": "games/codecritter/sprite/registry.lua",
+      "source_location": "L1",
+      "id": "games_codecritter_sprite_registry_lua",
+      "community": 46
+    },
+    {
+      "label": "entry()",
+      "file_type": "code",
+      "source_file": "games/codecritter/sprite/registry.lua",
+      "source_location": "L14",
+      "id": "registry_entry",
+      "community": 46
+    },
+    {
+      "label": "M.get()",
+      "file_type": "code",
+      "source_file": "games/codecritter/sprite/registry.lua",
+      "source_location": "L222",
+      "id": "registry_m_get",
+      "community": 46
+    },
+    {
+      "label": "px.py",
+      "file_type": "code",
+      "source_file": "tools/pxcli/px.py",
+      "source_location": "L1",
+      "id": "tools_pxcli_px_py",
+      "community": 14
+    },
+    {
+      "label": "_run()",
+      "file_type": "code",
+      "source_file": "tools/pxcli/px.py",
+      "source_location": "L9",
+      "id": "px_run",
+      "community": 14
+    },
+    {
+      "label": "Canvas",
+      "file_type": "code",
+      "source_file": "tools/pxcli/px.py",
+      "source_location": "L20",
+      "id": "px_canvas",
+      "community": 14
+    },
+    {
+      "label": ".__init__()",
+      "file_type": "code",
+      "source_file": "tools/pxcli/px.py",
+      "source_location": "L30",
+      "id": "px_canvas_init",
+      "community": 14
+    },
+    {
+      "label": ".set_pixel()",
+      "file_type": "code",
+      "source_file": "tools/pxcli/px.py",
+      "source_location": "L40",
+      "id": "px_canvas_set_pixel",
+      "community": 14
+    },
+    {
+      "label": ".fill_rect()",
+      "file_type": "code",
+      "source_file": "tools/pxcli/px.py",
+      "source_location": "L43",
+      "id": "px_canvas_fill_rect",
+      "community": 14
+    },
+    {
+      "label": ".line()",
+      "file_type": "code",
+      "source_file": "tools/pxcli/px.py",
+      "source_location": "L46",
+      "id": "px_canvas_line",
+      "community": 14
+    },
+    {
+      "label": ".clear()",
+      "file_type": "code",
+      "source_file": "tools/pxcli/px.py",
+      "source_location": "L49",
+      "id": "px_canvas_clear",
+      "community": 14
+    },
+    {
+      "label": ".get_pixel()",
+      "file_type": "code",
+      "source_file": "tools/pxcli/px.py",
+      "source_location": "L52",
+      "id": "px_canvas_get_pixel",
+      "community": 14
+    },
+    {
+      "label": ".export()",
+      "file_type": "code",
+      "source_file": "tools/pxcli/px.py",
+      "source_location": "L55",
+      "id": "px_canvas_export",
+      "community": 14
+    },
+    {
+      "label": ".undo()",
+      "file_type": "code",
+      "source_file": "tools/pxcli/px.py",
+      "source_location": "L58",
+      "id": "px_canvas_undo",
+      "community": 14
+    },
+    {
+      "label": ".redo()",
+      "file_type": "code",
+      "source_file": "tools/pxcli/px.py",
+      "source_location": "L61",
+      "id": "px_canvas_redo",
+      "community": 14
+    },
+    {
+      "label": ".stop()",
+      "file_type": "code",
+      "source_file": "tools/pxcli/px.py",
+      "source_location": "L64",
+      "id": "px_canvas_stop",
+      "community": 14
+    },
+    {
+      "label": ".__enter__()",
+      "file_type": "code",
+      "source_file": "tools/pxcli/px.py",
+      "source_location": "L67",
+      "id": "px_canvas_enter",
+      "community": 14
+    },
+    {
+      "label": ".__exit__()",
+      "file_type": "code",
+      "source_file": "tools/pxcli/px.py",
+      "source_location": "L70",
+      "id": "px_canvas_exit",
+      "community": 14
+    },
+    {
+      "label": "Core pxcli wrapper \u2014 Canvas context manager for the pxcli daemon.",
+      "file_type": "rationale",
+      "source_file": "tools/pxcli/px.py",
+      "source_location": "L1",
+      "community": 14,
+      "id": "px_rationale_1"
+    },
+    {
+      "label": "Run a pxcli command, return stdout.",
+      "file_type": "rationale",
+      "source_file": "tools/pxcli/px.py",
+      "source_location": "L10",
+      "community": 14,
+      "id": "px_rationale_10"
+    },
+    {
+      "label": "Context manager wrapping the pxcli daemon lifecycle.      Usage:         with Ca",
+      "file_type": "rationale",
+      "source_file": "tools/pxcli/px.py",
+      "source_location": "L21",
+      "community": 14,
+      "id": "px_rationale_21"
+    },
+    {
+      "label": "palette.py",
+      "file_type": "code",
+      "source_file": "tools/pxcli/palette.py",
+      "source_location": "L1",
+      "id": "tools_pxcli_palette_py",
+      "community": 31
+    },
+    {
+      "label": "get_palette()",
+      "file_type": "code",
+      "source_file": "tools/pxcli/palette.py",
+      "source_location": "L63",
+      "id": "palette_get_palette",
+      "community": 31
+    },
+    {
+      "label": "ramp()",
+      "file_type": "code",
+      "source_file": "tools/pxcli/palette.py",
+      "source_location": "L68",
+      "id": "palette_ramp",
+      "community": 31
+    },
+    {
+      "label": "Codecritter type palettes \u2014 7 types, 6 colors each.",
+      "file_type": "rationale",
+      "source_file": "tools/pxcli/palette.py",
+      "source_location": "L1",
+      "community": 31,
+      "id": "palette_rationale_1"
+    },
+    {
+      "label": "Return palette dict for a type. Raises KeyError if unknown.",
+      "file_type": "rationale",
+      "source_file": "tools/pxcli/palette.py",
+      "source_location": "L64",
+      "community": 31,
+      "id": "palette_rationale_64"
+    },
+    {
+      "label": "Return palette colors darkest-to-lightest (for shading reference).",
+      "file_type": "rationale",
+      "source_file": "tools/pxcli/palette.py",
+      "source_location": "L69",
+      "community": 31,
+      "id": "palette_rationale_69"
+    },
+    {
+      "label": "draw.py",
+      "file_type": "code",
+      "source_file": "tools/pxcli/draw.py",
+      "source_location": "L1",
+      "id": "tools_pxcli_draw_py",
+      "community": 15
+    },
+    {
+      "label": "circle()",
+      "file_type": "code",
+      "source_file": "tools/pxcli/draw.py",
+      "source_location": "L4",
+      "id": "draw_circle",
+      "community": 15
+    },
+    {
+      "label": "_plot_circle_points()",
+      "file_type": "code",
+      "source_file": "tools/pxcli/draw.py",
+      "source_location": "L24",
+      "id": "draw_plot_circle_points",
+      "community": 15
+    },
+    {
+      "label": "_fill_circle_points()",
+      "file_type": "code",
+      "source_file": "tools/pxcli/draw.py",
+      "source_location": "L34",
+      "id": "draw_fill_circle_points",
+      "community": 15
+    },
+    {
+      "label": "ellipse()",
+      "file_type": "code",
+      "source_file": "tools/pxcli/draw.py",
+      "source_location": "L43",
+      "id": "draw_ellipse",
+      "community": 15
+    },
+    {
+      "label": "_plot_ellipse_points()",
+      "file_type": "code",
+      "source_file": "tools/pxcli/draw.py",
+      "source_location": "L86",
+      "id": "draw_plot_ellipse_points",
+      "community": 15
+    },
+    {
+      "label": "_fill_ellipse_row()",
+      "file_type": "code",
+      "source_file": "tools/pxcli/draw.py",
+      "source_location": "L93",
+      "id": "draw_fill_ellipse_row",
+      "community": 15
+    },
+    {
+      "label": "outline_rect()",
+      "file_type": "code",
+      "source_file": "tools/pxcli/draw.py",
+      "source_location": "L102",
+      "id": "draw_outline_rect",
+      "community": 15
+    },
+    {
+      "label": "copy_region()",
+      "file_type": "code",
+      "source_file": "tools/pxcli/draw.py",
+      "source_location": "L110",
+      "id": "draw_copy_region",
+      "community": 15
+    },
+    {
+      "label": "shift_region()",
+      "file_type": "code",
+      "source_file": "tools/pxcli/draw.py",
+      "source_location": "L123",
+      "id": "draw_shift_region",
+      "community": 15
+    },
+    {
+      "label": "mirror_h()",
+      "file_type": "code",
+      "source_file": "tools/pxcli/draw.py",
+      "source_location": "L138",
+      "id": "draw_mirror_h",
+      "community": 15
+    },
+    {
+      "label": "Higher-level drawing primitives built on pxcli's set_pixel/fill_rect/line.",
+      "file_type": "rationale",
+      "source_file": "tools/pxcli/draw.py",
+      "source_location": "L1",
+      "community": 15,
+      "id": "draw_rationale_1"
+    },
+    {
+      "label": "Midpoint circle algorithm. Outline or filled.",
+      "file_type": "rationale",
+      "source_file": "tools/pxcli/draw.py",
+      "source_location": "L5",
+      "community": 15,
+      "id": "draw_rationale_5"
+    },
+    {
+      "label": "Midpoint ellipse. Outline or filled.",
+      "file_type": "rationale",
+      "source_file": "tools/pxcli/draw.py",
+      "source_location": "L44",
+      "community": 15,
+      "id": "draw_rationale_44"
+    },
+    {
+      "label": "1px border rectangle (no fill).",
+      "file_type": "rationale",
+      "source_file": "tools/pxcli/draw.py",
+      "source_location": "L103",
+      "community": 15,
+      "id": "draw_rationale_103"
+    },
+    {
+      "label": "Copy a rectangular region. Reads via get_pixel, writes via set_pixel.     Use sp",
+      "file_type": "rationale",
+      "source_file": "tools/pxcli/draw.py",
+      "source_location": "L111",
+      "community": 15,
+      "id": "draw_rationale_111"
+    },
+    {
+      "label": "Move a region by (dx, dy). Clears the source area.",
+      "file_type": "rationale",
+      "source_file": "tools/pxcli/draw.py",
+      "source_location": "L124",
+      "community": 15,
+      "id": "draw_rationale_124"
+    },
+    {
+      "label": "Mirror a region horizontally in-place.",
+      "file_type": "rationale",
+      "source_file": "tools/pxcli/draw.py",
+      "source_location": "L139",
+      "community": 15,
+      "id": "draw_rationale_139"
     },
     {
       "label": "Codecritter Game",
@@ -4399,7 +4727,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 55,
+      "community": 58,
       "id": "codecritter_design_ux_principles"
     },
     {
@@ -4435,7 +4763,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 56,
+      "community": 59,
       "id": "codecritter_design_v1_scope"
     },
     {
@@ -4471,7 +4799,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 57,
+      "community": 60,
       "id": "phase0_hello_world_game"
     },
     {
@@ -4495,7 +4823,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 51,
+      "community": 54,
       "id": "phase1_pixel_compositor"
     },
     {
@@ -4507,7 +4835,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 51,
+      "community": 54,
       "id": "phase1_rationale_compositor"
     },
     {
@@ -4519,7 +4847,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 58,
+      "community": 61,
       "id": "phase1_bounce_game"
     },
     {
@@ -4555,7 +4883,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 59,
+      "community": 62,
       "id": "phase2_sprites_game"
     },
     {
@@ -4663,7 +4991,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 52,
+      "community": 55,
       "id": "phase7_ecs_world"
     },
     {
@@ -4675,7 +5003,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 52,
+      "community": 55,
       "id": "phase7_ecs_components"
     },
     {
@@ -5671,7 +5999,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 31,
+      "community": 34,
       "id": "electro_shock_spritesheet"
     },
     {
@@ -5683,7 +6011,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 31,
+      "community": 34,
       "id": "electro_shock_effect"
     },
     {
@@ -5695,7 +6023,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 31,
+      "community": 34,
       "id": "lightning_animation"
     },
     {
@@ -5707,7 +6035,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 31,
+      "community": 34,
       "id": "blue_energy_orb"
     },
     {
@@ -5719,7 +6047,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 31,
+      "community": 34,
       "id": "particle_dissolve_frames"
     },
     {
@@ -5731,7 +6059,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 18,
+      "community": 20,
       "id": "castle_tileset"
     },
     {
@@ -5743,7 +6071,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 18,
+      "community": 20,
       "id": "castle_tileset_theme_castle"
     },
     {
@@ -5755,7 +6083,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 18,
+      "community": 20,
       "id": "castle_tileset_tile_platform"
     },
     {
@@ -5767,7 +6095,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 18,
+      "community": 20,
       "id": "castle_tileset_tile_column"
     },
     {
@@ -5779,7 +6107,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 18,
+      "community": 20,
       "id": "castle_tileset_tile_wall"
     },
     {
@@ -5791,7 +6119,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 18,
+      "community": 20,
       "id": "castle_tileset_tile_door"
     },
     {
@@ -5803,7 +6131,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 18,
+      "community": 20,
       "id": "castle_tileset_tile_chest"
     },
     {
@@ -5815,7 +6143,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 18,
+      "community": 20,
       "id": "castle_tileset_tile_stairs"
     },
     {
@@ -5827,7 +6155,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 18,
+      "community": 20,
       "id": "castle_tileset_style_pixel_art"
     },
     {
@@ -5839,7 +6167,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 18,
+      "community": 20,
       "id": "castle_tileset_palette_dark_green"
     },
     {
@@ -5851,7 +6179,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 18,
+      "community": 20,
       "id": "castle_tileset_usage_platformer"
     },
     {
@@ -5863,7 +6191,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 18,
+      "community": 20,
       "id": "castle_tileset_usage_tilemap"
     },
     {
@@ -5875,7 +6203,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 20,
+      "community": 22,
       "id": "castle_background_scene"
     },
     {
@@ -5887,7 +6215,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 20,
+      "community": 22,
       "id": "castle_background_pixel_art"
     },
     {
@@ -5899,7 +6227,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 20,
+      "community": 22,
       "id": "castle_background_interior"
     },
     {
@@ -5911,7 +6239,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 20,
+      "community": 22,
       "id": "castle_background_stained_glass"
     },
     {
@@ -5923,7 +6251,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 20,
+      "community": 22,
       "id": "castle_background_stone_walls"
     },
     {
@@ -5935,7 +6263,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 20,
+      "community": 22,
       "id": "castle_background_dark_atmosphere"
     },
     {
@@ -5947,7 +6275,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 20,
+      "community": 22,
       "id": "castle_background_ivy_vines"
     },
     {
@@ -5959,7 +6287,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 20,
+      "community": 22,
       "id": "castle_background_wall_sconce"
     },
     {
@@ -5971,7 +6299,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 20,
+      "community": 22,
       "id": "castle_background_variants"
     },
     {
@@ -5983,7 +6311,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 20,
+      "community": 22,
       "id": "castle_background_arched_columns"
     },
     {
@@ -5995,7 +6323,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 20,
+      "community": 22,
       "id": "castle_background_tiled_floor"
     },
     {
@@ -6007,7 +6335,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 32,
+      "community": 35,
       "id": "idle_sprite_sheet"
     },
     {
@@ -6019,7 +6347,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 32,
+      "community": 35,
       "id": "idle_character_female_ninja"
     },
     {
@@ -6031,7 +6359,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 32,
+      "community": 35,
       "id": "idle_animation"
     },
     {
@@ -6043,7 +6371,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 32,
+      "community": 35,
       "id": "idle_pixel_art_style"
     },
     {
@@ -6055,7 +6383,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 32,
+      "community": 35,
       "id": "idle_platformer_game"
     },
     {
@@ -6067,7 +6395,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 37,
+      "community": 40,
       "id": "walk_sprite_sheet"
     },
     {
@@ -6079,7 +6407,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 37,
+      "community": 40,
       "id": "walk_character_warrior"
     },
     {
@@ -6091,7 +6419,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 37,
+      "community": 40,
       "id": "walk_animation"
     },
     {
@@ -6103,7 +6431,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 37,
+      "community": 40,
       "id": "platformer_game"
     },
     {
@@ -6163,7 +6491,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 33,
+      "community": 36,
       "id": "sky_background_layer"
     },
     {
@@ -6175,7 +6503,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 33,
+      "community": 36,
       "id": "sky_pixel_art_style"
     },
     {
@@ -6187,7 +6515,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 33,
+      "community": 36,
       "id": "sky_night_scene"
     },
     {
@@ -6199,7 +6527,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 33,
+      "community": 36,
       "id": "sky_moon_element"
     },
     {
@@ -6211,7 +6539,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 33,
+      "community": 36,
       "id": "sky_parallax_layer"
     },
     {
@@ -6223,7 +6551,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 34,
+      "community": 37,
       "id": "mountains_asset"
     },
     {
@@ -6235,7 +6563,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 34,
+      "community": 37,
       "id": "mountains_pixelart_style"
     },
     {
@@ -6247,7 +6575,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 34,
+      "community": 37,
       "id": "mountains_background_layer"
     },
     {
@@ -6259,7 +6587,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 34,
+      "community": 37,
       "id": "mountains_desert_canyon"
     },
     {
@@ -6271,7 +6599,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 34,
+      "community": 37,
       "id": "scenes_game"
     },
     {
@@ -6283,7 +6611,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 38,
+      "community": 41,
       "id": "dragon_fly_sprite"
     },
     {
@@ -6295,7 +6623,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 38,
+      "community": 41,
       "id": "dragon_fly_entity"
     },
     {
@@ -6307,7 +6635,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 38,
+      "community": 41,
       "id": "dragon_fly_animation"
     },
     {
@@ -6319,7 +6647,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 38,
+      "community": 41,
       "id": "dragon_fly_style"
     },
     {
@@ -6367,7 +6695,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 35,
+      "community": 38,
       "id": "tileset_tileset"
     },
     {
@@ -6379,7 +6707,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 35,
+      "community": 38,
       "id": "tileset_floor_tile"
     },
     {
@@ -6391,7 +6719,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 35,
+      "community": 38,
       "id": "tileset_wall_tile"
     },
     {
@@ -6403,7 +6731,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 35,
+      "community": 38,
       "id": "tileset_player_tile"
     },
     {
@@ -6415,7 +6743,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 35,
+      "community": 38,
       "id": "tileset_stairs_tile"
     },
     {
@@ -6691,7 +7019,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 53,
+      "community": 56,
       "id": "arch_module_timer"
     },
     {
@@ -6907,7 +7235,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 60,
+      "community": 63,
       "id": "lua_graphics_phase1"
     },
     {
@@ -6919,7 +7247,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 44,
+      "community": 47,
       "id": "lua_sprites_phase2"
     },
     {
@@ -6931,7 +7259,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 44,
+      "community": 47,
       "id": "lua_retained_sprites"
     },
     {
@@ -6943,7 +7271,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 44,
+      "community": 47,
       "id": "lua_animation_system"
     },
     {
@@ -6967,7 +7295,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 54,
+      "community": 57,
       "id": "lua_input_api"
     },
     {
@@ -6991,7 +7319,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 53,
+      "community": 56,
       "id": "lua_timers_tweens"
     },
     {
@@ -7051,7 +7379,7 @@
       "captured_at": null,
       "author": null,
       "contributor": null,
-      "community": 54,
+      "community": 57,
       "id": "lua_gamepad_abstraction"
     },
     {
@@ -15123,6 +15451,1254 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/ui_sprites.lua",
+      "source_location": "L7",
+      "weight": 1.0,
+      "_src": "games_codecritter_ui_ui_sprites_lua",
+      "_tgt": "ui_sprites_m_load",
+      "source": "games_codecritter_ui_ui_sprites_lua",
+      "target": "ui_sprites_m_load",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/ui_sprites.lua",
+      "source_location": "L34",
+      "weight": 1.0,
+      "_src": "games_codecritter_ui_ui_sprites_lua",
+      "_tgt": "ui_sprites_m_get",
+      "source": "games_codecritter_ui_ui_sprites_lua",
+      "target": "ui_sprites_m_get",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/ui_sprites.lua",
+      "source_location": "L38",
+      "weight": 1.0,
+      "_src": "games_codecritter_ui_ui_sprites_lua",
+      "_tgt": "ui_sprites_m_unload",
+      "source": "games_codecritter_ui_ui_sprites_lua",
+      "target": "ui_sprites_m_unload",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/anim.lua",
+      "source_location": "L6",
+      "weight": 1.0,
+      "_src": "games_codecritter_ui_anim_lua",
+      "_tgt": "anim_m_new",
+      "source": "games_codecritter_ui_anim_lua",
+      "target": "anim_m_new",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/anim.lua",
+      "source_location": "L10",
+      "weight": 1.0,
+      "_src": "games_codecritter_ui_anim_lua",
+      "_tgt": "anim_m_push",
+      "source": "games_codecritter_ui_anim_lua",
+      "target": "anim_m_push",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/anim.lua",
+      "source_location": "L14",
+      "weight": 1.0,
+      "_src": "games_codecritter_ui_anim_lua",
+      "_tgt": "anim_m_update",
+      "source": "games_codecritter_ui_anim_lua",
+      "target": "anim_m_update",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/anim.lua",
+      "source_location": "L31",
+      "weight": 1.0,
+      "_src": "games_codecritter_ui_anim_lua",
+      "_tgt": "anim_m_skip",
+      "source": "games_codecritter_ui_anim_lua",
+      "target": "anim_m_skip",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/widgets.lua",
+      "source_location": "L11",
+      "weight": 1.0,
+      "_src": "games_codecritter_ui_widgets_lua",
+      "_tgt": "widgets_m_init",
+      "source": "games_codecritter_ui_widgets_lua",
+      "target": "widgets_m_init",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/widgets.lua",
+      "source_location": "L18",
+      "weight": 1.0,
+      "_src": "games_codecritter_ui_widgets_lua",
+      "_tgt": "widgets_m_cols",
+      "source": "games_codecritter_ui_widgets_lua",
+      "target": "widgets_m_cols",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/widgets.lua",
+      "source_location": "L19",
+      "weight": 1.0,
+      "_src": "games_codecritter_ui_widgets_lua",
+      "_tgt": "widgets_m_rows",
+      "source": "games_codecritter_ui_widgets_lua",
+      "target": "widgets_m_rows",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/widgets.lua",
+      "source_location": "L22",
+      "weight": 1.0,
+      "_src": "games_codecritter_ui_widgets_lua",
+      "_tgt": "widgets_m_col_px",
+      "source": "games_codecritter_ui_widgets_lua",
+      "target": "widgets_m_col_px",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/widgets.lua",
+      "source_location": "L23",
+      "weight": 1.0,
+      "_src": "games_codecritter_ui_widgets_lua",
+      "_tgt": "widgets_m_row_px",
+      "source": "games_codecritter_ui_widgets_lua",
+      "target": "widgets_m_row_px",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/widgets.lua",
+      "source_location": "L24",
+      "weight": 1.0,
+      "_src": "games_codecritter_ui_widgets_lua",
+      "_tgt": "widgets_m_px_col",
+      "source": "games_codecritter_ui_widgets_lua",
+      "target": "widgets_m_px_col",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/widgets.lua",
+      "source_location": "L25",
+      "weight": 1.0,
+      "_src": "games_codecritter_ui_widgets_lua",
+      "_tgt": "widgets_m_px_row",
+      "source": "games_codecritter_ui_widgets_lua",
+      "target": "widgets_m_px_row",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/widgets.lua",
+      "source_location": "L26",
+      "weight": 1.0,
+      "_src": "games_codecritter_ui_widgets_lua",
+      "_tgt": "widgets_m_cell_h",
+      "source": "games_codecritter_ui_widgets_lua",
+      "target": "widgets_m_cell_h",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/widgets.lua",
+      "source_location": "L27",
+      "weight": 1.0,
+      "_src": "games_codecritter_ui_widgets_lua",
+      "_tgt": "widgets_m_virt_w",
+      "source": "games_codecritter_ui_widgets_lua",
+      "target": "widgets_m_virt_w",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/widgets.lua",
+      "source_location": "L56",
+      "weight": 1.0,
+      "_src": "games_codecritter_ui_widgets_lua",
+      "_tgt": "widgets_m_fill_cells",
+      "source": "games_codecritter_ui_widgets_lua",
+      "target": "widgets_m_fill_cells",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/widgets.lua",
+      "source_location": "L62",
+      "weight": 1.0,
+      "_src": "games_codecritter_ui_widgets_lua",
+      "_tgt": "widgets_m_text",
+      "source": "games_codecritter_ui_widgets_lua",
+      "target": "widgets_m_text",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/widgets.lua",
+      "source_location": "L75",
+      "weight": 1.0,
+      "_src": "games_codecritter_ui_widgets_lua",
+      "_tgt": "widgets_m_info_panel",
+      "source": "games_codecritter_ui_widgets_lua",
+      "target": "widgets_m_info_panel",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/widgets.lua",
+      "source_location": "L133",
+      "weight": 1.0,
+      "_src": "games_codecritter_ui_widgets_lua",
+      "_tgt": "widgets_m_message_panel",
+      "source": "games_codecritter_ui_widgets_lua",
+      "target": "widgets_m_message_panel",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/widgets.lua",
+      "source_location": "L153",
+      "weight": 1.0,
+      "_src": "games_codecritter_ui_widgets_lua",
+      "_tgt": "widgets_m_menu_bar",
+      "source": "games_codecritter_ui_widgets_lua",
+      "target": "widgets_m_menu_bar",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/widgets.lua",
+      "source_location": "L171",
+      "weight": 1.0,
+      "_src": "games_codecritter_ui_widgets_lua",
+      "_tgt": "widgets_m_submenu_list",
+      "source": "games_codecritter_ui_widgets_lua",
+      "target": "widgets_m_submenu_list",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/widgets.lua",
+      "source_location": "L206",
+      "weight": 1.0,
+      "_src": "games_codecritter_ui_widgets_lua",
+      "_tgt": "widgets_m_move_menu",
+      "source": "games_codecritter_ui_widgets_lua",
+      "target": "widgets_m_move_menu",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/widgets.lua",
+      "source_location": "L57",
+      "weight": 1.0,
+      "_src": "widgets_m_fill_cells",
+      "_tgt": "widgets_m_col_px",
+      "source": "widgets_m_col_px",
+      "target": "widgets_m_fill_cells",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/widgets.lua",
+      "source_location": "L77",
+      "weight": 1.0,
+      "_src": "widgets_m_info_panel",
+      "_tgt": "widgets_m_col_px",
+      "source": "widgets_m_col_px",
+      "target": "widgets_m_info_panel",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/widgets.lua",
+      "source_location": "L57",
+      "weight": 1.0,
+      "_src": "widgets_m_fill_cells",
+      "_tgt": "widgets_m_row_px",
+      "source": "widgets_m_row_px",
+      "target": "widgets_m_fill_cells",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/widgets.lua",
+      "source_location": "L78",
+      "weight": 1.0,
+      "_src": "widgets_m_info_panel",
+      "_tgt": "widgets_m_row_px",
+      "source": "widgets_m_row_px",
+      "target": "widgets_m_info_panel",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/widgets.lua",
+      "source_location": "L136",
+      "weight": 1.0,
+      "_src": "widgets_m_message_panel",
+      "_tgt": "widgets_m_row_px",
+      "source": "widgets_m_row_px",
+      "target": "widgets_m_message_panel",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/widgets.lua",
+      "source_location": "L156",
+      "weight": 1.0,
+      "_src": "widgets_m_menu_bar",
+      "_tgt": "widgets_m_row_px",
+      "source": "widgets_m_row_px",
+      "target": "widgets_m_menu_bar",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/widgets.lua",
+      "source_location": "L174",
+      "weight": 1.0,
+      "_src": "widgets_m_submenu_list",
+      "_tgt": "widgets_m_row_px",
+      "source": "widgets_m_row_px",
+      "target": "widgets_m_submenu_list",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/widgets.lua",
+      "source_location": "L209",
+      "weight": 1.0,
+      "_src": "widgets_m_move_menu",
+      "_tgt": "widgets_m_row_px",
+      "source": "widgets_m_row_px",
+      "target": "widgets_m_move_menu",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/widgets.lua",
+      "source_location": "L134",
+      "weight": 1.0,
+      "_src": "widgets_m_message_panel",
+      "_tgt": "widgets_m_fill_cells",
+      "source": "widgets_m_fill_cells",
+      "target": "widgets_m_message_panel",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/widgets.lua",
+      "source_location": "L155",
+      "weight": 1.0,
+      "_src": "widgets_m_menu_bar",
+      "_tgt": "widgets_m_fill_cells",
+      "source": "widgets_m_fill_cells",
+      "target": "widgets_m_menu_bar",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/widgets.lua",
+      "source_location": "L173",
+      "weight": 1.0,
+      "_src": "widgets_m_submenu_list",
+      "_tgt": "widgets_m_fill_cells",
+      "source": "widgets_m_fill_cells",
+      "target": "widgets_m_submenu_list",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/widgets.lua",
+      "source_location": "L208",
+      "weight": 1.0,
+      "_src": "widgets_m_move_menu",
+      "_tgt": "widgets_m_fill_cells",
+      "source": "widgets_m_fill_cells",
+      "target": "widgets_m_move_menu",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/widgets.lua",
+      "source_location": "L90",
+      "weight": 1.0,
+      "_src": "widgets_m_info_panel",
+      "_tgt": "widgets_m_text",
+      "source": "widgets_m_text",
+      "target": "widgets_m_info_panel",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/widgets.lua",
+      "source_location": "L141",
+      "weight": 1.0,
+      "_src": "widgets_m_message_panel",
+      "_tgt": "widgets_m_text",
+      "source": "widgets_m_text",
+      "target": "widgets_m_message_panel",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/widgets.lua",
+      "source_location": "L167",
+      "weight": 1.0,
+      "_src": "widgets_m_menu_bar",
+      "_tgt": "widgets_m_text",
+      "source": "widgets_m_text",
+      "target": "widgets_m_menu_bar",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/widgets.lua",
+      "source_location": "L190",
+      "weight": 1.0,
+      "_src": "widgets_m_submenu_list",
+      "_tgt": "widgets_m_text",
+      "source": "widgets_m_text",
+      "target": "widgets_m_submenu_list",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/widgets.lua",
+      "source_location": "L221",
+      "weight": 1.0,
+      "_src": "widgets_m_move_menu",
+      "_tgt": "widgets_m_text",
+      "source": "widgets_m_text",
+      "target": "widgets_m_move_menu",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L45",
+      "weight": 1.0,
+      "_src": "games_codecritter_ui_battle_screen_lua",
+      "_tgt": "battle_screen_load_sprite",
+      "source": "games_codecritter_ui_battle_screen_lua",
+      "target": "battle_screen_load_sprite",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L59",
+      "weight": 1.0,
+      "_src": "games_codecritter_ui_battle_screen_lua",
+      "_tgt": "battle_screen_add_msg",
+      "source": "games_codecritter_ui_battle_screen_lua",
+      "target": "battle_screen_add_msg",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L63",
+      "weight": 1.0,
+      "_src": "games_codecritter_ui_battle_screen_lua",
+      "_tgt": "battle_screen_active_player",
+      "source": "games_codecritter_ui_battle_screen_lua",
+      "target": "battle_screen_active_player",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L67",
+      "weight": 1.0,
+      "_src": "games_codecritter_ui_battle_screen_lua",
+      "_tgt": "battle_screen_get_enemy",
+      "source": "games_codecritter_ui_battle_screen_lua",
+      "target": "battle_screen_get_enemy",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L71",
+      "weight": 1.0,
+      "_src": "games_codecritter_ui_battle_screen_lua",
+      "_tgt": "battle_screen_find_next_alive",
+      "source": "games_codecritter_ui_battle_screen_lua",
+      "target": "battle_screen_find_next_alive",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L85",
+      "weight": 1.0,
+      "_src": "games_codecritter_ui_battle_screen_lua",
+      "_tgt": "battle_screen_update_sprite_anim",
+      "source": "games_codecritter_ui_battle_screen_lua",
+      "target": "battle_screen_update_sprite_anim",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L108",
+      "weight": 1.0,
+      "_src": "games_codecritter_ui_battle_screen_lua",
+      "_tgt": "battle_screen_get_sprite_frame",
+      "source": "games_codecritter_ui_battle_screen_lua",
+      "target": "battle_screen_get_sprite_frame",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L124",
+      "weight": 1.0,
+      "_src": "games_codecritter_ui_battle_screen_lua",
+      "_tgt": "battle_screen_enter_submenu",
+      "source": "games_codecritter_ui_battle_screen_lua",
+      "target": "battle_screen_enter_submenu",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L130",
+      "weight": 1.0,
+      "_src": "games_codecritter_ui_battle_screen_lua",
+      "_tgt": "battle_screen_exit_submenu",
+      "source": "games_codecritter_ui_battle_screen_lua",
+      "target": "battle_screen_exit_submenu",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L139",
+      "weight": 1.0,
+      "_src": "games_codecritter_ui_battle_screen_lua",
+      "_tgt": "battle_screen_push_attack_steps",
+      "source": "games_codecritter_ui_battle_screen_lua",
+      "target": "battle_screen_push_attack_steps",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L206",
+      "weight": 1.0,
+      "_src": "games_codecritter_ui_battle_screen_lua",
+      "_tgt": "battle_screen_push_status_tick_steps",
+      "source": "games_codecritter_ui_battle_screen_lua",
+      "target": "battle_screen_push_status_tick_steps",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L223",
+      "weight": 1.0,
+      "_src": "games_codecritter_ui_battle_screen_lua",
+      "_tgt": "battle_screen_begin_victory_sequence",
+      "source": "games_codecritter_ui_battle_screen_lua",
+      "target": "battle_screen_begin_victory_sequence",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L264",
+      "weight": 1.0,
+      "_src": "games_codecritter_ui_battle_screen_lua",
+      "_tgt": "battle_screen_begin_defeat_sequence",
+      "source": "games_codecritter_ui_battle_screen_lua",
+      "target": "battle_screen_begin_defeat_sequence",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L280",
+      "weight": 1.0,
+      "_src": "games_codecritter_ui_battle_screen_lua",
+      "_tgt": "battle_screen_check_end_conditions",
+      "source": "games_codecritter_ui_battle_screen_lua",
+      "target": "battle_screen_check_end_conditions",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L356",
+      "weight": 1.0,
+      "_src": "games_codecritter_ui_battle_screen_lua",
+      "_tgt": "battle_screen_resolve_turn",
+      "source": "games_codecritter_ui_battle_screen_lua",
+      "target": "battle_screen_resolve_turn",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L385",
+      "weight": 1.0,
+      "_src": "games_codecritter_ui_battle_screen_lua",
+      "_tgt": "battle_screen_handle_action_input",
+      "source": "games_codecritter_ui_battle_screen_lua",
+      "target": "battle_screen_handle_action_input",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L403",
+      "weight": 1.0,
+      "_src": "games_codecritter_ui_battle_screen_lua",
+      "_tgt": "battle_screen_handle_submenu_input",
+      "source": "games_codecritter_ui_battle_screen_lua",
+      "target": "battle_screen_handle_submenu_input",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L599",
+      "weight": 1.0,
+      "_src": "games_codecritter_ui_battle_screen_lua",
+      "_tgt": "battle_screen_scene_load",
+      "source": "games_codecritter_ui_battle_screen_lua",
+      "target": "battle_screen_scene_load",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L703",
+      "weight": 1.0,
+      "_src": "games_codecritter_ui_battle_screen_lua",
+      "_tgt": "battle_screen_scene_update",
+      "source": "games_codecritter_ui_battle_screen_lua",
+      "target": "battle_screen_scene_update",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L724",
+      "weight": 1.0,
+      "_src": "games_codecritter_ui_battle_screen_lua",
+      "_tgt": "battle_screen_scene_draw",
+      "source": "games_codecritter_ui_battle_screen_lua",
+      "target": "battle_screen_scene_draw",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L902",
+      "weight": 1.0,
+      "_src": "games_codecritter_ui_battle_screen_lua",
+      "_tgt": "battle_screen_scene_on_key",
+      "source": "games_codecritter_ui_battle_screen_lua",
+      "target": "battle_screen_scene_on_key",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L928",
+      "weight": 1.0,
+      "_src": "games_codecritter_ui_battle_screen_lua",
+      "_tgt": "battle_screen_scene_unload",
+      "source": "games_codecritter_ui_battle_screen_lua",
+      "target": "battle_screen_scene_unload",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L248",
+      "weight": 1.0,
+      "_src": "battle_screen_begin_victory_sequence",
+      "_tgt": "battle_screen_load_sprite",
+      "source": "battle_screen_load_sprite",
+      "target": "battle_screen_begin_victory_sequence",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L295",
+      "weight": 1.0,
+      "_src": "battle_screen_check_end_conditions",
+      "_tgt": "battle_screen_load_sprite",
+      "source": "battle_screen_load_sprite",
+      "target": "battle_screen_check_end_conditions",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L514",
+      "weight": 1.0,
+      "_src": "battle_screen_handle_submenu_input",
+      "_tgt": "battle_screen_load_sprite",
+      "source": "battle_screen_load_sprite",
+      "target": "battle_screen_handle_submenu_input",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L666",
+      "weight": 1.0,
+      "_src": "battle_screen_scene_load",
+      "_tgt": "battle_screen_load_sprite",
+      "source": "battle_screen_load_sprite",
+      "target": "battle_screen_scene_load",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L142",
+      "weight": 1.0,
+      "_src": "battle_screen_push_attack_steps",
+      "_tgt": "battle_screen_add_msg",
+      "source": "battle_screen_add_msg",
+      "target": "battle_screen_push_attack_steps",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L213",
+      "weight": 1.0,
+      "_src": "battle_screen_push_status_tick_steps",
+      "_tgt": "battle_screen_add_msg",
+      "source": "battle_screen_add_msg",
+      "target": "battle_screen_push_status_tick_steps",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L229",
+      "weight": 1.0,
+      "_src": "battle_screen_begin_victory_sequence",
+      "_tgt": "battle_screen_add_msg",
+      "source": "battle_screen_add_msg",
+      "target": "battle_screen_begin_victory_sequence",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L267",
+      "weight": 1.0,
+      "_src": "battle_screen_begin_defeat_sequence",
+      "_tgt": "battle_screen_add_msg",
+      "source": "battle_screen_add_msg",
+      "target": "battle_screen_begin_defeat_sequence",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L291",
+      "weight": 1.0,
+      "_src": "battle_screen_check_end_conditions",
+      "_tgt": "battle_screen_add_msg",
+      "source": "battle_screen_add_msg",
+      "target": "battle_screen_check_end_conditions",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L440",
+      "weight": 1.0,
+      "_src": "battle_screen_handle_submenu_input",
+      "_tgt": "battle_screen_add_msg",
+      "source": "battle_screen_add_msg",
+      "target": "battle_screen_handle_submenu_input",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L694",
+      "weight": 1.0,
+      "_src": "battle_screen_scene_load",
+      "_tgt": "battle_screen_add_msg",
+      "source": "battle_screen_add_msg",
+      "target": "battle_screen_scene_load",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L923",
+      "weight": 1.0,
+      "_src": "battle_screen_scene_on_key",
+      "_tgt": "battle_screen_add_msg",
+      "source": "battle_screen_add_msg",
+      "target": "battle_screen_scene_on_key",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L208",
+      "weight": 1.0,
+      "_src": "battle_screen_push_status_tick_steps",
+      "_tgt": "battle_screen_active_player",
+      "source": "battle_screen_active_player",
+      "target": "battle_screen_push_status_tick_steps",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L225",
+      "weight": 1.0,
+      "_src": "battle_screen_begin_victory_sequence",
+      "_tgt": "battle_screen_active_player",
+      "source": "battle_screen_active_player",
+      "target": "battle_screen_begin_victory_sequence",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L267",
+      "weight": 1.0,
+      "_src": "battle_screen_begin_defeat_sequence",
+      "_tgt": "battle_screen_active_player",
+      "source": "battle_screen_active_player",
+      "target": "battle_screen_begin_defeat_sequence",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L281",
+      "weight": 1.0,
+      "_src": "battle_screen_check_end_conditions",
+      "_tgt": "battle_screen_active_player",
+      "source": "battle_screen_active_player",
+      "target": "battle_screen_check_end_conditions",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L360",
+      "weight": 1.0,
+      "_src": "battle_screen_resolve_turn",
+      "_tgt": "battle_screen_active_player",
+      "source": "battle_screen_active_player",
+      "target": "battle_screen_resolve_turn",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L410",
+      "weight": 1.0,
+      "_src": "battle_screen_handle_submenu_input",
+      "_tgt": "battle_screen_active_player",
+      "source": "battle_screen_active_player",
+      "target": "battle_screen_handle_submenu_input",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L666",
+      "weight": 1.0,
+      "_src": "battle_screen_scene_load",
+      "_tgt": "battle_screen_active_player",
+      "source": "battle_screen_active_player",
+      "target": "battle_screen_scene_load",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L705",
+      "weight": 1.0,
+      "_src": "battle_screen_scene_update",
+      "_tgt": "battle_screen_active_player",
+      "source": "battle_screen_active_player",
+      "target": "battle_screen_scene_update",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L725",
+      "weight": 1.0,
+      "_src": "battle_screen_scene_draw",
+      "_tgt": "battle_screen_active_player",
+      "source": "battle_screen_active_player",
+      "target": "battle_screen_scene_draw",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L209",
+      "weight": 1.0,
+      "_src": "battle_screen_push_status_tick_steps",
+      "_tgt": "battle_screen_get_enemy",
+      "source": "battle_screen_get_enemy",
+      "target": "battle_screen_push_status_tick_steps",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L282",
+      "weight": 1.0,
+      "_src": "battle_screen_check_end_conditions",
+      "_tgt": "battle_screen_get_enemy",
+      "source": "battle_screen_get_enemy",
+      "target": "battle_screen_check_end_conditions",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L361",
+      "weight": 1.0,
+      "_src": "battle_screen_resolve_turn",
+      "_tgt": "battle_screen_get_enemy",
+      "source": "battle_screen_get_enemy",
+      "target": "battle_screen_resolve_turn",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L473",
+      "weight": 1.0,
+      "_src": "battle_screen_handle_submenu_input",
+      "_tgt": "battle_screen_get_enemy",
+      "source": "battle_screen_get_enemy",
+      "target": "battle_screen_handle_submenu_input",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L726",
+      "weight": 1.0,
+      "_src": "battle_screen_scene_draw",
+      "_tgt": "battle_screen_get_enemy",
+      "source": "battle_screen_get_enemy",
+      "target": "battle_screen_scene_draw",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L331",
+      "weight": 1.0,
+      "_src": "battle_screen_check_end_conditions",
+      "_tgt": "battle_screen_find_next_alive",
+      "source": "battle_screen_find_next_alive",
+      "target": "battle_screen_check_end_conditions",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L705",
+      "weight": 1.0,
+      "_src": "battle_screen_scene_update",
+      "_tgt": "battle_screen_update_sprite_anim",
+      "source": "battle_screen_update_sprite_anim",
+      "target": "battle_screen_scene_update",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L755",
+      "weight": 1.0,
+      "_src": "battle_screen_scene_draw",
+      "_tgt": "battle_screen_get_sprite_frame",
+      "source": "battle_screen_get_sprite_frame",
+      "target": "battle_screen_scene_draw",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L391",
+      "weight": 1.0,
+      "_src": "battle_screen_handle_action_input",
+      "_tgt": "battle_screen_enter_submenu",
+      "source": "battle_screen_enter_submenu",
+      "target": "battle_screen_handle_action_input",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L405",
+      "weight": 1.0,
+      "_src": "battle_screen_handle_submenu_input",
+      "_tgt": "battle_screen_exit_submenu",
+      "source": "battle_screen_exit_submenu",
+      "target": "battle_screen_handle_submenu_input",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L367",
+      "weight": 1.0,
+      "_src": "battle_screen_resolve_turn",
+      "_tgt": "battle_screen_push_attack_steps",
+      "source": "battle_screen_push_attack_steps",
+      "target": "battle_screen_resolve_turn",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L523",
+      "weight": 1.0,
+      "_src": "battle_screen_handle_submenu_input",
+      "_tgt": "battle_screen_push_attack_steps",
+      "source": "battle_screen_push_attack_steps",
+      "target": "battle_screen_handle_submenu_input",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L374",
+      "weight": 1.0,
+      "_src": "battle_screen_resolve_turn",
+      "_tgt": "battle_screen_push_status_tick_steps",
+      "source": "battle_screen_push_status_tick_steps",
+      "target": "battle_screen_resolve_turn",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L525",
+      "weight": 1.0,
+      "_src": "battle_screen_handle_submenu_input",
+      "_tgt": "battle_screen_push_status_tick_steps",
+      "source": "battle_screen_push_status_tick_steps",
+      "target": "battle_screen_handle_submenu_input",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L326",
+      "weight": 1.0,
+      "_src": "battle_screen_check_end_conditions",
+      "_tgt": "battle_screen_begin_victory_sequence",
+      "source": "battle_screen_begin_victory_sequence",
+      "target": "battle_screen_check_end_conditions",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L349",
+      "weight": 1.0,
+      "_src": "battle_screen_check_end_conditions",
+      "_tgt": "battle_screen_begin_defeat_sequence",
+      "source": "battle_screen_begin_defeat_sequence",
+      "target": "battle_screen_check_end_conditions",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L377",
+      "weight": 1.0,
+      "_src": "battle_screen_resolve_turn",
+      "_tgt": "battle_screen_check_end_conditions",
+      "source": "battle_screen_check_end_conditions",
+      "target": "battle_screen_resolve_turn",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L490",
+      "weight": 1.0,
+      "_src": "battle_screen_handle_submenu_input",
+      "_tgt": "battle_screen_check_end_conditions",
+      "source": "battle_screen_check_end_conditions",
+      "target": "battle_screen_handle_submenu_input",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L419",
+      "weight": 1.0,
+      "_src": "battle_screen_handle_submenu_input",
+      "_tgt": "battle_screen_resolve_turn",
+      "source": "battle_screen_resolve_turn",
+      "target": "battle_screen_handle_submenu_input",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L918",
+      "weight": 1.0,
+      "_src": "battle_screen_scene_on_key",
+      "_tgt": "battle_screen_handle_action_input",
+      "source": "battle_screen_handle_action_input",
+      "target": "battle_screen_scene_on_key",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_location": "L920",
+      "weight": 1.0,
+      "_src": "battle_screen_scene_on_key",
+      "_tgt": "battle_screen_handle_submenu_input",
+      "source": "battle_screen_handle_submenu_input",
+      "target": "battle_screen_scene_on_key",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
       "source_file": "games/codecritter/audio/music.lua",
       "source_location": "L21",
       "weight": 1.0,
@@ -15448,7 +17024,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "games/codecritter/sprite/registry.lua",
-      "source_location": "L13",
+      "source_location": "L14",
       "weight": 1.0,
       "_src": "games_codecritter_sprite_registry_lua",
       "_tgt": "registry_entry",
@@ -15460,7 +17036,7 @@
       "relation": "contains",
       "confidence": "EXTRACTED",
       "source_file": "games/codecritter/sprite/registry.lua",
-      "source_location": "L96",
+      "source_location": "L222",
       "weight": 1.0,
       "_src": "games_codecritter_sprite_registry_lua",
       "_tgt": "registry_m_get",
@@ -15471,1213 +17047,649 @@
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/anim.lua",
-      "source_location": "L6",
+      "source_file": "tools/pxcli/px.py",
+      "source_location": "L9",
       "weight": 1.0,
-      "_src": "games_codecritter_ui_anim_lua",
-      "_tgt": "anim_m_new",
-      "source": "games_codecritter_ui_anim_lua",
-      "target": "anim_m_new",
+      "_src": "tools_pxcli_px_py",
+      "_tgt": "px_run",
+      "source": "tools_pxcli_px_py",
+      "target": "px_run",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/anim.lua",
-      "source_location": "L10",
+      "source_file": "tools/pxcli/px.py",
+      "source_location": "L20",
       "weight": 1.0,
-      "_src": "games_codecritter_ui_anim_lua",
-      "_tgt": "anim_m_push",
-      "source": "games_codecritter_ui_anim_lua",
-      "target": "anim_m_push",
+      "_src": "tools_pxcli_px_py",
+      "_tgt": "px_canvas",
+      "source": "tools_pxcli_px_py",
+      "target": "px_canvas",
       "confidence_score": 1.0
     },
     {
-      "relation": "contains",
+      "relation": "rationale_for",
       "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/anim.lua",
-      "source_location": "L14",
+      "source_file": "tools/pxcli/px.py",
+      "source_location": "L1",
       "weight": 1.0,
-      "_src": "games_codecritter_ui_anim_lua",
-      "_tgt": "anim_m_update",
-      "source": "games_codecritter_ui_anim_lua",
-      "target": "anim_m_update",
+      "_src": "px_rationale_1",
+      "_tgt": "tools_pxcli_px_py",
+      "source": "tools_pxcli_px_py",
+      "target": "px_rationale_1",
       "confidence_score": 1.0
     },
     {
-      "relation": "contains",
+      "relation": "calls",
       "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/anim.lua",
-      "source_location": "L31",
-      "weight": 1.0,
-      "_src": "games_codecritter_ui_anim_lua",
-      "_tgt": "anim_m_skip",
-      "source": "games_codecritter_ui_anim_lua",
-      "target": "anim_m_skip",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/ui_sprites.lua",
-      "source_location": "L7",
-      "weight": 1.0,
-      "_src": "games_codecritter_ui_ui_sprites_lua",
-      "_tgt": "ui_sprites_m_load",
-      "source": "games_codecritter_ui_ui_sprites_lua",
-      "target": "ui_sprites_m_load",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/ui_sprites.lua",
+      "source_file": "tools/pxcli/px.py",
       "source_location": "L34",
       "weight": 1.0,
-      "_src": "games_codecritter_ui_ui_sprites_lua",
-      "_tgt": "ui_sprites_m_get",
-      "source": "games_codecritter_ui_ui_sprites_lua",
-      "target": "ui_sprites_m_get",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/ui_sprites.lua",
-      "source_location": "L38",
-      "weight": 1.0,
-      "_src": "games_codecritter_ui_ui_sprites_lua",
-      "_tgt": "ui_sprites_m_unload",
-      "source": "games_codecritter_ui_ui_sprites_lua",
-      "target": "ui_sprites_m_unload",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/widgets.lua",
-      "source_location": "L11",
-      "weight": 1.0,
-      "_src": "games_codecritter_ui_widgets_lua",
-      "_tgt": "widgets_m_init",
-      "source": "games_codecritter_ui_widgets_lua",
-      "target": "widgets_m_init",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/widgets.lua",
-      "source_location": "L18",
-      "weight": 1.0,
-      "_src": "games_codecritter_ui_widgets_lua",
-      "_tgt": "widgets_px_to_col",
-      "source": "games_codecritter_ui_widgets_lua",
-      "target": "widgets_px_to_col",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/widgets.lua",
-      "source_location": "L19",
-      "weight": 1.0,
-      "_src": "games_codecritter_ui_widgets_lua",
-      "_tgt": "widgets_px_to_row",
-      "source": "games_codecritter_ui_widgets_lua",
-      "target": "widgets_px_to_row",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/widgets.lua",
-      "source_location": "L22",
-      "weight": 1.0,
-      "_src": "games_codecritter_ui_widgets_lua",
-      "_tgt": "widgets_first_row_in",
-      "source": "games_codecritter_ui_widgets_lua",
-      "target": "widgets_first_row_in",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/widgets.lua",
-      "source_location": "L36",
-      "weight": 1.0,
-      "_src": "games_codecritter_ui_widgets_lua",
-      "_tgt": "widgets_m_hp_bar",
-      "source": "games_codecritter_ui_widgets_lua",
-      "target": "widgets_m_hp_bar",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/widgets.lua",
-      "source_location": "L51",
-      "weight": 1.0,
-      "_src": "games_codecritter_ui_widgets_lua",
-      "_tgt": "widgets_m_type_badge",
-      "source": "games_codecritter_ui_widgets_lua",
-      "target": "widgets_m_type_badge",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/widgets.lua",
-      "source_location": "L58",
-      "weight": 1.0,
-      "_src": "games_codecritter_ui_widgets_lua",
-      "_tgt": "widgets_m_panel",
-      "source": "games_codecritter_ui_widgets_lua",
-      "target": "widgets_m_panel",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/widgets.lua",
-      "source_location": "L78",
-      "weight": 1.0,
-      "_src": "games_codecritter_ui_widgets_lua",
-      "_tgt": "widgets_m_status_icon",
-      "source": "games_codecritter_ui_widgets_lua",
-      "target": "widgets_m_status_icon",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/widgets.lua",
-      "source_location": "L87",
-      "weight": 1.0,
-      "_src": "games_codecritter_ui_widgets_lua",
-      "_tgt": "widgets_m_text",
-      "source": "games_codecritter_ui_widgets_lua",
-      "target": "widgets_m_text",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/widgets.lua",
-      "source_location": "L92",
-      "weight": 1.0,
-      "_src": "games_codecritter_ui_widgets_lua",
-      "_tgt": "widgets_m_panel_text",
-      "source": "games_codecritter_ui_widgets_lua",
-      "target": "widgets_m_panel_text",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/widgets.lua",
-      "source_location": "L99",
-      "weight": 1.0,
-      "_src": "games_codecritter_ui_widgets_lua",
-      "_tgt": "widgets_m_panel_row_y",
-      "source": "games_codecritter_ui_widgets_lua",
-      "target": "widgets_m_panel_row_y",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/widgets.lua",
-      "source_location": "L110",
-      "weight": 1.0,
-      "_src": "games_codecritter_ui_widgets_lua",
-      "_tgt": "widgets_m_hp_bar_sprite",
-      "source": "games_codecritter_ui_widgets_lua",
-      "target": "widgets_m_hp_bar_sprite",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/widgets.lua",
-      "source_location": "L135",
-      "weight": 1.0,
-      "_src": "games_codecritter_ui_widgets_lua",
-      "_tgt": "widgets_m_button_sprite",
-      "source": "games_codecritter_ui_widgets_lua",
-      "target": "widgets_m_button_sprite",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/widgets.lua",
-      "source_location": "L144",
-      "weight": 1.0,
-      "_src": "games_codecritter_ui_widgets_lua",
-      "_tgt": "widgets_m_boss_badge",
-      "source": "games_codecritter_ui_widgets_lua",
-      "target": "widgets_m_boss_badge",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/widgets.lua",
-      "source_location": "L155",
-      "weight": 1.0,
-      "_src": "games_codecritter_ui_widgets_lua",
-      "_tgt": "widgets_m_rarity_stars",
-      "source": "games_codecritter_ui_widgets_lua",
-      "target": "widgets_m_rarity_stars",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/widgets.lua",
-      "source_location": "L168",
-      "weight": 1.0,
-      "_src": "games_codecritter_ui_widgets_lua",
-      "_tgt": "widgets_m_message_panel",
-      "source": "games_codecritter_ui_widgets_lua",
-      "target": "widgets_m_message_panel",
+      "_src": "px_canvas_init",
+      "_tgt": "px_run",
+      "source": "px_run",
+      "target": "px_canvas_init",
       "confidence_score": 1.0
     },
     {
       "relation": "calls",
       "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/widgets.lua",
-      "source_location": "L54",
+      "source_file": "tools/pxcli/px.py",
+      "source_location": "L41",
       "weight": 1.0,
-      "_src": "widgets_m_type_badge",
-      "_tgt": "widgets_px_to_col",
-      "source": "widgets_px_to_col",
-      "target": "widgets_m_type_badge",
+      "_src": "px_canvas_set_pixel",
+      "_tgt": "px_run",
+      "source": "px_run",
+      "target": "px_canvas_set_pixel",
       "confidence_score": 1.0
     },
     {
       "relation": "calls",
       "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/widgets.lua",
-      "source_location": "L83",
+      "source_file": "tools/pxcli/px.py",
+      "source_location": "L44",
       "weight": 1.0,
-      "_src": "widgets_m_status_icon",
-      "_tgt": "widgets_px_to_col",
-      "source": "widgets_px_to_col",
-      "target": "widgets_m_status_icon",
+      "_src": "px_canvas_fill_rect",
+      "_tgt": "px_run",
+      "source": "px_run",
+      "target": "px_canvas_fill_rect",
       "confidence_score": 1.0
     },
     {
       "relation": "calls",
       "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/widgets.lua",
-      "source_location": "L88",
+      "source_file": "tools/pxcli/px.py",
+      "source_location": "L47",
       "weight": 1.0,
-      "_src": "widgets_m_text",
-      "_tgt": "widgets_px_to_col",
-      "source": "widgets_px_to_col",
-      "target": "widgets_m_text",
+      "_src": "px_canvas_line",
+      "_tgt": "px_run",
+      "source": "px_run",
+      "target": "px_canvas_line",
       "confidence_score": 1.0
     },
     {
       "relation": "calls",
       "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/widgets.lua",
-      "source_location": "L93",
+      "source_file": "tools/pxcli/px.py",
+      "source_location": "L50",
       "weight": 1.0,
-      "_src": "widgets_m_panel_text",
-      "_tgt": "widgets_px_to_col",
-      "source": "widgets_px_to_col",
-      "target": "widgets_m_panel_text",
+      "_src": "px_canvas_clear",
+      "_tgt": "px_run",
+      "source": "px_run",
+      "target": "px_canvas_clear",
       "confidence_score": 1.0
     },
     {
       "relation": "calls",
       "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/widgets.lua",
-      "source_location": "L176",
-      "weight": 1.0,
-      "_src": "widgets_m_message_panel",
-      "_tgt": "widgets_px_to_col",
-      "source": "widgets_px_to_col",
-      "target": "widgets_m_message_panel",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/widgets.lua",
-      "source_location": "L54",
-      "weight": 1.0,
-      "_src": "widgets_m_type_badge",
-      "_tgt": "widgets_px_to_row",
-      "source": "widgets_px_to_row",
-      "target": "widgets_m_type_badge",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/widgets.lua",
-      "source_location": "L83",
-      "weight": 1.0,
-      "_src": "widgets_m_status_icon",
-      "_tgt": "widgets_px_to_row",
-      "source": "widgets_px_to_row",
-      "target": "widgets_m_status_icon",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/widgets.lua",
-      "source_location": "L88",
-      "weight": 1.0,
-      "_src": "widgets_m_text",
-      "_tgt": "widgets_px_to_row",
-      "source": "widgets_px_to_row",
-      "target": "widgets_m_text",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/widgets.lua",
-      "source_location": "L177",
-      "weight": 1.0,
-      "_src": "widgets_m_message_panel",
-      "_tgt": "widgets_px_to_row",
-      "source": "widgets_px_to_row",
-      "target": "widgets_m_message_panel",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/widgets.lua",
-      "source_location": "L94",
-      "weight": 1.0,
-      "_src": "widgets_m_panel_text",
-      "_tgt": "widgets_first_row_in",
-      "source": "widgets_first_row_in",
-      "target": "widgets_m_panel_text",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/widgets.lua",
-      "source_location": "L100",
-      "weight": 1.0,
-      "_src": "widgets_m_panel_row_y",
-      "_tgt": "widgets_first_row_in",
-      "source": "widgets_first_row_in",
-      "target": "widgets_m_panel_row_y",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/widgets.lua",
-      "source_location": "L129",
-      "weight": 1.0,
-      "_src": "widgets_m_hp_bar_sprite",
-      "_tgt": "widgets_m_hp_bar",
-      "source": "widgets_m_hp_bar",
-      "target": "widgets_m_hp_bar_sprite",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_file": "tools/pxcli/px.py",
       "source_location": "L53",
       "weight": 1.0,
-      "_src": "games_codecritter_ui_battle_screen_lua",
-      "_tgt": "battle_screen_draw_menu_bg",
-      "source": "games_codecritter_ui_battle_screen_lua",
-      "target": "battle_screen_draw_menu_bg",
+      "_src": "px_canvas_get_pixel",
+      "_tgt": "px_run",
+      "source": "px_run",
+      "target": "px_canvas_get_pixel",
       "confidence_score": 1.0
     },
     {
-      "relation": "contains",
+      "relation": "calls",
       "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_file": "tools/pxcli/px.py",
+      "source_location": "L56",
+      "weight": 1.0,
+      "_src": "px_canvas_export",
+      "_tgt": "px_run",
+      "source": "px_run",
+      "target": "px_canvas_export",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "tools/pxcli/px.py",
+      "source_location": "L59",
+      "weight": 1.0,
+      "_src": "px_canvas_undo",
+      "_tgt": "px_run",
+      "source": "px_run",
+      "target": "px_canvas_undo",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "tools/pxcli/px.py",
       "source_location": "L62",
       "weight": 1.0,
-      "_src": "games_codecritter_ui_battle_screen_lua",
-      "_tgt": "battle_screen_load_sprite",
-      "source": "games_codecritter_ui_battle_screen_lua",
-      "target": "battle_screen_load_sprite",
+      "_src": "px_canvas_redo",
+      "_tgt": "px_run",
+      "source": "px_run",
+      "target": "px_canvas_redo",
       "confidence_score": 1.0
     },
     {
-      "relation": "contains",
+      "relation": "calls",
       "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L76",
+      "source_file": "tools/pxcli/px.py",
+      "source_location": "L65",
       "weight": 1.0,
-      "_src": "games_codecritter_ui_battle_screen_lua",
-      "_tgt": "battle_screen_add_msg",
-      "source": "games_codecritter_ui_battle_screen_lua",
-      "target": "battle_screen_add_msg",
+      "_src": "px_canvas_stop",
+      "_tgt": "px_run",
+      "source": "px_run",
+      "target": "px_canvas_stop",
       "confidence_score": 1.0
     },
     {
-      "relation": "contains",
+      "relation": "rationale_for",
       "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L80",
+      "source_file": "tools/pxcli/px.py",
+      "source_location": "L10",
       "weight": 1.0,
-      "_src": "games_codecritter_ui_battle_screen_lua",
-      "_tgt": "battle_screen_active_player",
-      "source": "games_codecritter_ui_battle_screen_lua",
-      "target": "battle_screen_active_player",
+      "_src": "px_rationale_10",
+      "_tgt": "px_run",
+      "source": "px_run",
+      "target": "px_rationale_10",
       "confidence_score": 1.0
     },
     {
-      "relation": "contains",
+      "relation": "method",
       "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L84",
+      "source_file": "tools/pxcli/px.py",
+      "source_location": "L30",
       "weight": 1.0,
-      "_src": "games_codecritter_ui_battle_screen_lua",
-      "_tgt": "battle_screen_get_enemy",
-      "source": "games_codecritter_ui_battle_screen_lua",
-      "target": "battle_screen_get_enemy",
+      "_src": "px_canvas",
+      "_tgt": "px_canvas_init",
+      "source": "px_canvas",
+      "target": "px_canvas_init",
       "confidence_score": 1.0
     },
     {
-      "relation": "contains",
+      "relation": "method",
       "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L88",
+      "source_file": "tools/pxcli/px.py",
+      "source_location": "L40",
       "weight": 1.0,
-      "_src": "games_codecritter_ui_battle_screen_lua",
-      "_tgt": "battle_screen_find_next_alive",
-      "source": "games_codecritter_ui_battle_screen_lua",
-      "target": "battle_screen_find_next_alive",
+      "_src": "px_canvas",
+      "_tgt": "px_canvas_set_pixel",
+      "source": "px_canvas",
+      "target": "px_canvas_set_pixel",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "tools/pxcli/px.py",
+      "source_location": "L43",
+      "weight": 1.0,
+      "_src": "px_canvas",
+      "_tgt": "px_canvas_fill_rect",
+      "source": "px_canvas",
+      "target": "px_canvas_fill_rect",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "tools/pxcli/px.py",
+      "source_location": "L46",
+      "weight": 1.0,
+      "_src": "px_canvas",
+      "_tgt": "px_canvas_line",
+      "source": "px_canvas",
+      "target": "px_canvas_line",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "tools/pxcli/px.py",
+      "source_location": "L49",
+      "weight": 1.0,
+      "_src": "px_canvas",
+      "_tgt": "px_canvas_clear",
+      "source": "px_canvas",
+      "target": "px_canvas_clear",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "tools/pxcli/px.py",
+      "source_location": "L52",
+      "weight": 1.0,
+      "_src": "px_canvas",
+      "_tgt": "px_canvas_get_pixel",
+      "source": "px_canvas",
+      "target": "px_canvas_get_pixel",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "tools/pxcli/px.py",
+      "source_location": "L55",
+      "weight": 1.0,
+      "_src": "px_canvas",
+      "_tgt": "px_canvas_export",
+      "source": "px_canvas",
+      "target": "px_canvas_export",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "tools/pxcli/px.py",
+      "source_location": "L58",
+      "weight": 1.0,
+      "_src": "px_canvas",
+      "_tgt": "px_canvas_undo",
+      "source": "px_canvas",
+      "target": "px_canvas_undo",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "tools/pxcli/px.py",
+      "source_location": "L61",
+      "weight": 1.0,
+      "_src": "px_canvas",
+      "_tgt": "px_canvas_redo",
+      "source": "px_canvas",
+      "target": "px_canvas_redo",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "tools/pxcli/px.py",
+      "source_location": "L64",
+      "weight": 1.0,
+      "_src": "px_canvas",
+      "_tgt": "px_canvas_stop",
+      "source": "px_canvas",
+      "target": "px_canvas_stop",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "tools/pxcli/px.py",
+      "source_location": "L67",
+      "weight": 1.0,
+      "_src": "px_canvas",
+      "_tgt": "px_canvas_enter",
+      "source": "px_canvas",
+      "target": "px_canvas_enter",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "method",
+      "confidence": "EXTRACTED",
+      "source_file": "tools/pxcli/px.py",
+      "source_location": "L70",
+      "weight": 1.0,
+      "_src": "px_canvas",
+      "_tgt": "px_canvas_exit",
+      "source": "px_canvas",
+      "target": "px_canvas_exit",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "tools/pxcli/px.py",
+      "source_location": "L21",
+      "weight": 1.0,
+      "_src": "px_rationale_21",
+      "_tgt": "px_canvas",
+      "source": "px_canvas",
+      "target": "px_rationale_21",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "calls",
+      "confidence": "EXTRACTED",
+      "source_file": "tools/pxcli/px.py",
+      "source_location": "L71",
+      "weight": 1.0,
+      "_src": "px_canvas_exit",
+      "_tgt": "px_canvas_stop",
+      "source": "px_canvas_stop",
+      "target": "px_canvas_exit",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
+      "source_file": "tools/pxcli/palette.py",
+      "source_location": "L63",
+      "weight": 1.0,
+      "_src": "tools_pxcli_palette_py",
+      "_tgt": "palette_get_palette",
+      "source": "tools_pxcli_palette_py",
+      "target": "palette_get_palette",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tools/pxcli/palette.py",
+      "source_location": "L68",
+      "weight": 1.0,
+      "_src": "tools_pxcli_palette_py",
+      "_tgt": "palette_ramp",
+      "source": "tools_pxcli_palette_py",
+      "target": "palette_ramp",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "tools/pxcli/palette.py",
+      "source_location": "L1",
+      "weight": 1.0,
+      "_src": "palette_rationale_1",
+      "_tgt": "tools_pxcli_palette_py",
+      "source": "tools_pxcli_palette_py",
+      "target": "palette_rationale_1",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "tools/pxcli/palette.py",
+      "source_location": "L64",
+      "weight": 1.0,
+      "_src": "palette_rationale_64",
+      "_tgt": "palette_get_palette",
+      "source": "palette_get_palette",
+      "target": "palette_rationale_64",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "tools/pxcli/palette.py",
+      "source_location": "L69",
+      "weight": 1.0,
+      "_src": "palette_rationale_69",
+      "_tgt": "palette_ramp",
+      "source": "palette_ramp",
+      "target": "palette_rationale_69",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tools/pxcli/draw.py",
+      "source_location": "L4",
+      "weight": 1.0,
+      "_src": "tools_pxcli_draw_py",
+      "_tgt": "draw_circle",
+      "source": "tools_pxcli_draw_py",
+      "target": "draw_circle",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tools/pxcli/draw.py",
+      "source_location": "L24",
+      "weight": 1.0,
+      "_src": "tools_pxcli_draw_py",
+      "_tgt": "draw_plot_circle_points",
+      "source": "tools_pxcli_draw_py",
+      "target": "draw_plot_circle_points",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tools/pxcli/draw.py",
+      "source_location": "L34",
+      "weight": 1.0,
+      "_src": "tools_pxcli_draw_py",
+      "_tgt": "draw_fill_circle_points",
+      "source": "tools_pxcli_draw_py",
+      "target": "draw_fill_circle_points",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tools/pxcli/draw.py",
+      "source_location": "L43",
+      "weight": 1.0,
+      "_src": "tools_pxcli_draw_py",
+      "_tgt": "draw_ellipse",
+      "source": "tools_pxcli_draw_py",
+      "target": "draw_ellipse",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tools/pxcli/draw.py",
+      "source_location": "L86",
+      "weight": 1.0,
+      "_src": "tools_pxcli_draw_py",
+      "_tgt": "draw_plot_ellipse_points",
+      "source": "tools_pxcli_draw_py",
+      "target": "draw_plot_ellipse_points",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tools/pxcli/draw.py",
+      "source_location": "L93",
+      "weight": 1.0,
+      "_src": "tools_pxcli_draw_py",
+      "_tgt": "draw_fill_ellipse_row",
+      "source": "tools_pxcli_draw_py",
+      "target": "draw_fill_ellipse_row",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "tools/pxcli/draw.py",
       "source_location": "L102",
       "weight": 1.0,
-      "_src": "games_codecritter_ui_battle_screen_lua",
-      "_tgt": "battle_screen_update_sprite_anim",
-      "source": "games_codecritter_ui_battle_screen_lua",
-      "target": "battle_screen_update_sprite_anim",
+      "_src": "tools_pxcli_draw_py",
+      "_tgt": "draw_outline_rect",
+      "source": "tools_pxcli_draw_py",
+      "target": "draw_outline_rect",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L121",
+      "source_file": "tools/pxcli/draw.py",
+      "source_location": "L110",
       "weight": 1.0,
-      "_src": "games_codecritter_ui_battle_screen_lua",
-      "_tgt": "battle_screen_get_sprite_frame",
-      "source": "games_codecritter_ui_battle_screen_lua",
-      "target": "battle_screen_get_sprite_frame",
+      "_src": "tools_pxcli_draw_py",
+      "_tgt": "draw_copy_region",
+      "source": "tools_pxcli_draw_py",
+      "target": "draw_copy_region",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L137",
+      "source_file": "tools/pxcli/draw.py",
+      "source_location": "L123",
       "weight": 1.0,
-      "_src": "games_codecritter_ui_battle_screen_lua",
-      "_tgt": "battle_screen_enter_submenu",
-      "source": "games_codecritter_ui_battle_screen_lua",
-      "target": "battle_screen_enter_submenu",
+      "_src": "tools_pxcli_draw_py",
+      "_tgt": "draw_shift_region",
+      "source": "tools_pxcli_draw_py",
+      "target": "draw_shift_region",
       "confidence_score": 1.0
     },
     {
       "relation": "contains",
       "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L143",
+      "source_file": "tools/pxcli/draw.py",
+      "source_location": "L138",
       "weight": 1.0,
-      "_src": "games_codecritter_ui_battle_screen_lua",
-      "_tgt": "battle_screen_exit_submenu",
-      "source": "games_codecritter_ui_battle_screen_lua",
-      "target": "battle_screen_exit_submenu",
+      "_src": "tools_pxcli_draw_py",
+      "_tgt": "draw_mirror_h",
+      "source": "tools_pxcli_draw_py",
+      "target": "draw_mirror_h",
       "confidence_score": 1.0
     },
     {
-      "relation": "contains",
+      "relation": "rationale_for",
       "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L152",
+      "source_file": "tools/pxcli/draw.py",
+      "source_location": "L1",
       "weight": 1.0,
-      "_src": "games_codecritter_ui_battle_screen_lua",
-      "_tgt": "battle_screen_push_attack_steps",
-      "source": "games_codecritter_ui_battle_screen_lua",
-      "target": "battle_screen_push_attack_steps",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L210",
-      "weight": 1.0,
-      "_src": "games_codecritter_ui_battle_screen_lua",
-      "_tgt": "battle_screen_push_status_tick_steps",
-      "source": "games_codecritter_ui_battle_screen_lua",
-      "target": "battle_screen_push_status_tick_steps",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L227",
-      "weight": 1.0,
-      "_src": "games_codecritter_ui_battle_screen_lua",
-      "_tgt": "battle_screen_begin_victory_sequence",
-      "source": "games_codecritter_ui_battle_screen_lua",
-      "target": "battle_screen_begin_victory_sequence",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L268",
-      "weight": 1.0,
-      "_src": "games_codecritter_ui_battle_screen_lua",
-      "_tgt": "battle_screen_begin_defeat_sequence",
-      "source": "games_codecritter_ui_battle_screen_lua",
-      "target": "battle_screen_begin_defeat_sequence",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L284",
-      "weight": 1.0,
-      "_src": "games_codecritter_ui_battle_screen_lua",
-      "_tgt": "battle_screen_check_end_conditions",
-      "source": "games_codecritter_ui_battle_screen_lua",
-      "target": "battle_screen_check_end_conditions",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L360",
-      "weight": 1.0,
-      "_src": "games_codecritter_ui_battle_screen_lua",
-      "_tgt": "battle_screen_resolve_turn",
-      "source": "games_codecritter_ui_battle_screen_lua",
-      "target": "battle_screen_resolve_turn",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L389",
-      "weight": 1.0,
-      "_src": "games_codecritter_ui_battle_screen_lua",
-      "_tgt": "battle_screen_handle_action_input",
-      "source": "games_codecritter_ui_battle_screen_lua",
-      "target": "battle_screen_handle_action_input",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L407",
-      "weight": 1.0,
-      "_src": "games_codecritter_ui_battle_screen_lua",
-      "_tgt": "battle_screen_handle_submenu_input",
-      "source": "games_codecritter_ui_battle_screen_lua",
-      "target": "battle_screen_handle_submenu_input",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L603",
-      "weight": 1.0,
-      "_src": "games_codecritter_ui_battle_screen_lua",
-      "_tgt": "battle_screen_scene_load",
-      "source": "games_codecritter_ui_battle_screen_lua",
-      "target": "battle_screen_scene_load",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L676",
-      "weight": 1.0,
-      "_src": "games_codecritter_ui_battle_screen_lua",
-      "_tgt": "battle_screen_scene_update",
-      "source": "games_codecritter_ui_battle_screen_lua",
-      "target": "battle_screen_scene_update",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L697",
-      "weight": 1.0,
-      "_src": "games_codecritter_ui_battle_screen_lua",
-      "_tgt": "battle_screen_scene_draw",
-      "source": "games_codecritter_ui_battle_screen_lua",
-      "target": "battle_screen_scene_draw",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L974",
-      "weight": 1.0,
-      "_src": "games_codecritter_ui_battle_screen_lua",
-      "_tgt": "battle_screen_scene_on_key",
-      "source": "games_codecritter_ui_battle_screen_lua",
-      "target": "battle_screen_scene_on_key",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "contains",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L1000",
-      "weight": 1.0,
-      "_src": "games_codecritter_ui_battle_screen_lua",
-      "_tgt": "battle_screen_scene_unload",
-      "source": "games_codecritter_ui_battle_screen_lua",
-      "target": "battle_screen_scene_unload",
+      "_src": "draw_rationale_1",
+      "_tgt": "tools_pxcli_draw_py",
+      "source": "tools_pxcli_draw_py",
+      "target": "draw_rationale_1",
       "confidence_score": 1.0
     },
     {
       "relation": "calls",
       "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L801",
+      "source_file": "tools/pxcli/draw.py",
+      "source_location": "L8",
       "weight": 1.0,
-      "_src": "battle_screen_scene_draw",
-      "_tgt": "battle_screen_draw_menu_bg",
-      "source": "battle_screen_draw_menu_bg",
-      "target": "battle_screen_scene_draw",
+      "_src": "draw_circle",
+      "_tgt": "draw_fill_circle_points",
+      "source": "draw_circle",
+      "target": "draw_fill_circle_points",
       "confidence_score": 1.0
     },
     {
       "relation": "calls",
       "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L252",
+      "source_file": "tools/pxcli/draw.py",
+      "source_location": "L10",
       "weight": 1.0,
-      "_src": "battle_screen_begin_victory_sequence",
-      "_tgt": "battle_screen_load_sprite",
-      "source": "battle_screen_load_sprite",
-      "target": "battle_screen_begin_victory_sequence",
+      "_src": "draw_circle",
+      "_tgt": "draw_plot_circle_points",
+      "source": "draw_circle",
+      "target": "draw_plot_circle_points",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "source_file": "tools/pxcli/draw.py",
+      "source_location": "L5",
+      "weight": 1.0,
+      "_src": "draw_rationale_5",
+      "_tgt": "draw_circle",
+      "source": "draw_circle",
+      "target": "draw_rationale_5",
       "confidence_score": 1.0
     },
     {
       "relation": "calls",
       "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L299",
+      "source_file": "tools/pxcli/draw.py",
+      "source_location": "L53",
       "weight": 1.0,
-      "_src": "battle_screen_check_end_conditions",
-      "_tgt": "battle_screen_load_sprite",
-      "source": "battle_screen_load_sprite",
-      "target": "battle_screen_check_end_conditions",
+      "_src": "draw_ellipse",
+      "_tgt": "draw_plot_ellipse_points",
+      "source": "draw_ellipse",
+      "target": "draw_plot_ellipse_points",
       "confidence_score": 1.0
     },
     {
       "relation": "calls",
       "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L518",
+      "source_file": "tools/pxcli/draw.py",
+      "source_location": "L66",
       "weight": 1.0,
-      "_src": "battle_screen_handle_submenu_input",
-      "_tgt": "battle_screen_load_sprite",
-      "source": "battle_screen_load_sprite",
-      "target": "battle_screen_handle_submenu_input",
+      "_src": "draw_ellipse",
+      "_tgt": "draw_fill_ellipse_row",
+      "source": "draw_ellipse",
+      "target": "draw_fill_ellipse_row",
       "confidence_score": 1.0
     },
     {
-      "relation": "calls",
+      "relation": "rationale_for",
       "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L639",
+      "source_file": "tools/pxcli/draw.py",
+      "source_location": "L44",
       "weight": 1.0,
-      "_src": "battle_screen_scene_load",
-      "_tgt": "battle_screen_load_sprite",
-      "source": "battle_screen_load_sprite",
-      "target": "battle_screen_scene_load",
+      "_src": "draw_rationale_44",
+      "_tgt": "draw_ellipse",
+      "source": "draw_ellipse",
+      "target": "draw_rationale_44",
       "confidence_score": 1.0
     },
     {
-      "relation": "calls",
+      "relation": "rationale_for",
       "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L155",
+      "source_file": "tools/pxcli/draw.py",
+      "source_location": "L103",
       "weight": 1.0,
-      "_src": "battle_screen_push_attack_steps",
-      "_tgt": "battle_screen_add_msg",
-      "source": "battle_screen_add_msg",
-      "target": "battle_screen_push_attack_steps",
+      "_src": "draw_rationale_103",
+      "_tgt": "draw_outline_rect",
+      "source": "draw_outline_rect",
+      "target": "draw_rationale_103",
       "confidence_score": 1.0
     },
     {
-      "relation": "calls",
+      "relation": "rationale_for",
       "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L217",
+      "source_file": "tools/pxcli/draw.py",
+      "source_location": "L111",
       "weight": 1.0,
-      "_src": "battle_screen_push_status_tick_steps",
-      "_tgt": "battle_screen_add_msg",
-      "source": "battle_screen_add_msg",
-      "target": "battle_screen_push_status_tick_steps",
+      "_src": "draw_rationale_111",
+      "_tgt": "draw_copy_region",
+      "source": "draw_copy_region",
+      "target": "draw_rationale_111",
       "confidence_score": 1.0
     },
     {
-      "relation": "calls",
+      "relation": "rationale_for",
       "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L233",
+      "source_file": "tools/pxcli/draw.py",
+      "source_location": "L124",
       "weight": 1.0,
-      "_src": "battle_screen_begin_victory_sequence",
-      "_tgt": "battle_screen_add_msg",
-      "source": "battle_screen_add_msg",
-      "target": "battle_screen_begin_victory_sequence",
+      "_src": "draw_rationale_124",
+      "_tgt": "draw_shift_region",
+      "source": "draw_shift_region",
+      "target": "draw_rationale_124",
       "confidence_score": 1.0
     },
     {
-      "relation": "calls",
+      "relation": "rationale_for",
       "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L271",
+      "source_file": "tools/pxcli/draw.py",
+      "source_location": "L139",
       "weight": 1.0,
-      "_src": "battle_screen_begin_defeat_sequence",
-      "_tgt": "battle_screen_add_msg",
-      "source": "battle_screen_add_msg",
-      "target": "battle_screen_begin_defeat_sequence",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L295",
-      "weight": 1.0,
-      "_src": "battle_screen_check_end_conditions",
-      "_tgt": "battle_screen_add_msg",
-      "source": "battle_screen_add_msg",
-      "target": "battle_screen_check_end_conditions",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L444",
-      "weight": 1.0,
-      "_src": "battle_screen_handle_submenu_input",
-      "_tgt": "battle_screen_add_msg",
-      "source": "battle_screen_add_msg",
-      "target": "battle_screen_handle_submenu_input",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L667",
-      "weight": 1.0,
-      "_src": "battle_screen_scene_load",
-      "_tgt": "battle_screen_add_msg",
-      "source": "battle_screen_add_msg",
-      "target": "battle_screen_scene_load",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L995",
-      "weight": 1.0,
-      "_src": "battle_screen_scene_on_key",
-      "_tgt": "battle_screen_add_msg",
-      "source": "battle_screen_add_msg",
-      "target": "battle_screen_scene_on_key",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L212",
-      "weight": 1.0,
-      "_src": "battle_screen_push_status_tick_steps",
-      "_tgt": "battle_screen_active_player",
-      "source": "battle_screen_active_player",
-      "target": "battle_screen_push_status_tick_steps",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L229",
-      "weight": 1.0,
-      "_src": "battle_screen_begin_victory_sequence",
-      "_tgt": "battle_screen_active_player",
-      "source": "battle_screen_active_player",
-      "target": "battle_screen_begin_victory_sequence",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L271",
-      "weight": 1.0,
-      "_src": "battle_screen_begin_defeat_sequence",
-      "_tgt": "battle_screen_active_player",
-      "source": "battle_screen_active_player",
-      "target": "battle_screen_begin_defeat_sequence",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L285",
-      "weight": 1.0,
-      "_src": "battle_screen_check_end_conditions",
-      "_tgt": "battle_screen_active_player",
-      "source": "battle_screen_active_player",
-      "target": "battle_screen_check_end_conditions",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L364",
-      "weight": 1.0,
-      "_src": "battle_screen_resolve_turn",
-      "_tgt": "battle_screen_active_player",
-      "source": "battle_screen_active_player",
-      "target": "battle_screen_resolve_turn",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L414",
-      "weight": 1.0,
-      "_src": "battle_screen_handle_submenu_input",
-      "_tgt": "battle_screen_active_player",
-      "source": "battle_screen_active_player",
-      "target": "battle_screen_handle_submenu_input",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L639",
-      "weight": 1.0,
-      "_src": "battle_screen_scene_load",
-      "_tgt": "battle_screen_active_player",
-      "source": "battle_screen_active_player",
-      "target": "battle_screen_scene_load",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L678",
-      "weight": 1.0,
-      "_src": "battle_screen_scene_update",
-      "_tgt": "battle_screen_active_player",
-      "source": "battle_screen_active_player",
-      "target": "battle_screen_scene_update",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L698",
-      "weight": 1.0,
-      "_src": "battle_screen_scene_draw",
-      "_tgt": "battle_screen_active_player",
-      "source": "battle_screen_active_player",
-      "target": "battle_screen_scene_draw",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L213",
-      "weight": 1.0,
-      "_src": "battle_screen_push_status_tick_steps",
-      "_tgt": "battle_screen_get_enemy",
-      "source": "battle_screen_get_enemy",
-      "target": "battle_screen_push_status_tick_steps",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L286",
-      "weight": 1.0,
-      "_src": "battle_screen_check_end_conditions",
-      "_tgt": "battle_screen_get_enemy",
-      "source": "battle_screen_get_enemy",
-      "target": "battle_screen_check_end_conditions",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L365",
-      "weight": 1.0,
-      "_src": "battle_screen_resolve_turn",
-      "_tgt": "battle_screen_get_enemy",
-      "source": "battle_screen_get_enemy",
-      "target": "battle_screen_resolve_turn",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L477",
-      "weight": 1.0,
-      "_src": "battle_screen_handle_submenu_input",
-      "_tgt": "battle_screen_get_enemy",
-      "source": "battle_screen_get_enemy",
-      "target": "battle_screen_handle_submenu_input",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L699",
-      "weight": 1.0,
-      "_src": "battle_screen_scene_draw",
-      "_tgt": "battle_screen_get_enemy",
-      "source": "battle_screen_get_enemy",
-      "target": "battle_screen_scene_draw",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L335",
-      "weight": 1.0,
-      "_src": "battle_screen_check_end_conditions",
-      "_tgt": "battle_screen_find_next_alive",
-      "source": "battle_screen_find_next_alive",
-      "target": "battle_screen_check_end_conditions",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L678",
-      "weight": 1.0,
-      "_src": "battle_screen_scene_update",
-      "_tgt": "battle_screen_update_sprite_anim",
-      "source": "battle_screen_update_sprite_anim",
-      "target": "battle_screen_scene_update",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L723",
-      "weight": 1.0,
-      "_src": "battle_screen_scene_draw",
-      "_tgt": "battle_screen_get_sprite_frame",
-      "source": "battle_screen_get_sprite_frame",
-      "target": "battle_screen_scene_draw",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L395",
-      "weight": 1.0,
-      "_src": "battle_screen_handle_action_input",
-      "_tgt": "battle_screen_enter_submenu",
-      "source": "battle_screen_enter_submenu",
-      "target": "battle_screen_handle_action_input",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L409",
-      "weight": 1.0,
-      "_src": "battle_screen_handle_submenu_input",
-      "_tgt": "battle_screen_exit_submenu",
-      "source": "battle_screen_exit_submenu",
-      "target": "battle_screen_handle_submenu_input",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L371",
-      "weight": 1.0,
-      "_src": "battle_screen_resolve_turn",
-      "_tgt": "battle_screen_push_attack_steps",
-      "source": "battle_screen_push_attack_steps",
-      "target": "battle_screen_resolve_turn",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L527",
-      "weight": 1.0,
-      "_src": "battle_screen_handle_submenu_input",
-      "_tgt": "battle_screen_push_attack_steps",
-      "source": "battle_screen_push_attack_steps",
-      "target": "battle_screen_handle_submenu_input",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L378",
-      "weight": 1.0,
-      "_src": "battle_screen_resolve_turn",
-      "_tgt": "battle_screen_push_status_tick_steps",
-      "source": "battle_screen_push_status_tick_steps",
-      "target": "battle_screen_resolve_turn",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L529",
-      "weight": 1.0,
-      "_src": "battle_screen_handle_submenu_input",
-      "_tgt": "battle_screen_push_status_tick_steps",
-      "source": "battle_screen_push_status_tick_steps",
-      "target": "battle_screen_handle_submenu_input",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L330",
-      "weight": 1.0,
-      "_src": "battle_screen_check_end_conditions",
-      "_tgt": "battle_screen_begin_victory_sequence",
-      "source": "battle_screen_begin_victory_sequence",
-      "target": "battle_screen_check_end_conditions",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L353",
-      "weight": 1.0,
-      "_src": "battle_screen_check_end_conditions",
-      "_tgt": "battle_screen_begin_defeat_sequence",
-      "source": "battle_screen_begin_defeat_sequence",
-      "target": "battle_screen_check_end_conditions",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L381",
-      "weight": 1.0,
-      "_src": "battle_screen_resolve_turn",
-      "_tgt": "battle_screen_check_end_conditions",
-      "source": "battle_screen_check_end_conditions",
-      "target": "battle_screen_resolve_turn",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L494",
-      "weight": 1.0,
-      "_src": "battle_screen_handle_submenu_input",
-      "_tgt": "battle_screen_check_end_conditions",
-      "source": "battle_screen_check_end_conditions",
-      "target": "battle_screen_handle_submenu_input",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L423",
-      "weight": 1.0,
-      "_src": "battle_screen_handle_submenu_input",
-      "_tgt": "battle_screen_resolve_turn",
-      "source": "battle_screen_resolve_turn",
-      "target": "battle_screen_handle_submenu_input",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L990",
-      "weight": 1.0,
-      "_src": "battle_screen_scene_on_key",
-      "_tgt": "battle_screen_handle_action_input",
-      "source": "battle_screen_handle_action_input",
-      "target": "battle_screen_scene_on_key",
-      "confidence_score": 1.0
-    },
-    {
-      "relation": "calls",
-      "confidence": "EXTRACTED",
-      "source_file": "games/codecritter/ui/battle_screen.lua",
-      "source_location": "L992",
-      "weight": 1.0,
-      "_src": "battle_screen_scene_on_key",
-      "_tgt": "battle_screen_handle_submenu_input",
-      "source": "battle_screen_handle_submenu_input",
-      "target": "battle_screen_scene_on_key",
+      "_src": "draw_rationale_139",
+      "_tgt": "draw_mirror_h",
+      "source": "draw_mirror_h",
+      "target": "draw_rationale_139",
       "confidence_score": 1.0
     },
     {
