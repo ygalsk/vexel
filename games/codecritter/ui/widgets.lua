@@ -1,5 +1,8 @@
 -- Reusable UI widgets for battle screen and future screens.
 -- All pixel drawing via engine.graphics.pixel.*, text via engine.graphics.draw_text().
+-- Sprite-based widgets use ui_sprites for loaded asset handles.
+
+local ui_sprites = require("ui.ui_sprites")
 
 local M = {}
 
@@ -51,12 +54,6 @@ function M.type_badge(x, y, type_name)
   engine.graphics.draw_text(px_to_col(x + 2), px_to_row(y + 1), type_name:upper(), 0x000000)
 end
 
--- Archetype badge
-function M.archetype_badge(x, y, archetype_name)
-  engine.graphics.pixel.rect(x, y, 56, 12, 0x3C3C50)
-  engine.graphics.draw_text(px_to_col(x + 2), px_to_row(y + 1), archetype_name, 0xC8C8DC)
-end
-
 -- Panel border
 function M.panel(x, y, w, h)
   engine.graphics.pixel.rect(x, y, w, h, 0x14141E)
@@ -66,37 +63,22 @@ function M.panel(x, y, w, h)
   engine.graphics.pixel.rect(x + w - 1, y, 1, h, 0x505064)
 end
 
--- Message log: draws last 2 messages
-function M.message_log(x, y, w, messages)
-  M.panel(x, y, w, 40)
-  local start = math.max(1, #messages - 1)
-  for i = start, math.min(start + 1, #messages) do
-    local msg = messages[i]
-    local row_offset = i - start
-    engine.graphics.draw_text(
-      px_to_col(x + 6),
-      px_to_row(y + 6 + row_offset * 18),
-      msg.text,
-      msg.color or 0xDCDCDC
-    )
-  end
-end
-
 -- Status icon: abbreviated label
+local status_labels = {
+  blocked = "BLK", deprecated = "DEP", segfaulted = "SEG",
+  linted = "LNT", tilted = "TLT", in_the_zone = "ZON",
+  spaghettified = "SPA", enlightened = "ENL", hallucinating = "HAL",
+}
+local status_colors = {
+  blocked = 0x6464DC, deprecated = 0x8C6440, segfaulted = 0xDC3232,
+  linted = 0x00C850, tilted = 0xDCA000, in_the_zone = 0xFF96C8,
+  spaghettified = 0xB464DC, enlightened = 0xC8C83C, hallucinating = 0xC864B4,
+}
+
 function M.status_icon(x, y, status_name)
   if not status_name then return end
-  local labels = {
-    blocked = "BLK", deprecated = "DEP", segfaulted = "SEG",
-    linted = "LNT", tilted = "TLT", in_the_zone = "ZON",
-    spaghettified = "SPA", enlightened = "ENL", hallucinating = "HAL",
-  }
-  local colors = {
-    blocked = 0x6464DC, deprecated = 0x8C6440, segfaulted = 0xDC3232,
-    linted = 0x00C850, tilted = 0xDCA000, in_the_zone = 0xFF96C8,
-    spaghettified = 0xB464DC, enlightened = 0xC8C83C, hallucinating = 0xC864B4,
-  }
-  local label = labels[status_name] or "???"
-  local col = colors[status_name] or 0x969696
+  local label = status_labels[status_name] or "???"
+  local col = status_colors[status_name] or 0x969696
   engine.graphics.pixel.rect(x, y, 28, 10, col)
   engine.graphics.draw_text(px_to_col(x + 2), px_to_row(y), label, 0x000000)
 end
@@ -116,6 +98,87 @@ end
 -- Pixel Y of a row inside a panel (for aligning pixel elements like badges/bars)
 function M.panel_row_y(panel_y, row_offset)
   return (first_row_in(panel_y) + row_offset) * cell_h
+end
+
+-----------------------------------------------------------------------
+-- Sprite-based widgets (use assets from Pixel UI pack 3)
+-----------------------------------------------------------------------
+
+-- HP bar using sprite frames. 6 fill states per color strip.
+-- Color auto-selected by HP percentage: blue (>50%), yellow (25-50%), red (<25%).
+-- bar_w/bar_h are the 04.png bar dimensions: 42x11 per frame.
+function M.hp_bar_sprite(x, y, hp, max_hp, scale)
+  scale = scale or 2
+  local pct = hp / math.max(1, max_hp)
+
+  -- Pick color strip
+  local bar_name
+  if pct > 0.5 then bar_name = "hp_bar_blue"
+  elseif pct > 0.25 then bar_name = "hp_bar_yellow"
+  else bar_name = "hp_bar_red" end
+
+  -- Map percentage to frame (0=full, 5=empty)
+  local frame = math.floor((1 - pct) * 5 + 0.5)
+  frame = math.max(0, math.min(5, frame))
+
+  local handle = ui_sprites.get(bar_name)
+  if handle then
+    engine.graphics.draw_sprite(handle, x, y, { frame = frame, scale = scale })
+  else
+    -- Fallback to pixel.rect if sprite not loaded
+    M.hp_bar(x, y, hp, max_hp, 42 * scale)
+  end
+end
+
+-- Dark button sprite for menu items.
+-- Draws the dark capsule button at position, scaled.
+function M.button_sprite(x, y, scale)
+  scale = scale or 1
+  local handle = ui_sprites.get("btn_dark")
+  if handle then
+    engine.graphics.draw_sprite(handle, x, y, { scale = scale })
+  end
+end
+
+-- Boss wing badge sprite.
+function M.boss_badge(x, y, scale)
+  scale = scale or 1
+  local handle = ui_sprites.get("badge_boss")
+  if handle then
+    engine.graphics.draw_sprite(handle, x, y, { scale = scale })
+  end
+end
+
+-- Rarity star display. Draws 1-5 stars based on rarity string.
+local rarity_star_counts = { common = 1, uncommon = 2, rare = 3, epic = 4, legendary = 5 }
+
+function M.rarity_stars(x, y, rarity, scale)
+  scale = scale or 1
+  local star_count = rarity_star_counts[rarity] or 1
+  local star_w = 14 * scale
+  local handle = ui_sprites.get("star_3")
+  if not handle then return end
+  for i = 1, star_count do
+    engine.graphics.draw_sprite(handle, x + (i - 1) * star_w, y, { scale = scale })
+  end
+end
+
+-- Message panel: fill + border-bottom only (no full panel border).
+-- Height = 42px to match mockup.
+function M.message_panel(x, y, w, messages)
+  engine.graphics.pixel.rect(x, y, w, 42, 0x14141E)
+  engine.graphics.pixel.rect(x, y + 41, w, 1, 0x505064)
+  local start = math.max(1, #messages - 1)
+  for i = start, math.min(start + 1, #messages) do
+    local msg = messages[i]
+    local row_offset = i - start
+    engine.graphics.draw_text(
+      px_to_col(x + 8),
+      px_to_row(y + 7 + row_offset * 15),
+      msg.text,
+      msg.color or 0xDCDCDC
+    )
+  end
 end
 
 return M

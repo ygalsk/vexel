@@ -16,7 +16,7 @@
 | 9 | Codecritter Port | Not started |
 
 ## Recent
-- Condensed CLAUDE.md: trimmed verbose descriptions, aligned formatting, added graphify + UI/UX sections
+- Simplify battle UI: removed dead widgets (message_log, archetype_badge), hoisted per-frame table allocations (status_icon, rarity_stars), extracted menu background helper and minion labels constant
 
 ## What's Built
 

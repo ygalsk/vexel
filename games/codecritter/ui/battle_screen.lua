@@ -8,12 +8,13 @@
 --   swarm = { critter1, critter2, ... },       -- for swarm
 --   biome = biome_id,
 --   floor = floor_num,
+--   gold = number,                             -- optional, dungeon gold
 --   inventory = { item1, item2, ... },         -- optional
 -- }
 
-local widgets  = require("ui.widgets")
-local anim     = require("ui.anim")
-local music    = require("audio.music")
+local widgets    = require("ui.widgets")
+local anim       = require("ui.anim")
+local music      = require("audio.music")
 local battle   = require("battle.engine")
 local ai       = require("battle.ai")
 local status   = require("battle.status")
@@ -45,7 +46,14 @@ local PLAYER_SPRITE_X, PLAYER_SPRITE_Y = 120, 170
 
 -- UI positions
 local ENEMY_INFO_X,  ENEMY_INFO_Y  = 10, 10
-local PLAYER_INFO_X, PLAYER_INFO_Y = 340, 210
+local PLAYER_INFO_X, PLAYER_INFO_Y = 360, 210
+
+local MENU_H = H - MENU_Y
+
+local function draw_menu_bg()
+  engine.graphics.pixel.rect(0, MENU_Y, W, MENU_H, 0x14141E)
+  engine.graphics.pixel.rect(0, MENU_Y, W, 1, 0x505064)
+end
 
 -----------------------------------------------------------------------
 -- Helpers
@@ -122,8 +130,9 @@ end
 -- Menu actions
 -----------------------------------------------------------------------
 
-local menu_labels = { "Attack", "Catch", "Swap", "Item" }
-local menu_keys   = { "moves", "catch", "swap", "items" }
+local menu_labels        = { "Attack", "Catch", "Swap", "Item" }
+local menu_labels_minion = { "Attack", "Catch", "Swap", "Item", "Bench" }
+local menu_keys          = { "moves", "catch", "swap", "items" }
 
 local function enter_submenu(sub)
   state.sub_menu = sub
@@ -613,6 +622,7 @@ function scene.load(data)
     caught_critter = nil,
     inventory      = data.inventory or {},
     floor          = data.floor or 1,
+    gold           = data.gold or 0,
     end_timer      = 0,
   }
 
@@ -687,6 +697,7 @@ end
 function scene.draw()
   local p = active_player()
   local e = get_enemy()
+  local is_boss = state.encounter_type == "boss_team" or state.encounter_type == "boss_minion"
 
   -- Clear all layers to prevent stale pixel data from prior scenes
   for layer = 0, 7 do
@@ -694,17 +705,16 @@ function scene.draw()
     engine.graphics.pixel.clear()
   end
 
-  -- Layer 0: background
+  -- Layer 0: background zones (pixel.rect — solid fills)
   engine.graphics.set_layer(0)
-  engine.graphics.pixel.rect(0, 0, W, PLAYER_Y, 0x1A1A2E)       -- enemy zone
+  engine.graphics.pixel.rect(0, 0, W, PLAYER_Y, 0x1A1A2E)                   -- enemy zone
   engine.graphics.pixel.rect(0, PLAYER_Y, W, ACTION_Y - PLAYER_Y, 0x141428) -- player zone
   engine.graphics.pixel.rect(0, ACTION_Y, W, H - ACTION_Y, 0x0E0E1E)        -- action zone
-
   -- Divider lines
   engine.graphics.pixel.rect(0, PLAYER_Y, W, 1, 0x333355)
   engine.graphics.pixel.rect(0, ACTION_Y, W, 1, 0x333355)
 
-  -- Layer 1: sprites
+  -- Layer 1: critter sprites
   engine.graphics.set_layer(1)
 
   -- Player sprite (bottom-left, facing right)
@@ -729,7 +739,7 @@ function scene.draw()
     engine.graphics.pixel.rect(ENEMY_SPRITE_X, ENEMY_SPRITE_Y, 64, 32, tc)
   end
 
-  -- Minion sprite (boss_minion: top-left area)
+  -- Minion sprite (boss_minion: secondary enemy)
   if state.encounter_type == "boss_minion" and state.minion then
     local ms = sheets[state.minion.species_id]
     if ms and ms.handle then
@@ -738,46 +748,73 @@ function scene.draw()
     end
   end
 
+  -- Sprite name labels (over placeholder rects)
+  widgets.text(ENEMY_SPRITE_X + 2, ENEMY_SPRITE_Y + 10, e.name:upper(), 0x000000)
+  widgets.text(PLAYER_SPRITE_X + 2, PLAYER_SPRITE_Y + 10, p.name:upper(), 0x000000)
+
   -- Layer 3: UI chrome
   engine.graphics.set_layer(3)
 
-  -- Enemy info panel (pixel elements aligned to cell rows)
-  local e_row1_y = widgets.panel_row_y(ENEMY_INFO_Y, 1)
-  widgets.panel(ENEMY_INFO_X, ENEMY_INFO_Y, 220, e_row1_y + 10 - ENEMY_INFO_Y)
-  widgets.type_badge(ENEMY_INFO_X + 10, e_row1_y, e.critter_type)
-  widgets.status_icon(ENEMY_INFO_X + 62, e_row1_y, e.status)
-  widgets.hp_bar(ENEMY_INFO_X + 100, e_row1_y + 2, e.hp, e.max_hp, 110)
+  -- Boss indicator: badge sprite + party pips
+  local enemy_info_y = ENEMY_INFO_Y
+  if is_boss then
+    enemy_info_y = 22  -- shift panel down for boss header
+    widgets.text(ENEMY_INFO_X, 2, "[BOSS]", 0xFF6644)
+    if state.encounter_type == "boss_team" then
+      -- Draw party pips as small circles
+      local pip_x = ENEMY_INFO_X + 96
+      for i = 1, #state.boss_team do
+        local cx = pip_x + (i - 1) * 10
+        if i < state.boss_idx then
+          engine.graphics.pixel.circle(cx, 10, 3, 0x444444)         -- defeated
+        elseif i == state.boss_idx then
+          engine.graphics.pixel.circle(cx, 10, 3, 0xFF6644)         -- current
+        else
+          engine.graphics.pixel.circle(cx, 10, 3, 0xFF6644)         -- remaining
+          engine.graphics.pixel.circle(cx, 10, 2, 0x1A1A2E)         -- hollow center
+        end
+      end
+    end
+  end
 
-  -- Player info panel (pixel elements aligned to cell rows)
-  local p_row1_y = widgets.panel_row_y(PLAYER_INFO_Y, 1)
-  widgets.panel(PLAYER_INFO_X, PLAYER_INFO_Y, 220, p_row1_y + 10 - PLAYER_INFO_Y)
-  widgets.type_badge(PLAYER_INFO_X + 10, p_row1_y, p.critter_type)
-  widgets.status_icon(PLAYER_INFO_X + 62, p_row1_y, p.status)
-  widgets.hp_bar(PLAYER_INFO_X + 100, p_row1_y + 2, p.hp, p.max_hp, 110)
+  -- Enemy info panel (46px tall, matching mockup)
+  widgets.panel(ENEMY_INFO_X, enemy_info_y, 230, 46)
+  widgets.type_badge(ENEMY_INFO_X + 5, enemy_info_y + 5, e.critter_type)
+  widgets.status_icon(ENEMY_INFO_X + 198, enemy_info_y + 5, e.status)
+  widgets.hp_bar(ENEMY_INFO_X + 64, enemy_info_y + 8, e.hp, e.max_hp, 120)
 
-  -- Message log
-  widgets.message_log(0, MSG_Y, W, state.messages)
+  -- Player info panel (46px tall)
+  widgets.panel(PLAYER_INFO_X, PLAYER_INFO_Y, 230, 46)
+  widgets.type_badge(PLAYER_INFO_X + 5, PLAYER_INFO_Y + 5, p.critter_type)
+  widgets.status_icon(PLAYER_INFO_X + 198, PLAYER_INFO_Y + 5, p.status)
+  widgets.hp_bar(PLAYER_INFO_X + 48, PLAYER_INFO_Y + 8, p.hp, p.max_hp, 120)
+
+  -- Message panel (border-bottom only, 42px)
+  widgets.message_panel(0, MSG_Y, W, state.messages)
+
+  -- Floor/gold display (right-aligned in message area)
+  local floor_str = string.format("Floor %d/15  %dg", state.floor, state.gold)
+  widgets.text(W - #floor_str * 8 - 8, MSG_Y + 20, floor_str, 0xAAAAAA)
 
   -- Action menu area
   if state.phase == "player_action" then
-    widgets.panel(0, MENU_Y, W, H - MENU_Y)
-    -- Menu highlight
+    draw_menu_bg()
     local labels = menu_labels
     if state.encounter_type == "boss_minion" then
-      labels = { "Attack", "Catch", "Swap", "Item", "Bench" }
+      labels = menu_labels_minion
     end
     local item_w = math.floor(W / #labels)
     for i, label in ipairs(labels) do
       local x = (i - 1) * item_w
       if i == state.menu_cursor then
-        engine.graphics.pixel.rect(x + 2, MENU_Y + 2, item_w - 4, H - MENU_Y - 4, 0x334466)
+        engine.graphics.pixel.rect(x + 2, MENU_Y + 2, item_w - 4, MENU_H - 4, 0x334466)
       end
     end
   end
 
   -- Sub-menu overlay
   if state.phase == "sub_menu" then
-    widgets.panel(0, MENU_Y, W, H - MENU_Y)
+    draw_menu_bg()
     if state.sub_menu == "moves" then
       local move_list = p.moves
       local item_w = math.floor(W / math.max(1, #move_list))
@@ -786,38 +823,45 @@ function scene.draw()
         if m then
           local x = (i - 1) * item_w
           if i == state.sub_cursor then
-            engine.graphics.pixel.rect(x + 2, MENU_Y + 2, item_w - 4, H - MENU_Y - 4, 0x334466)
+            engine.graphics.pixel.rect(x + 2, MENU_Y + 2, item_w - 4, MENU_H - 4, 0x334466)
           end
-          -- Type color indicator
+          -- Type color indicator (8x8 square)
           local tc = widgets.type_colors[m.move_type] or 0x808080
-          engine.graphics.pixel.rect(x + 4, MENU_Y + 4, 6, 6, tc)
+          engine.graphics.pixel.rect(x + 4, MENU_Y + 4, 8, 8, tc)
         end
       end
     end
   end
 
-  -- Text layer: all text drawn via draw_text (renders above pixel layers)
-  -- Enemy info text (cell-aligned to panel)
-  widgets.panel_text(ENEMY_INFO_X, ENEMY_INFO_Y, 0,
-    e.name .. "  Lv" .. e.level, 0xDCDCDC)
-  widgets.panel_text(ENEMY_INFO_X + 90, ENEMY_INFO_Y, 1,
-    e.hp .. "/" .. e.max_hp, 0xAAAAAA)
+  -- Text layer: drawn via draw_text (renders above pixel layers)
 
-  -- Player info text (cell-aligned to panel)
+  -- Enemy info text
+  widgets.panel_text(ENEMY_INFO_X, enemy_info_y, 0,
+    e.name .. "  Lv" .. e.level, 0xDCDCDC)
+  -- HP fraction
+  widgets.text(ENEMY_INFO_X + 170, enemy_info_y + 5, e.hp .. "/" .. e.max_hp, 0xAAAAAA)
+  -- Archetype row
+  local e_sp = species[e.species_id]
+  if is_boss then
+    widgets.text(ENEMY_INFO_X + 5, enemy_info_y + 33,
+      "BOSS - " .. (e_sp and e_sp.archetype:upper() or "???"), 0xFF6644)
+  else
+    widgets.text(ENEMY_INFO_X + 5, enemy_info_y + 33,
+      (e_sp and e_sp.archetype:upper() or "") .. " archetype", 0x666688)
+  end
+
+  -- Player info text
   widgets.panel_text(PLAYER_INFO_X, PLAYER_INFO_Y, 0,
     p.name .. "  Lv" .. p.level, 0xDCDCDC)
-  widgets.panel_text(PLAYER_INFO_X + 90, PLAYER_INFO_Y, 1,
-    p.hp .. "/" .. p.max_hp, 0xAAAAAA)
+  -- HP fraction
+  widgets.text(PLAYER_INFO_X + 154, PLAYER_INFO_Y + 5, p.hp .. "/" .. p.max_hp, 0xAAAAAA)
+  -- Archetype row
+  local p_sp = species[p.species_id]
+  widgets.text(PLAYER_INFO_X + 5, PLAYER_INFO_Y + 33,
+    (p_sp and p_sp.archetype:upper() or "") .. " archetype", 0x666688)
 
-  -- Encounter type header
-  if state.encounter_type == "boss_team" then
-    local dots = ""
-    for i = 1, #state.boss_team do
-      dots = dots .. (i < state.boss_idx and "x" or i == state.boss_idx and "@" or "o")
-    end
-    widgets.text(ENEMY_INFO_X + 10, ENEMY_INFO_Y - 15,
-      "[BOSS] Party: " .. dots, 0xFF6644)
-  elseif state.encounter_type == "swarm" then
+  -- Swarm header (not boss, so enemy_info_y stays at ENEMY_INFO_Y)
+  if state.encounter_type == "swarm" then
     widgets.text(ENEMY_INFO_X + 10, ENEMY_INFO_Y - 15,
       string.format("[SWARM] %d of %d", state.swarm_idx, #state.swarm), 0xFFAA44)
   end
@@ -826,13 +870,13 @@ function scene.draw()
   if state.phase == "player_action" then
     local labels = menu_labels
     if state.encounter_type == "boss_minion" then
-      labels = { "Attack", "Catch", "Swap", "Item", "Bench" }
+      labels = menu_labels_minion
     end
     local item_w = math.floor(W / #labels)
     for i, label in ipairs(labels) do
       local x = (i - 1) * item_w + 10
       local color = (i == state.menu_cursor) and 0xFFFFFF or 0x888888
-      widgets.text(x, MENU_Y + 14, i .. " " .. label, color)
+      widgets.text(x, MENU_Y + 16, i .. "  " .. label, color)
     end
   end
 
@@ -844,18 +888,18 @@ function scene.draw()
       for i, mid in ipairs(move_list) do
         local m = moves[mid]
         if m then
-          local x = (i - 1) * item_w + 14
+          local x = (i - 1) * item_w + 16
           local color = (i == state.sub_cursor) and 0xFFFFFF or 0x888888
-          widgets.text(x, MENU_Y + 6, m.name, color)
+          widgets.text(x, MENU_Y + 5, m.name, color)
           -- Effectiveness preview
           local eff = types.effectiveness(m.move_type, e.critter_type)
           local eff_str = string.format("P:%d A:%d%%", m.power, m.accuracy)
-          if eff >= 1.5 then eff_str = eff_str .. " SE" end
-          if eff <= 0.5 then eff_str = eff_str .. " NVE" end
-          widgets.text(x, MENU_Y + 24, eff_str, (i == state.sub_cursor) and 0xCCCCCC or 0x666666)
+          if eff >= 1.5 then eff_str = eff_str .. "  SE" end
+          if eff <= 0.5 then eff_str = eff_str .. "  NVE" end
+          widgets.text(x, MENU_Y + 20, eff_str, (i == state.sub_cursor) and 0xCCCCCC or 0x666666)
         end
       end
-      widgets.text(10, MENU_Y + 38, "[B] Back", 0x666666)
+      widgets.text(8, MENU_Y + 36, "[B] Back", 0x666666)
 
     elseif state.sub_menu == "catch" then
       local catch_tools = {}
@@ -877,7 +921,7 @@ function scene.draw()
             string.format("%s (%.0f%%)", tool.name, chance), color)
         end
       end
-      widgets.text(10, MENU_Y + 38, "[B] Back", 0x666666)
+      widgets.text(8, MENU_Y + 36, "[B] Back", 0x666666)
 
     elseif state.sub_menu == "swap" then
       for i, c in ipairs(state.party) do
@@ -889,7 +933,7 @@ function scene.draw()
         widgets.text(20, MENU_Y + 6 + (i-1) * 16,
           string.format("%s Lv%d  %d/%d HP", c.name, c.level, c.hp, c.max_hp), color)
       end
-      widgets.text(10, MENU_Y + 38, "[B] Back", 0x666666)
+      widgets.text(8, MENU_Y + 36, "[B] Back", 0x666666)
 
     elseif state.sub_menu == "items" then
       local usable = {}
@@ -908,7 +952,7 @@ function scene.draw()
           widgets.text(20, MENU_Y + 6 + (i-1) * 16, desc, color)
         end
       end
-      widgets.text(10, MENU_Y + 38, "[B] Back", 0x666666)
+      widgets.text(8, MENU_Y + 36, "[B] Back", 0x666666)
     end
   end
 
@@ -955,7 +999,8 @@ end
 
 function scene.unload()
   music.stop()
-  -- Unload sprites
+  ui_sprites.unload()
+  -- Unload critter sprites
   for id, s in pairs(sheets) do
     if s.handle then
       pcall(engine.graphics.unload_image, s.handle)
