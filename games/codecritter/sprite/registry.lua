@@ -1,5 +1,6 @@
 -- Species ID → sprite configuration.
--- All placeholder sprites are 32×16 RGBA with 2 frames.
+-- Enhanced sprites are 32×32 RGBA with 11 frames (4 idle + 3 attack + 2 hit + 2 faint).
+-- Placeholder sprites are 32×32 RGBA with 2 frames.
 
 local M = {}
 
@@ -7,47 +8,172 @@ local ANIMS = {
   idle   = { frames = {0, 1}, speed = 0.5, loop = true  },
   attack = { frames = {0},    speed = 0.0, loop = false },
   hit    = { frames = {1},    speed = 0.0, loop = false },
-  faint  = { frames = {1},    speed = 0.0, loop = false },
+  faint  = { frames = {1},    speed = 0.0, loop = false, stay_on_last = true },
 }
 
-local function entry(filename)
+local function entry(filename, anims)
   return {
     path = "assets/sprites/" .. filename .. ".png",
-    frame_w = 32, frame_h = 16, scale = 2,
-    animations = ANIMS,
+    frame_w = 32, frame_h = 32, scale = 1,
+    animations = anims or ANIMS,
   }
 end
 
 -- Common base forms
-M.println    = entry("println")
-M.glitch     = entry("glitch")
-M["goto"]    = entry("goto")
-M.monad      = entry("monad")
-M.copilot    = entry("copilot")
-M.segfault   = entry("segfault")
-M.mutex      = entry("mutex")
-M.lgtm       = entry("lgtm")
-M.singleton  = entry("singleton")
-M.printf     = entry("printf")
+M.println    = entry("println", {
+  idle   = { frames = {0,1,2,3},  speed = 0.4,  loop = true },
+  attack = { frames = {4,5,6},    speed = 0.12, loop = false },
+  hit    = { frames = {7,8},      speed = 0.15, loop = false },
+  faint  = { frames = {9,10},     speed = 0.3,  loop = false, stay_on_last = true },
+})
+M.glitch     = entry("glitch", {
+  idle   = { frames = {0,1,2,3},  speed = 0.35, loop = true },
+  attack = { frames = {4,5,6},    speed = 0.1,  loop = false },
+  hit    = { frames = {7,8},      speed = 0.15, loop = false },
+  faint  = { frames = {9,10},     speed = 0.3,  loop = false, stay_on_last = true },
+})
+M["goto"]    = entry("goto", {
+  idle   = { frames = {0,1,2,3},  speed = 0.45, loop = true },
+  attack = { frames = {4,5,6},    speed = 0.15, loop = false },
+  hit    = { frames = {7,8},      speed = 0.15, loop = false },
+  faint  = { frames = {9,10},     speed = 0.3,  loop = false, stay_on_last = true },
+})
+M.monad      = entry("monad", {
+  idle   = { frames = {0,1,2,3},  speed = 0.45, loop = true },
+  attack = { frames = {4,5,6},    speed = 0.15, loop = false },
+  hit    = { frames = {7,8},      speed = 0.15, loop = false },
+  faint  = { frames = {9,10},     speed = 0.3,  loop = false, stay_on_last = true },
+})
+M.copilot    = entry("copilot", {
+  idle   = { frames = {0,1,2,3},  speed = 0.35, loop = true },
+  attack = { frames = {4,5,6},    speed = 0.12, loop = false },
+  hit    = { frames = {7,8},      speed = 0.15, loop = false },
+  faint  = { frames = {9,10},     speed = 0.3,  loop = false, stay_on_last = true },
+})
+M.segfault   = entry("segfault", {
+  idle   = { frames = {0,1,2,3},  speed = 0.35, loop = true },
+  attack = { frames = {4,5,6},    speed = 0.12, loop = false },
+  hit    = { frames = {7,8},      speed = 0.15, loop = false },
+  faint  = { frames = {9,10},     speed = 0.3,  loop = false, stay_on_last = true },
+})
+M.mutex      = entry("mutex", {
+  idle   = { frames = {0,1,2,3},  speed = 0.5,  loop = true },
+  attack = { frames = {4,5,6},    speed = 0.15, loop = false },
+  hit    = { frames = {7,8},      speed = 0.15, loop = false },
+  faint  = { frames = {9,10},     speed = 0.3,  loop = false, stay_on_last = true },
+})
+M.lgtm       = entry("lgtm", {
+  idle   = { frames = {0,1,2,3},  speed = 0.4,  loop = true },
+  attack = { frames = {4,5,6},    speed = 0.12, loop = false },
+  hit    = { frames = {7,8},      speed = 0.15, loop = false },
+  faint  = { frames = {9,10},     speed = 0.3,  loop = false, stay_on_last = true },
+})
+M.singleton  = entry("singleton", {
+  idle   = { frames = {0,1,2,3},  speed = 0.45, loop = true },
+  attack = { frames = {4,5,6},    speed = 0.15, loop = false },
+  hit    = { frames = {7,8},      speed = 0.15, loop = false },
+  faint  = { frames = {9,10},     speed = 0.3,  loop = false, stay_on_last = true },
+})
+M.printf     = entry("printf", {
+  idle   = { frames = {0,1,2,3},  speed = 0.4,  loop = true },
+  attack = { frames = {4,5,6},    speed = 0.12, loop = false },
+  hit    = { frames = {7,8},      speed = 0.15, loop = false },
+  faint  = { frames = {9,10},     speed = 0.3,  loop = false, stay_on_last = true },
+})
 
 -- Common evolutions
-M.tracer         = entry("tracer")
-M.gremlin        = entry("gremlin")
-M.spaghetto      = entry("spaghetto")
-M.functor        = entry("functor")
-M.autopilot      = entry("autopilot")
-M.stack_overflow = entry("stack_overflow")
-M.god_object     = entry("god_object")
-M.semaphore      = entry("semaphore")
-M.nitpick        = entry("nitpick")
-M.fprintf        = entry("fprintf")
+M.tracer         = entry("tracer", {
+  idle   = { frames = {0,1,2,3,4},  speed = 0.4,  loop = true },
+  attack = { frames = {5,6,7},      speed = 0.12, loop = false },
+  hit    = { frames = {8,9},        speed = 0.15, loop = false },
+  faint  = { frames = {10,11},      speed = 0.3,  loop = false, stay_on_last = true },
+})
+M.gremlin        = entry("gremlin", {
+  idle   = { frames = {0,1,2,3,4},  speed = 0.35, loop = true },
+  attack = { frames = {5,6,7},      speed = 0.1,  loop = false },
+  hit    = { frames = {8,9},        speed = 0.15, loop = false },
+  faint  = { frames = {10,11},      speed = 0.3,  loop = false, stay_on_last = true },
+})
+M.spaghetto      = entry("spaghetto", {
+  idle   = { frames = {0,1,2,3,4},  speed = 0.45, loop = true },
+  attack = { frames = {5,6,7},      speed = 0.15, loop = false },
+  hit    = { frames = {8,9},        speed = 0.15, loop = false },
+  faint  = { frames = {10,11},      speed = 0.3,  loop = false, stay_on_last = true },
+})
+M.functor        = entry("functor", {
+  idle   = { frames = {0,1,2,3,4},  speed = 0.45, loop = true },
+  attack = { frames = {5,6,7},      speed = 0.15, loop = false },
+  hit    = { frames = {8,9},        speed = 0.15, loop = false },
+  faint  = { frames = {10,11},      speed = 0.3,  loop = false, stay_on_last = true },
+})
+M.autopilot      = entry("autopilot", {
+  idle   = { frames = {0,1,2,3,4},  speed = 0.35, loop = true },
+  attack = { frames = {5,6,7},      speed = 0.12, loop = false },
+  hit    = { frames = {8,9},        speed = 0.15, loop = false },
+  faint  = { frames = {10,11},      speed = 0.3,  loop = false, stay_on_last = true },
+})
+M.stack_overflow = entry("stack_overflow", {
+  idle   = { frames = {0,1,2,3,4},  speed = 0.35, loop = true },
+  attack = { frames = {5,6,7},      speed = 0.1,  loop = false },
+  hit    = { frames = {8,9},        speed = 0.15, loop = false },
+  faint  = { frames = {10,11},      speed = 0.3,  loop = false, stay_on_last = true },
+})
+M.god_object     = entry("god_object", {
+  idle   = { frames = {0,1,2,3,4},  speed = 0.45, loop = true },
+  attack = { frames = {5,6,7},      speed = 0.12, loop = false },
+  hit    = { frames = {8,9},        speed = 0.15, loop = false },
+  faint  = { frames = {10,11},      speed = 0.3,  loop = false, stay_on_last = true },
+})
+M.semaphore      = entry("semaphore", {
+  idle   = { frames = {0,1,2,3,4},  speed = 0.5,  loop = true },
+  attack = { frames = {5,6,7},      speed = 0.12, loop = false },
+  hit    = { frames = {8,9},        speed = 0.15, loop = false },
+  faint  = { frames = {10,11},      speed = 0.3,  loop = false, stay_on_last = true },
+})
+M.nitpick        = entry("nitpick", {
+  idle   = { frames = {0,1,2,3,4},  speed = 0.4,  loop = true },
+  attack = { frames = {5,6,7},      speed = 0.12, loop = false },
+  hit    = { frames = {8,9},        speed = 0.15, loop = false },
+  faint  = { frames = {10,11},      speed = 0.3,  loop = false, stay_on_last = true },
+})
+M.fprintf        = entry("fprintf", {
+  idle   = { frames = {0,1,2,3,4},  speed = 0.4,  loop = true },
+  attack = { frames = {5,6,7},      speed = 0.12, loop = false },
+  hit    = { frames = {8,9},        speed = 0.15, loop = false },
+  faint  = { frames = {10,11},      speed = 0.3,  loop = false, stay_on_last = true },
+})
 
 -- Uncommon final forms
-M.pandemonium        = entry("pandemonium")
-M.dependency         = entry("dependency")
-M.profiler           = entry("profiler")
-M.logstash           = entry("logstash")
-M.kernel_panic_critter = entry("kernel_panic_critter")
+M.pandemonium        = entry("pandemonium", {
+  idle   = { frames = {0,1,2,3,4,5},  speed = 0.35, loop = true },
+  attack = { frames = {6,7,8},        speed = 0.12, loop = false },
+  hit    = { frames = {9,10},         speed = 0.15, loop = false },
+  faint  = { frames = {11,12,13},     speed = 0.3,  loop = false, stay_on_last = true },
+})
+M.dependency         = entry("dependency", {
+  idle   = { frames = {0,1,2,3,4,5},  speed = 0.45, loop = true },
+  attack = { frames = {6,7,8},        speed = 0.15, loop = false },
+  hit    = { frames = {9,10},         speed = 0.15, loop = false },
+  faint  = { frames = {11,12,13},     speed = 0.3,  loop = false, stay_on_last = true },
+})
+M.profiler           = entry("profiler", {
+  idle   = { frames = {0,1,2,3,4,5},  speed = 0.4,  loop = true },
+  attack = { frames = {6,7,8},        speed = 0.12, loop = false },
+  hit    = { frames = {9,10},         speed = 0.15, loop = false },
+  faint  = { frames = {11,12,13},     speed = 0.3,  loop = false, stay_on_last = true },
+})
+M.logstash           = entry("logstash", {
+  idle   = { frames = {0,1,2,3,4,5},  speed = 0.4,  loop = true },
+  attack = { frames = {6,7,8},        speed = 0.15, loop = false },
+  hit    = { frames = {9,10},         speed = 0.15, loop = false },
+  faint  = { frames = {11,12,13},     speed = 0.3,  loop = false, stay_on_last = true },
+})
+M.kernel_panic_critter = entry("kernel_panic_critter", {
+  idle   = { frames = {0,1,2,3,4,5},  speed = 0.35, loop = true },
+  attack = { frames = {6,7,8},        speed = 0.1,  loop = false },
+  hit    = { frames = {9,10},         speed = 0.15, loop = false },
+  faint  = { frames = {11,12,13},     speed = 0.3,  loop = false, stay_on_last = true },
+})
 M.monolith           = entry("monolith")
 M.deadlock           = entry("deadlock")
 M.burrito            = entry("burrito")
@@ -96,7 +222,7 @@ M.linus    = entry("linus")
 function M.get(species_id)
   return M[species_id] or {
     path = nil,
-    frame_w = 32, frame_h = 16, scale = 2,
+    frame_w = 32, frame_h = 32, scale = 1,
     animations = ANIMS,
   }
 end

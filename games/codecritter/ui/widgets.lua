@@ -1,25 +1,30 @@
--- Reusable UI widgets for battle screen and future screens.
--- All pixel drawing via engine.graphics.pixel.*, text via engine.graphics.draw_text().
--- Sprite-based widgets use ui_sprites for loaded asset handles.
-
-local ui_sprites = require("ui.ui_sprites")
+-- Reusable UI widgets for battle screen.
+-- pixel.rect for all graphical elements, draw_text for all text.
+-- Layout computed from cell grid to guarantee alignment.
 
 local M = {}
 
-local cell_w, cell_h = 8, 18  -- defaults, recalculated in init()
+local cell_w, cell_h = 8, 18
+local total_cols, total_rows = 80, 20
+local virt_w, virt_h = 640, 360
 
 function M.init()
-  local px_w, px_h = engine.graphics.get_pixel_size()
-  local cols, rows = engine.graphics.get_size()
-  if cols > 0 then cell_w = px_w / cols end
-  if rows > 0 then cell_h = px_h / rows end
+  virt_w, virt_h = engine.graphics.get_resolution()
+  total_cols, total_rows = engine.graphics.get_size()
+  if total_cols > 0 then cell_w = virt_w / total_cols end
+  if total_rows > 0 then cell_h = virt_h / total_rows end
 end
 
-local function px_to_col(x) return math.floor(x / cell_w) end
-local function px_to_row(y) return math.floor(y / cell_h) end
+function M.cols() return total_cols end
+function M.rows() return total_rows end
 
--- First cell row whose top edge is at or inside a panel starting at pixel y
-local function first_row_in(y) return math.ceil(y / cell_h) end
+-- Convert between coordinate systems
+function M.col_px(c) return math.floor(c * cell_w) end
+function M.row_px(r) return math.floor(r * cell_h) end
+function M.px_col(x) return math.floor(x / cell_w) end
+function M.px_row(y) return math.floor(y / cell_h) end
+function M.cell_h() return cell_h end
+function M.virt_w() return virt_w end
 
 -- Type colors
 M.type_colors = {
@@ -32,38 +37,6 @@ M.type_colors = {
   legacy   = 0x888844,
 }
 
--- HP bar: green (>50%), yellow (25-50%), red (<25%)
-function M.hp_bar(x, y, hp, max_hp, width)
-  width = width or 120
-  local pct = hp / math.max(1, max_hp)
-  local color
-  if pct > 0.5 then color = 0x3CC83C
-  elseif pct > 0.25 then color = 0xDCC800
-  else color = 0xC83232 end
-  engine.graphics.pixel.rect(x, y, width, 6, 0x282828)
-  local fill = math.floor(width * pct)
-  if fill > 0 then
-    engine.graphics.pixel.rect(x, y, fill, 6, color)
-  end
-end
-
--- Type badge: colored pill with type name
-function M.type_badge(x, y, type_name)
-  local col = M.type_colors[type_name] or 0x808080
-  engine.graphics.pixel.rect(x, y, 48, 12, col)
-  engine.graphics.draw_text(px_to_col(x + 2), px_to_row(y + 1), type_name:upper(), 0x000000)
-end
-
--- Panel border
-function M.panel(x, y, w, h)
-  engine.graphics.pixel.rect(x, y, w, h, 0x14141E)
-  engine.graphics.pixel.rect(x, y, w, 1, 0x505064)
-  engine.graphics.pixel.rect(x, y + h - 1, w, 1, 0x505064)
-  engine.graphics.pixel.rect(x, y, 1, h, 0x505064)
-  engine.graphics.pixel.rect(x + w - 1, y, 1, h, 0x505064)
-end
-
--- Status icon: abbreviated label
 local status_labels = {
   blocked = "BLK", deprecated = "DEP", segfaulted = "SEG",
   linted = "LNT", tilted = "TLT", in_the_zone = "ZON",
@@ -75,110 +48,187 @@ local status_colors = {
   spaghettified = 0xB464DC, enlightened = 0xC8C83C, hallucinating = 0xC864B4,
 }
 
-function M.status_icon(x, y, status_name)
-  if not status_name then return end
-  local label = status_labels[status_name] or "???"
-  local col = status_colors[status_name] or 0x969696
-  engine.graphics.pixel.rect(x, y, 28, 10, col)
-  engine.graphics.draw_text(px_to_col(x + 2), px_to_row(y), label, 0x000000)
+-----------------------------------------------------------------------
+-- Drawing helpers (all pixel.rect + draw_text, no draw_rect)
+-----------------------------------------------------------------------
+
+-- Fill a cell-aligned region with pixel.rect
+function M.fill_cells(col, row, w_cells, h_cells, color)
+  engine.graphics.pixel.rect(M.col_px(col), M.row_px(row),
+    M.col_px(w_cells), M.row_px(h_cells), color)
 end
 
--- Draw text at pixel position (convenience wrapper)
-function M.text(x, y, str, color)
-  engine.graphics.draw_text(px_to_col(x), px_to_row(y), str, color or 0xDCDCDC)
-end
-
--- Draw text inside a panel: row 0 = first cell row inside the panel, row 1 = next, etc.
-function M.panel_text(panel_x, panel_y, row_offset, str, color)
-  local col = px_to_col(panel_x + 10)
-  local row = first_row_in(panel_y) + row_offset
-  engine.graphics.draw_text(col, row, str, color or 0xDCDCDC)
-end
-
--- Pixel Y of a row inside a panel (for aligning pixel elements like badges/bars)
-function M.panel_row_y(panel_y, row_offset)
-  return (first_row_in(panel_y) + row_offset) * cell_h
+-- Text at cell position
+function M.text(col, row, str, fg, bg)
+  engine.graphics.draw_text(col, row, str, fg or 0xDCDCDC, bg)
 end
 
 -----------------------------------------------------------------------
--- Sprite-based widgets (use assets from Pixel UI pack 3)
+-- Info panel widget
 -----------------------------------------------------------------------
 
--- HP bar using sprite frames. 6 fill states per color strip.
--- Color auto-selected by HP percentage: blue (>50%), yellow (25-50%), red (<25%).
--- bar_w/bar_h are the 04.png bar dimensions: 42x11 per frame.
-function M.hp_bar_sprite(x, y, hp, max_hp, scale)
-  scale = scale or 2
-  local pct = hp / math.max(1, max_hp)
+-- Draws a critter info panel. col/row are cell coordinates.
+-- 3 cell rows tall:
+--   Row 0: Name  Lv##           HP/MAX
+--   Row 1: [TYPE]  ARCHETYPE     [STATUS]
+--   Row 2: ████████░░░░░░░░░ (HP bar)
+function M.info_panel(col, row, panel_w, critter, sp_entry, is_boss)
+  -- Panel background (pixel.rect for consistent rendering)
+  local px = M.col_px(col)
+  local py = M.row_px(row)
+  local pw = M.col_px(panel_w)
+  local ph = M.row_px(3)
+  engine.graphics.pixel.rect(px, py, pw, ph, 0x14141E)
+  -- Borders
+  engine.graphics.pixel.rect(px, py, pw, 1, 0x505064)
+  engine.graphics.pixel.rect(px, py + ph - 1, pw, 1, 0x505064)
+  engine.graphics.pixel.rect(px, py, 1, ph, 0x505064)
+  engine.graphics.pixel.rect(px + pw - 1, py, 1, ph, 0x505064)
 
-  -- Pick color strip
-  local bar_name
-  if pct > 0.5 then bar_name = "hp_bar_blue"
-  elseif pct > 0.25 then bar_name = "hp_bar_yellow"
-  else bar_name = "hp_bar_red" end
+  -- Row 0: name + level (left), HP fraction (right)
+  local hp_str = critter.hp .. "/" .. critter.max_hp
+  M.text(col + 1, row, critter.name .. "  Lv" .. critter.level, 0xDCDCDC)
+  M.text(col + panel_w - #hp_str - 1, row, hp_str, 0xAAAAAA)
 
-  -- Map percentage to frame (0=full, 5=empty)
-  local frame = math.floor((1 - pct) * 5 + 0.5)
-  frame = math.max(0, math.min(5, frame))
+  -- Row 1: type badge + archetype (left), status icon (right)
+  local type_name = critter.critter_type or "debug"
+  local type_col = M.type_colors[type_name] or 0x808080
+  M.text(col + 1, row + 1, type_name:upper(), 0x000000, type_col)
 
-  local handle = ui_sprites.get(bar_name)
-  if handle then
-    engine.graphics.draw_sprite(handle, x, y, { frame = frame, scale = scale })
-  else
-    -- Fallback to pixel.rect if sprite not loaded
-    M.hp_bar(x, y, hp, max_hp, 42 * scale)
+  local arch_start = col + 1 + #type_name + 1
+  if is_boss and sp_entry then
+    M.text(arch_start, row + 1, "BOSS - " .. (sp_entry.archetype or ""):upper(), 0xFF6644)
+  elseif sp_entry then
+    M.text(arch_start, row + 1, (sp_entry.archetype or ""):upper(), 0x666688)
+  end
+
+  if critter.status then
+    local slabel = status_labels[critter.status] or "???"
+    local scol = status_colors[critter.status] or 0x969696
+    M.text(col + panel_w - #slabel - 1, row + 1, slabel, 0x000000, scol)
+  end
+
+  -- Row 2: HP bar (pixel.rect for smooth fill, vertically centered in the cell)
+  local bar_x = M.col_px(col + 1)
+  local bar_y = M.row_px(row + 2) + math.floor(cell_h * 0.25)
+  local bar_w = M.col_px(panel_w - 2)
+  local bar_h = math.max(3, math.floor(cell_h * 0.5))
+  local pct = critter.hp / math.max(1, critter.max_hp)
+  local bar_color
+  if pct > 0.5 then bar_color = 0x3CC83C
+  elseif pct > 0.25 then bar_color = 0xDCC800
+  else bar_color = 0xC83232 end
+
+  engine.graphics.pixel.rect(bar_x, bar_y, bar_w, bar_h, 0x282828)
+  local fill = math.floor(bar_w * pct)
+  if fill > 0 then
+    engine.graphics.pixel.rect(bar_x, bar_y, fill, bar_h, bar_color)
   end
 end
 
--- Dark button sprite for menu items.
--- Draws the dark capsule button at position, scaled.
-function M.button_sprite(x, y, scale)
-  scale = scale or 1
-  local handle = ui_sprites.get("btn_dark")
-  if handle then
-    engine.graphics.draw_sprite(handle, x, y, { scale = scale })
-  end
-end
+-----------------------------------------------------------------------
+-- Message panel
+-----------------------------------------------------------------------
 
--- Boss wing badge sprite.
-function M.boss_badge(x, y, scale)
-  scale = scale or 1
-  local handle = ui_sprites.get("badge_boss")
-  if handle then
-    engine.graphics.draw_sprite(handle, x, y, { scale = scale })
-  end
-end
+function M.message_panel(row, messages, floor_str)
+  M.fill_cells(0, row, total_cols, 2, 0x14141E)
+  -- Bottom border
+  engine.graphics.pixel.rect(0, M.row_px(row + 2) - 1, virt_w, 1, 0x505064)
 
--- Rarity star display. Draws 1-5 stars based on rarity string.
-local rarity_star_counts = { common = 1, uncommon = 2, rare = 3, epic = 4, legendary = 5 }
-
-function M.rarity_stars(x, y, rarity, scale)
-  scale = scale or 1
-  local star_count = rarity_star_counts[rarity] or 1
-  local star_w = 14 * scale
-  local handle = ui_sprites.get("star_3")
-  if not handle then return end
-  for i = 1, star_count do
-    engine.graphics.draw_sprite(handle, x + (i - 1) * star_w, y, { scale = scale })
-  end
-end
-
--- Message panel: fill + border-bottom only (no full panel border).
--- Height = 42px to match mockup.
-function M.message_panel(x, y, w, messages)
-  engine.graphics.pixel.rect(x, y, w, 42, 0x14141E)
-  engine.graphics.pixel.rect(x, y + 41, w, 1, 0x505064)
   local start = math.max(1, #messages - 1)
   for i = start, math.min(start + 1, #messages) do
     local msg = messages[i]
-    local row_offset = i - start
-    engine.graphics.draw_text(
-      px_to_col(x + 8),
-      px_to_row(y + 7 + row_offset * 15),
-      msg.text,
-      msg.color or 0xDCDCDC
-    )
+    M.text(1, row + (i - start), msg.text, msg.color or 0xDCDCDC)
   end
+
+  if floor_str then
+    M.text(total_cols - #floor_str - 1, row + 1, floor_str, 0x666688)
+  end
+end
+
+-----------------------------------------------------------------------
+-- Menu widgets
+-----------------------------------------------------------------------
+
+function M.menu_bar(row, labels, cursor)
+  local menu_h = total_rows - row
+  M.fill_cells(0, row, total_cols, menu_h, 0x14141E)
+  engine.graphics.pixel.rect(0, M.row_px(row), virt_w, 1, 0x505064)
+
+  local item_w = math.floor(total_cols / #labels)
+  local text_row = row + math.max(0, math.floor(menu_h / 2))
+
+  for i, label in ipairs(labels) do
+    local x = (i - 1) * item_w
+    if i == cursor then
+      M.fill_cells(x, row, item_w, menu_h, 0x334466)
+    end
+    local color = (i == cursor) and 0xFFFFFF or 0x888888
+    M.text(x + 2, text_row, i .. "  " .. label, color)
+  end
+end
+
+function M.submenu_list(row, items, cursor, back_label)
+  local menu_h = total_rows - row
+  M.fill_cells(0, row, total_cols, menu_h, 0x14141E)
+  engine.graphics.pixel.rect(0, M.row_px(row), virt_w, 1, 0x505064)
+
+  local max_vis = math.max(1, menu_h - 1)
+  local vis_start = math.max(1, cursor - math.floor(max_vis / 2))
+  vis_start = math.min(vis_start, math.max(1, #items - max_vis + 1))
+  local vis_end = math.min(#items, vis_start + max_vis - 1)
+
+  for vi = vis_start, vis_end do
+    local slot = vi - vis_start
+    local item = items[vi]
+    local color = (vi == cursor) and 0xFFFFFF or 0x888888
+    if item.color then color = item.color end
+    if vi == cursor then
+      M.fill_cells(0, row + slot, total_cols, 1, 0x1E2A3E)
+    end
+    if item.type_color then
+      M.text(2, row + slot, "\u{25CF}", item.type_color)
+      M.text(4, row + slot, item.text, color)
+    else
+      M.text(2, row + slot, item.text, color)
+    end
+    if item.detail then
+      M.text(total_cols - #item.detail - 2, row + slot, item.detail,
+        (vi == cursor) and 0xCCCCCC or 0x555566)
+    end
+  end
+
+  if vis_start > 1 then M.text(total_cols - 3, row, "^", 0x555566) end
+  if vis_end < #items then M.text(total_cols - 3, row + max_vis - 1, "v", 0x555566) end
+  M.text(1, row + menu_h - 1, back_label or "[B] Back", 0x555566)
+end
+
+function M.move_menu(row, move_items, cursor, back_label)
+  local menu_h = total_rows - row
+  M.fill_cells(0, row, total_cols, menu_h, 0x14141E)
+  engine.graphics.pixel.rect(0, M.row_px(row), virt_w, 1, 0x505064)
+
+  local count = #move_items
+  local item_w = math.floor(total_cols / math.max(1, count))
+
+  for i, m in ipairs(move_items) do
+    local x = (i - 1) * item_w
+    if i == cursor then
+      M.fill_cells(x, row, item_w, menu_h - 1, 0x1E2A3E)
+    end
+    local color = (i == cursor) and 0xFFFFFF or 0x888888
+    if m.type_color then
+      M.text(x + 1, row, "\u{25CF}", m.type_color)
+      M.text(x + 3, row, m.name, color)
+    else
+      M.text(x + 1, row, m.name, color)
+    end
+    if m.detail then
+      M.text(x + 1, row + 1, m.detail, (i == cursor) and 0xCCCCCC or 0x555566)
+    end
+  end
+
+  M.text(1, row + menu_h - 1, back_label or "[B] Back", 0x555566)
 end
 
 return M
