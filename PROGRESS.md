@@ -15,6 +15,9 @@
 | 8 | Documentation | Not started |
 | 9 | Codecritter Port | Not started |
 
+## Recent
+- Condensed CLAUDE.md: trimmed verbose descriptions, aligned formatting, added graphify + UI/UX sections
+
 ## What's Built
 
 ### Phase 0 — Skeleton
