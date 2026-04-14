@@ -4,7 +4,18 @@
 //!   1. Standalone: `zig build run -- path/to/project/` (uses src/bin/main.zig)
 //!   2. Library: import "vexel" in your Zig project, embed the Lua runtime
 //!
-//! See examples/ for Lua project examples.
+//! Library quick start:
+//!   var app = try vexel.App.init(allocator, .{ .project_dir = "." });
+//!   defer app.deinit();
+//!   app.registerModule("mymod", MyZigModule);
+//!   try app.run();
+//!
+//! See examples/fractal-zig/ for a complete hybrid Zig+Lua example.
+
+pub const App = @import("app").App;
+pub const lua_bind = @import("lua_bind");
+pub const EngineContext = @import("lua_api").EngineContext;
+pub const Lua = @import("zlua").Lua;
 
 pub const Renderer = @import("renderer");
 pub const ImageManager = @import("image");

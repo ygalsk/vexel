@@ -78,16 +78,16 @@ pub fn probeTransport(tty_fd: std.posix.fd_t, writer: *IoWriter) TransportMode {
     // Drain any stale input before probing
     drainTty(tty_fd);
 
-    // Probe t=t (temp file) — works with Kitty, likely Ghostty/WezTerm
-    if (probeTmpfile(tty_fd, writer)) {
-        logTransport("using tmpfile (t=t)");
-        return .tmpfile;
-    }
-
-    // Probe t=s (POSIX shared memory) — WezTerm added this explicitly
+    // Probe t=s (POSIX shared memory) — zero-copy, preferred on Kitty
     if (probePosixShm(tty_fd, writer)) {
         logTransport("using posix_shm (t=s)");
         return .posix_shm;
+    }
+
+    // Probe t=t (temp file) — fallback, works with Ghostty/WezTerm
+    if (probeTmpfile(tty_fd, writer)) {
+        logTransport("using tmpfile (t=t)");
+        return .tmpfile;
     }
 
     logTransport("using base64 (t=d)");

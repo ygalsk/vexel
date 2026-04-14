@@ -204,6 +204,39 @@ pub fn build(b: *std.Build) void {
         lua_api_mod.addImport("audio", am);
     }
 
+    const lua_bind_mod = b.createModule(.{
+        .root_source_file = b.path("src/scripting/lua_bind.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &.{
+            .{ .name = "zlua", .module = zlua_dep.module("zlua") },
+            .{ .name = "lua_api", .module = lua_api_mod },
+        },
+    });
+
+    const app_mod = b.createModule(.{
+        .root_source_file = b.path("src/app.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &.{
+            .{ .name = "vaxis", .module = vaxis_dep.module("vaxis") },
+            .{ .name = "zlua", .module = zlua_dep.module("zlua") },
+            .{ .name = "renderer", .module = renderer_mod },
+            .{ .name = "image", .module = image_mod },
+            .{ .name = "input", .module = input_mod },
+            .{ .name = "scene", .module = scene_mod },
+            .{ .name = "lua_engine", .module = lua_engine_mod },
+            .{ .name = "lua_api", .module = lua_api_mod },
+            .{ .name = "lua_bind", .module = lua_bind_mod },
+            .{ .name = "timer", .module = timer_mod },
+            .{ .name = "db", .module = db_mod },
+            .{ .name = "ecs_world", .module = ecs_world_mod },
+        },
+    });
+    if (audio_mod) |am| {
+        app_mod.addImport("audio", am);
+    }
+
     // --- Library module (for downstream Zig projects) ---
     const vexel_mod = b.addModule("vexel", .{
         .root_source_file = b.path("src/root.zig"),
@@ -216,6 +249,9 @@ pub fn build(b: *std.Build) void {
             .{ .name = "scene", .module = scene_mod },
             .{ .name = "lua_engine", .module = lua_engine_mod },
             .{ .name = "lua_api", .module = lua_api_mod },
+            .{ .name = "lua_bind", .module = lua_bind_mod },
+            .{ .name = "app", .module = app_mod },
+            .{ .name = "zlua", .module = zlua_dep.module("zlua") },
             .{ .name = "timer", .module = timer_mod },
             .{ .name = "db", .module = db_mod },
             .{ .name = "ecs_world", .module = ecs_world_mod },
@@ -224,6 +260,10 @@ pub fn build(b: *std.Build) void {
     // Audio is optional — only wire it if enabled
     if (audio_mod) |am| {
         vexel_mod.addImport("audio", am);
+    }
+    // Link C libraries into the module so downstream consumers get them automatically
+    if (zaudio_dep) |dep| {
+        vexel_mod.linkLibrary(dep.artifact("miniaudio"));
     }
 
     // --- Executable ---
@@ -349,4 +389,25 @@ pub fn build(b: *std.Build) void {
         const run_test = b.addRunArtifact(unit_test);
         test_step.dependOn(&run_test.step);
     }
+
+    // --- Example: fractal-zig (library consumer demo) ---
+    const fractal_zig_exe = b.addExecutable(.{
+        .name = "fractal-zig",
+        .root_module = b.createModule(.{
+            .root_source_file = b.path("examples/fractal-zig/main.zig"),
+            .target = target,
+            .optimize = optimize,
+            .imports = &.{
+                .{ .name = "vexel", .module = vexel_mod },
+            },
+        }),
+    });
+    fractal_zig_exe.link_gc_sections = true;
+    b.installArtifact(fractal_zig_exe);
+
+    const run_fractal_zig = b.addRunArtifact(fractal_zig_exe);
+    run_fractal_zig.step.dependOn(b.getInstallStep());
+    run_fractal_zig.setCwd(b.path("examples/fractal-zig"));
+    const run_fractal_zig_step = b.step("run-fractal-zig", "Run the fractal-zig hybrid example");
+    run_fractal_zig_step.dependOn(&run_fractal_zig.step);
 }

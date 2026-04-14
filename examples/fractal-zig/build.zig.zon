@@ -1,0 +1,15 @@
+.{
+    .name = .fractal_zig,
+    .version = "0.1.0",
+    .fingerprint = 0x1e8aee615fb3e57d,
+    .minimum_zig_version = "0.15.2",
+    .dependencies = .{
+        .vexel = .{ .path = "../.." },
+    },
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "main.zig",
+        "main.lua",
+    },
+}
