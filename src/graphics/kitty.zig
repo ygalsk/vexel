@@ -8,24 +8,41 @@ vx: *vaxis.Vaxis,
 writer: *std.io.Writer,
 encode_buf: []u8,
 next_file_id: u32,
-file_idx: u1,
 use_shm: bool,
 
 /// Image IDs for file-based uploads start here to avoid collisions with vaxis's sequential IDs.
 const FILE_ID_BASE: u32 = 0x40000000;
 
-const SHM_PATHS = [2][]const u8{ "/dev/shm/vexel-frame-0", "/dev/shm/vexel-frame-1" };
-const SHM_PATHS_B64 = blk: {
-    var result: [2][std.base64.standard.Encoder.calcSize(SHM_PATHS[0].len)]u8 = undefined;
-    for (SHM_PATHS, 0..) |path, i| {
-        _ = std.base64.standard.Encoder.encode(&result[i], path);
-    }
-    break :blk result;
-};
+const SHM_PREFIX = "/dev/shm/vexel-";
 
 pub fn init(allocator: std.mem.Allocator, vx: *vaxis.Vaxis, writer: *std.io.Writer) !Kitty {
     const initial_size = comptime std.base64.standard.Encoder.calcSize(320 * 180 * 4);
     const buf = try allocator.alloc(u8, initial_size);
+
+    // File-based upload (t=t) requires the terminal to read from the local
+    // filesystem. Currently only Kitty supports this — Ghostty, WezTerm, etc.
+    // support Kitty graphics protocol but only via inline data (t=d).
+    // We check two things:
+    //   1. /dev/shm is writable (filesystem capability — fails on macOS, containers)
+    //   2. Terminal is Kitty (protocol capability — only Kitty reads temp files)
+    const shm_available = blk: {
+        const probe = std.fs.createFileAbsolute("/dev/shm/vexel-probe", .{}) catch break :blk false;
+        probe.close();
+        std.fs.deleteFileAbsolute("/dev/shm/vexel-probe") catch {};
+        break :blk true;
+    };
+    const supports_file_upload = std.posix.getenv("KITTY_WINDOW_ID") != null or
+        std.posix.getenv("KITTY_PID") != null;
+
+    // Clean up any leftover shm files from previous crashes
+    cleanupShmFiles();
+
+    const use_shm = shm_available and supports_file_upload;
+    if (!use_shm) {
+        var diag_buf: [128]u8 = undefined;
+        const msg = std.fmt.bufPrint(&diag_buf, "vexel: shm disabled (shm_available={}, kitty_env={})\n", .{ shm_available, supports_file_upload }) catch "vexel: shm disabled\n";
+        std.fs.File.stderr().writeAll(msg) catch {};
+    }
 
     return .{
         .allocator = allocator,
@@ -33,16 +50,13 @@ pub fn init(allocator: std.mem.Allocator, vx: *vaxis.Vaxis, writer: *std.io.Writ
         .writer = writer,
         .encode_buf = buf,
         .next_file_id = FILE_ID_BASE,
-        .file_idx = 0,
-        .use_shm = std.posix.getenv("KITTY_PID") != null,
+        .use_shm = use_shm,
     };
 }
 
 pub fn deinit(self: *Kitty) void {
     self.allocator.free(self.encode_buf);
-    // Clean up any leftover temp files
-    std.fs.deleteFileAbsolute(SHM_PATHS[0]) catch {};
-    std.fs.deleteFileAbsolute(SHM_PATHS[1]) catch {};
+    cleanupShmFiles();
 }
 
 /// Check if the terminal supports kitty graphics protocol.
@@ -50,36 +64,57 @@ pub fn isSupported(self: *const Kitty) bool {
     return self.vx.caps.kitty_graphics;
 }
 
-/// Upload raw RGBA pixel data. Uses /dev/shm file transfer on Kitty, base64 elsewhere.
+/// Upload raw RGBA pixel data. Tries /dev/shm file transfer first, falls back to base64.
+/// On first shm failure, permanently disables shm to avoid retrying every frame.
 pub fn uploadRgba(self: *Kitty, pixels: []const u8, width: u16, height: u16) !vaxis.Image {
-    if (self.vx.caps.kitty_graphics and self.use_shm) {
-        return self.uploadViaFile(pixels, width, height) catch
-            self.uploadViaBase64(pixels, width, height);
+    if (self.use_shm) {
+        return self.uploadViaFile(pixels, width, height) catch |err| {
+            self.use_shm = false; // terminal doesn't support t=t — stop trying
+            var buf: [128]u8 = undefined;
+            const msg = std.fmt.bufPrint(&buf, "vexel: shm upload failed ({}), falling back to base64\n", .{err}) catch "vexel: shm upload failed\n";
+            std.fs.File.stderr().writeAll(msg) catch {};
+            return self.uploadViaBase64(pixels, width, height);
+        };
     }
     return self.uploadViaBase64(pixels, width, height);
 }
 
 /// File-based upload: write pixels to /dev/shm (RAM-backed), send ~80 byte escape.
-/// Double-buffered to avoid overwriting data kitty is still reading.
+/// Each upload gets a unique filename (using the image ID) so multiple uploads
+/// per frame don't race — the terminal may batch-read from the pty.
 fn uploadViaFile(self: *Kitty, pixels: []const u8, width: u16, height: u16) !vaxis.Image {
-    const idx = self.file_idx;
-    self.file_idx +%= 1;
-
-    const path = SHM_PATHS[idx];
-    const file = std.fs.createFileAbsolute(path, .{}) catch return error.Unexpected;
-    defer file.close();
-    file.writeAll(pixels) catch return error.Unexpected;
-
     const id = self.next_file_id;
     self.next_file_id +%= 1;
 
-    const encoded_path = &SHM_PATHS_B64[idx];
+    // Build path: /dev/shm/vexel-{id}
+    var path_buf: [48]u8 = undefined;
+    const path = std.fmt.bufPrint(&path_buf, SHM_PREFIX ++ "{d}", .{id}) catch {
+        logShm("bufPrint failed");
+        return error.Unexpected;
+    };
+
+    const file = std.fs.createFileAbsolute(path, .{}) catch {
+        logShm("createFile failed");
+        return error.Unexpected;
+    };
+    defer file.close();
+    file.writeAll(pixels) catch {
+        logShm("writeAll failed");
+        return error.Unexpected;
+    };
+
+    // Base64-encode the path dynamically
+    var b64_buf: [68]u8 = undefined; // 48 bytes -> 64 base64 chars
+    const encoded_path = std.base64.standard.Encoder.encode(&b64_buf, path);
 
     // Kitty protocol: f=32 (RGBA), t=t (temp file — kitty deletes after reading)
     self.writer.print(
         "\x1b_Gf=32,s={d},v={d},i={d},t=t,S={d};{s}\x1b\\",
         .{ width, height, id, pixels.len, encoded_path },
-    ) catch return error.Unexpected;
+    ) catch {
+        logShm("writer.print failed");
+        return error.Unexpected;
+    };
     self.writer.flush() catch {};
 
     return .{
@@ -87,6 +122,12 @@ fn uploadViaFile(self: *Kitty, pixels: []const u8, width: u16, height: u16) !vax
         .width = width,
         .height = height,
     };
+}
+
+fn logShm(msg: []const u8) void {
+    var buf: [128]u8 = undefined;
+    const s = std.fmt.bufPrint(&buf, "vexel: shm: {s}\n", .{msg}) catch return;
+    std.fs.File.stderr().writeAll(s) catch {};
 }
 
 /// Base64 upload fallback for terminals without file-based transmission.
@@ -108,6 +149,18 @@ pub fn freeImage(self: *Kitty, id: u32) void {
         self.writer.flush() catch {};
     } else {
         self.vx.freeImage(self.writer, id);
+    }
+}
+
+/// Remove any leftover /dev/shm/vexel-* files from previous runs or crashes.
+fn cleanupShmFiles() void {
+    var dir = std.fs.openDirAbsolute("/dev/shm", .{ .iterate = true }) catch return;
+    defer dir.close();
+    var it = dir.iterate();
+    while (it.next() catch null) |entry| {
+        if (std.mem.startsWith(u8, entry.name, "vexel-")) {
+            dir.deleteFile(entry.name) catch {};
+        }
     }
 }
 

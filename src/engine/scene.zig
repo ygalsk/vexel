@@ -256,7 +256,7 @@ pub fn draw(self: *SceneManager) void {
 
         // Blend from_buf (outgoing snapshot) + to_buf (incoming) into composite_buf
         blendTransition(compositor.composite_buf, t.from_buf, t.to_buf, t.kind, progress, compositor.width, compositor.height);
-        compositor.markAllDirty();
+        compositor.setCompositeOverride();
         return;
     }
 

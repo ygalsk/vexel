@@ -16,6 +16,8 @@
 | 9 | ~~Example App Port~~ | Extracted to separate repo |
 
 ## Recent
+- Simplify: compositor — extracted clearBBox/rotateBBoxes helpers (eliminated 3× duplicate loops), merged flattenLayers into single-pass, added setCompositeOverride method to encapsulate transition flag, consolidated logShm to single syscall, removed dead layerCompZ.
+- Compositor perf: dirty bounding box per layer (memset only drawn region), premultiplied alpha + SIMD 4-pixel blend (flattenLayers), capability-based shm detection with fallback. See COMPOSITOR_PERF.md.
 - Simplify: kitty.zig — cached KITTY_PID env check (was getenv every frame), comptime-precomputed shm path base64 encodings, replaced cwd-relative absolute paths with proper deleteFileAbsolute/createFileAbsolute, removed unused posix import. Renamed "game" terminology to "project" throughout docs/code/examples, renamed quit_game→quit in Lua API.
 - Compositor: file-based Kitty upload via /dev/shm — upload went from 35% → 0% CPU on Kitty terminal at 1080×720. Ghostty falls back to base64. See COMPOSITOR_PERF.md.
 - Simplify: consolidated Lua API docs into single source of truth (.claude/rules/vexel-engine.md), deleted registry.lua in favor of frame-count-based ANIM_TEMPLATES, migrated battle_screen sprites from manual animation to ECS, fixed placeholder anim speed=0 bug, eliminated dead on_complete closures for idle anims

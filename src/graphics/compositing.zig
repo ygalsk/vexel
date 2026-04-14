@@ -24,28 +24,89 @@ pub const Color = struct {
         };
     }
 
-    /// Pack color into a pixel buffer at the given offset.
+    /// Pack color into a pixel buffer at the given offset (premultiplied alpha).
     pub inline fn write(color: Color, pixels: []u8, offset: usize) void {
-        pixels[offset] = color.r;
-        pixels[offset + 1] = color.g;
-        pixels[offset + 2] = color.b;
-        pixels[offset + 3] = color.a;
+        if (color.a == 255) {
+            pixels[offset] = color.r;
+            pixels[offset + 1] = color.g;
+            pixels[offset + 2] = color.b;
+            pixels[offset + 3] = 255;
+        } else {
+            const a: u16 = color.a;
+            pixels[offset] = @intCast((@as(u16, color.r) * a + 127) / 255);
+            pixels[offset + 1] = @intCast((@as(u16, color.g) * a + 127) / 255);
+            pixels[offset + 2] = @intCast((@as(u16, color.b) * a + 127) / 255);
+            pixels[offset + 3] = color.a;
+        }
     }
 
-    /// Pack RGBA into a u32 in memory-layout order (R at byte 0).
+    /// Pack RGBA into a u32 in memory-layout order (R at byte 0, premultiplied alpha).
     pub inline fn pack(color: Color) u32 {
-        return @as(u32, color.r) |
-            (@as(u32, color.g) << 8) |
-            (@as(u32, color.b) << 16) |
-            (@as(u32, color.a) << 24);
+        if (color.a == 255) {
+            return @as(u32, color.r) |
+                (@as(u32, color.g) << 8) |
+                (@as(u32, color.b) << 16) |
+                (@as(u32, 255) << 24);
+        } else {
+            const a: u16 = color.a;
+            const r: u8 = @intCast((@as(u16, color.r) * a + 127) / 255);
+            const g: u8 = @intCast((@as(u16, color.g) * a + 127) / 255);
+            const b: u8 = @intCast((@as(u16, color.b) * a + 127) / 255);
+            return @as(u32, r) |
+                (@as(u32, g) << 8) |
+                (@as(u32, b) << 16) |
+                (@as(u32, color.a) << 24);
+        }
     }
 };
+
+pub const BBox = struct {
+    min_x: u16,
+    min_y: u16,
+    max_x: u16, // exclusive
+    max_y: u16, // exclusive
+
+    const EMPTY = BBox{ .min_x = std.math.maxInt(u16), .min_y = std.math.maxInt(u16), .max_x = 0, .max_y = 0 };
+
+    fn isEmpty(self: BBox) bool {
+        return self.min_x >= self.max_x or self.min_y >= self.max_y;
+    }
+
+    fn expand(self: *BBox, x0: u16, y0: u16, x1: u16, y1: u16) void {
+        self.min_x = @min(self.min_x, x0);
+        self.min_y = @min(self.min_y, y0);
+        self.max_x = @max(self.max_x, x1);
+        self.max_y = @max(self.max_y, y1);
+    }
+
+    fn unionWith(self: BBox, other: BBox) BBox {
+        if (self.isEmpty()) return other;
+        if (other.isEmpty()) return self;
+        return .{
+            .min_x = @min(self.min_x, other.min_x),
+            .min_y = @min(self.min_y, other.min_y),
+            .max_x = @max(self.max_x, other.max_x),
+            .max_y = @max(self.max_y, other.max_y),
+        };
+    }
+};
+
+/// Z-index base for compositor layers and sprites. Interleaved so that
+/// compositor layer N is behind sprites on layer N, which is behind layer N+1.
+const Z_BASE: i32 = -20;
+
+/// Z-index for sprites placed on layer i (above compositor pixels, below next layer).
+pub fn layerSpriteZ(layer: u8) i32 {
+    return Z_BASE + @as(i32, layer) * 2 + 1;
+}
 
 const Layer = struct {
     pixels: []u8,
     dirty: bool,
     has_content: bool,
     visible: bool,
+    drawn_bbox: BBox, // region drawn this frame
+    prev_bbox: BBox, // region drawn last frame (cleared next frame)
 };
 
 const Compositor = @This();
@@ -60,6 +121,7 @@ active_layer: u8,
 composite_buf: []u8,
 composite_image: ?vaxis.Image,
 pending_free_id: ?u32,
+use_composite_override: bool, // when true, flush() uploads composite_buf as-is (transitions)
 any_dirty: bool,
 
 pub fn init(allocator: std.mem.Allocator, kitty: *Kitty, vx: *vaxis.Vaxis) !Compositor {
@@ -76,6 +138,7 @@ pub fn init(allocator: std.mem.Allocator, kitty: *Kitty, vx: *vaxis.Vaxis) !Comp
         .composite_buf = try allocator.alloc(u8, buf_size),
         .composite_image = null,
         .pending_free_id = null,
+        .use_composite_override = false,
         .any_dirty = false,
     };
     @memset(comp.composite_buf, 0);
@@ -86,6 +149,8 @@ pub fn init(allocator: std.mem.Allocator, kitty: *Kitty, vx: *vaxis.Vaxis) !Comp
         layer.dirty = false;
         layer.has_content = false;
         layer.visible = true;
+        layer.drawn_bbox = BBox.EMPTY;
+        layer.prev_bbox = BBox.EMPTY;
     }
 
     return comp;
@@ -110,6 +175,8 @@ pub fn setResolution(self: *Compositor, w: u16, h: u16) !void {
         @memset(layer.pixels, 0);
         layer.dirty = true;
         layer.has_content = false;
+        layer.drawn_bbox = BBox.EMPTY;
+        layer.prev_bbox = BBox.EMPTY;
     }
     self.allocator.free(self.composite_buf);
     self.composite_buf = try self.allocator.alloc(u8, buf_size);
@@ -145,7 +212,9 @@ pub fn setPixel(self: *Compositor, x: i32, y: i32, color: Color) void {
     const layer = &self.layers[self.active_layer];
     const offset = (uy * @as(usize, self.width) + ux) * 4;
     color.write(layer.pixels, offset);
-    self.markLayerDirty(layer);
+    const px: u16 = @intCast(ux);
+    const py: u16 = @intCast(uy);
+    self.markLayerDirty(layer, px, py, px + 1, py + 1);
 }
 
 /// Blit a flat array of packed u32 RGBA colors onto the active layer at (x, y).
@@ -181,7 +250,7 @@ pub fn blitBuffer(self: *Compositor, x: i32, y: i32, w: i32, h: i32, colors: []c
         const aligned: []align(@alignOf(u32)) u8 = @alignCast(dst_bytes);
         @memcpy(std.mem.bytesAsSlice(u32, aligned), src_slice);
     }
-    self.markLayerDirty(layer);
+    self.markLayerDirty(layer, @intCast(x0), @intCast(y0), @intCast(x1), @intCast(y1));
 }
 
 pub fn drawRect(self: *Compositor, x: i32, y: i32, w: i32, h: i32, color: Color) void {
@@ -203,7 +272,7 @@ pub fn drawRect(self: *Compositor, x: i32, y: i32, w: i32, h: i32, color: Color)
         const aligned: []align(@alignOf(u32)) u8 = @alignCast(row_bytes);
         @memset(std.mem.bytesAsSlice(u32, aligned), color_u32);
     }
-    self.markLayerDirty(layer);
+    self.markLayerDirty(layer, @intCast(x0), @intCast(y0), @intCast(x1), @intCast(y1));
 }
 
 /// Line using Bresenham's algorithm.
@@ -218,15 +287,21 @@ pub fn drawLine(self: *Compositor, x1: i32, y1: i32, x2: i32, y2: i32, color: Co
     var err = dx + dy;
 
     const layer = &self.layers[self.active_layer];
-    var drew = false;
+    var bmin_x: u16 = std.math.maxInt(u16);
+    var bmin_y: u16 = std.math.maxInt(u16);
+    var bmax_x: u16 = 0;
+    var bmax_y: u16 = 0;
 
     while (true) {
         if (cx >= 0 and cy >= 0 and cx < self.width and cy < self.height) {
-            const ux: usize = @intCast(cx);
-            const uy: usize = @intCast(cy);
-            const offset = (uy * @as(usize, self.width) + ux) * 4;
+            const ux: u16 = @intCast(cx);
+            const uy: u16 = @intCast(cy);
+            const offset = (@as(usize, uy) * @as(usize, self.width) + @as(usize, ux)) * 4;
             color.write(layer.pixels, offset);
-            drew = true;
+            bmin_x = @min(bmin_x, ux);
+            bmin_y = @min(bmin_y, uy);
+            bmax_x = @max(bmax_x, ux + 1);
+            bmax_y = @max(bmax_y, uy + 1);
         }
         if (cx == x2 and cy == y2) break;
         const e2 = err * 2;
@@ -240,7 +315,7 @@ pub fn drawLine(self: *Compositor, x1: i32, y1: i32, x2: i32, y2: i32, color: Co
         }
     }
 
-    if (drew) self.markLayerDirty(layer);
+    if (bmin_x < bmax_x) self.markLayerDirty(layer, bmin_x, bmin_y, bmax_x, bmax_y);
 }
 
 /// Filled circle using midpoint algorithm with horizontal scanline fill.
@@ -249,27 +324,35 @@ pub fn drawCircle(self: *Compositor, cx: i32, cy: i32, r: i32, color: Color) voi
 
     const layer = &self.layers[self.active_layer];
     const color_u32 = color.pack();
-    var x: i32 = r;
-    var y: i32 = 0;
+    var xi: i32 = r;
+    var yi: i32 = 0;
     var err: i32 = 1 - r;
+
+    // Compute clipped bounding box for the circle
+    const bx0: u16 = @intCast(@max(0, cx - r));
+    const by0: u16 = @intCast(@max(0, cy - r));
+    const bx1: u16 = @intCast(@min(@as(i32, self.width), cx + r + 1));
+    const by1: u16 = @intCast(@min(@as(i32, self.height), cy + r + 1));
+    if (bx0 >= bx1 or by0 >= by1) return;
+
     var drew = false;
 
-    while (x >= y) {
-        drew = drawHLineRaw(layer, self.width, self.height, cx - x, cx + x, cy + y, color_u32) or drew;
-        drew = drawHLineRaw(layer, self.width, self.height, cx - x, cx + x, cy - y, color_u32) or drew;
-        drew = drawHLineRaw(layer, self.width, self.height, cx - y, cx + y, cy + x, color_u32) or drew;
-        drew = drawHLineRaw(layer, self.width, self.height, cx - y, cx + y, cy - x, color_u32) or drew;
+    while (xi >= yi) {
+        drew = drawHLineRaw(layer, self.width, self.height, cx - xi, cx + xi, cy + yi, color_u32) or drew;
+        drew = drawHLineRaw(layer, self.width, self.height, cx - xi, cx + xi, cy - yi, color_u32) or drew;
+        drew = drawHLineRaw(layer, self.width, self.height, cx - yi, cx + yi, cy + xi, color_u32) or drew;
+        drew = drawHLineRaw(layer, self.width, self.height, cx - yi, cx + yi, cy - xi, color_u32) or drew;
 
-        y += 1;
+        yi += 1;
         if (err <= 0) {
-            err += 2 * y + 1;
+            err += 2 * yi + 1;
         } else {
-            x -= 1;
-            err += 2 * (y - x) + 1;
+            xi -= 1;
+            err += 2 * (yi - xi) + 1;
         }
     }
 
-    if (drew) self.markLayerDirty(layer);
+    if (drew) self.markLayerDirty(layer, bx0, by0, bx1, by1);
 }
 
 /// Write a horizontal line of pixels to a layer without marking dirty. Returns true if any pixels were written.
@@ -350,31 +433,54 @@ pub fn blitImage(
             blendPixel(layer.pixels, dst_off, src, src_off);
         }
     }
-    self.markLayerDirty(layer);
+    self.markLayerDirty(layer, @intCast(vis_x0), @intCast(vis_y0), @intCast(vis_x1), @intCast(vis_y1));
 }
 
 pub fn clearLayer(self: *Compositor) void {
     const layer = &self.layers[self.active_layer];
-    @memset(layer.pixels, 0);
+    clearBBox(layer, self.width);
     layer.dirty = true;
     layer.has_content = false;
+    layer.drawn_bbox = BBox.EMPTY;
     self.any_dirty = true;
 }
 
 pub fn clearAll(self: *Compositor) void {
     for (&self.layers) |*layer| {
         if (!layer.has_content) continue;
-        @memset(layer.pixels, 0);
+        clearBBox(layer, self.width);
         layer.dirty = true;
         layer.has_content = false;
+        layer.drawn_bbox = BBox.EMPTY;
         self.any_dirty = true;
     }
 }
 
-/// Mark all layers as dirty (e.g., after terminal resize).
+/// Zero pixels within a layer's prev_bbox (the region drawn last frame).
+fn clearBBox(layer: *Layer, width: u16) void {
+    const bbox = layer.prev_bbox;
+    if (bbox.isEmpty()) return;
+    const stride = @as(usize, width) * 4;
+    var y: usize = bbox.min_y;
+    while (y < bbox.max_y) : (y += 1) {
+        const row_start = y * stride;
+        @memset(layer.pixels[row_start + @as(usize, bbox.min_x) * 4 .. row_start + @as(usize, bbox.max_x) * 4], 0);
+    }
+}
+
+/// Tell flush() to upload composite_buf as-is, skipping flattenLayers.
+/// Used by scene transitions that blend directly into composite_buf.
+pub fn setCompositeOverride(self: *Compositor) void {
+    self.use_composite_override = true;
+}
+
+/// Mark all layers as dirty (e.g., after terminal resize or scene transition).
 pub fn markAllDirty(self: *Compositor) void {
+    const full = BBox{ .min_x = 0, .min_y = 0, .max_x = self.width, .max_y = self.height };
     for (&self.layers) |*layer| {
         layer.dirty = true;
+        layer.drawn_bbox = full;
+        layer.prev_bbox = full;
     }
     self.any_dirty = true;
 }
@@ -387,6 +493,21 @@ pub fn flush(self: *Compositor) !void {
     if (self.pending_free_id) |old_id| {
         self.kitty.freeImage(old_id);
         self.pending_free_id = null;
+    }
+
+    // Transition path: composite_buf already has the blended result from scene.zig.
+    // Upload it directly — don't re-flatten (that would overwrite the blend).
+    if (self.use_composite_override) {
+        const new_img = try self.kitty.uploadRgba(self.composite_buf, self.width, self.height);
+        const win = self.vx.window();
+        new_img.draw(win, .{ .z_index = -10, .scale = .fill }) catch {};
+        if (self.composite_image) |old| {
+            self.pending_free_id = old.id;
+        }
+        self.composite_image = new_img;
+        self.rotateBBoxes();
+        self.use_composite_override = false;
+        return;
     }
 
     // Check if any layer with actual content changed
@@ -410,10 +531,7 @@ pub fn flush(self: *Compositor) !void {
             }) catch {};
         }
         if (self.any_dirty) {
-            for (&self.layers) |*layer| {
-                layer.dirty = false;
-            }
-            self.any_dirty = false;
+            self.rotateBBoxes();
         }
         return;
     }
@@ -434,12 +552,7 @@ pub fn flush(self: *Compositor) !void {
         self.pending_free_id = old.id;
     }
     self.composite_image = new_img;
-
-    // Clear dirty flags
-    for (&self.layers) |*layer| {
-        layer.dirty = false;
-    }
-    self.any_dirty = false;
+    self.rotateBBoxes();
 }
 
 /// Flatten all layers into composite_buf without uploading to the terminal.
@@ -448,29 +561,89 @@ pub fn compositeOnly(self: *Compositor) void {
     self.flattenLayers();
 }
 
-fn flattenLayers(self: *Compositor) void {
-    const byte_count = @as(usize, self.width) * @as(usize, self.height) * 4;
+/// Rotate drawn_bbox → prev_bbox and clear dirty flags for all layers.
+fn rotateBBoxes(self: *Compositor) void {
+    for (&self.layers) |*layer| {
+        layer.prev_bbox = layer.drawn_bbox;
+        layer.drawn_bbox = BBox.EMPTY;
+        layer.dirty = false;
+    }
+    self.any_dirty = false;
+}
 
+fn flattenLayers(self: *Compositor) void {
+    // Compute the union of all visible layers' bboxes (drawn + prev to catch clears)
+    var region = BBox.EMPTY;
+    for (&self.layers) |*layer| {
+        if (!layer.visible and layer.prev_bbox.isEmpty()) continue;
+        if (layer.has_content) {
+            region = region.unionWith(layer.drawn_bbox);
+        }
+        // Include prev_bbox so cleared regions get recomposited
+        region = region.unionWith(layer.prev_bbox);
+    }
+
+    // Clamp to canvas
+    region.min_x = @min(region.min_x, self.width);
+    region.min_y = @min(region.min_y, self.height);
+    region.max_x = @min(region.max_x, self.width);
+    region.max_y = @min(region.max_y, self.height);
+
+    if (region.isEmpty()) {
+        // Nothing visible at all
+        const byte_count = @as(usize, self.width) * @as(usize, self.height) * 4;
+        @memset(self.composite_buf[0..byte_count], 0);
+        return;
+    }
+
+    const stride: usize = @as(usize, self.width) * 4;
+    const rx0: usize = region.min_x;
+    const rx1: usize = region.max_x;
+
+    const row_bytes = (rx1 - rx0) * 4;
+
+    // Single pass: memcpy first visible layer, SIMD-blend subsequent ones
     var first_copied = false;
     for (&self.layers) |*layer| {
-        if (!layer.visible) continue;
-        if (!layer.has_content) continue;
+        if (!layer.visible or !layer.has_content) continue;
 
         if (!first_copied) {
-            @memcpy(self.composite_buf[0..byte_count], layer.pixels[0..byte_count]);
+            var y: usize = region.min_y;
+            while (y < region.max_y) : (y += 1) {
+                const off = y * stride + rx0 * 4;
+                @memcpy(self.composite_buf[off..][0..row_bytes], layer.pixels[off..][0..row_bytes]);
+            }
             first_copied = true;
-        } else {
-            const pixel_count = byte_count / 4;
-            var i: usize = 0;
-            while (i < pixel_count) : (i += 1) {
-                const off = i * 4;
+            continue;
+        }
+
+        var y: usize = region.min_y;
+        while (y < region.max_y) : (y += 1) {
+            const row_start = y * stride + rx0 * 4;
+            const row_pixels = rx1 - rx0;
+            const simd_end = (row_pixels / 4) * 4;
+
+            var px: usize = 0;
+            while (px < simd_end) : (px += 4) {
+                const off = row_start + px * 4;
+                blendPixels4(
+                    @ptrCast(self.composite_buf[off..][0..16]),
+                    @ptrCast(layer.pixels[off..][0..16]),
+                );
+            }
+
+            while (px < row_pixels) : (px += 1) {
+                const off = row_start + px * 4;
                 blendPixel(self.composite_buf, off, layer.pixels, off);
             }
         }
     }
 
     if (!first_copied) {
-        @memset(self.composite_buf, 0);
+        var y: usize = region.min_y;
+        while (y < region.max_y) : (y += 1) {
+            @memset(self.composite_buf[y * stride + rx0 * 4 ..][0..row_bytes], 0);
+        }
     }
 }
 
@@ -491,7 +664,32 @@ inline fn div255(x: u16) u16 {
     return @intCast((@as(u32, x) + 1 + (@as(u32, x) >> 8)) >> 8);
 }
 
-/// Alpha-blend a single pixel (src-over). Both offsets must be valid.
+/// Premultiplied src-over blend of 4 RGBA pixels at once using SIMD.
+/// Maps to SSE2 (128-bit) on x86-64 automatically via @Vector.
+inline fn blendPixels4(dst: *[16]u8, src: *const [16]u8) void {
+    const ones: @Vector(16, u16) = @splat(1);
+    const all255: @Vector(16, u16) = @splat(255);
+    const shift8: @Vector(16, u4) = @splat(8);
+
+    const src_v: @Vector(16, u16) = @as(@Vector(16, u8), src.*);
+    const dst_v: @Vector(16, u16) = @as(@Vector(16, u8), dst.*);
+
+    // Broadcast each pixel's alpha to all 4 channels: [R,G,B,A] -> [A,A,A,A]
+    const alpha_idx = comptime @Vector(16, i32){ 3, 3, 3, 3, 7, 7, 7, 7, 11, 11, 11, 11, 15, 15, 15, 15 };
+    const src_alpha = @shuffle(u16, src_v, undefined, alpha_idx);
+    const inv_alpha = all255 - src_alpha;
+
+    // dst = src + dst * (255 - src_a) / 255
+    const product = dst_v * inv_alpha;
+    const divided = (product +% ones +% (product >> shift8)) >> shift8;
+    const result = src_v + divided;
+
+    const narrow: @Vector(16, u8) = @truncate(result);
+    dst.* = narrow;
+}
+
+/// Alpha-blend a single pixel (premultiplied src-over). Both offsets must be valid.
+/// Formula: dst = src + dst * (1 - src_a) / 255. No division by out_a needed.
 inline fn blendPixel(dst: []u8, dst_off: usize, src: []const u8, src_off: usize) void {
     const sa = src[src_off + 3];
     if (sa == 0) return;
@@ -502,22 +700,18 @@ inline fn blendPixel(dst: []u8, dst_off: usize, src: []const u8, src_off: usize)
         dst[dst_off + 2] = src[src_off + 2];
         dst[dst_off + 3] = 255;
     } else {
-        const s_a: u16 = sa;
-        const d_a: u16 = dst[dst_off + 3];
-        const inv_sa: u16 = 255 - s_a;
-        const d_contrib = div255(d_a * inv_sa);
-        const out_a = s_a + d_contrib;
-        if (out_a == 0) return;
-        dst[dst_off] = @intCast((@as(u16, src[src_off]) * s_a + @as(u16, dst[dst_off]) * d_contrib) / out_a);
-        dst[dst_off + 1] = @intCast((@as(u16, src[src_off + 1]) * s_a + @as(u16, dst[dst_off + 1]) * d_contrib) / out_a);
-        dst[dst_off + 2] = @intCast((@as(u16, src[src_off + 2]) * s_a + @as(u16, dst[dst_off + 2]) * d_contrib) / out_a);
-        dst[dst_off + 3] = @intCast(out_a);
+        const inv_sa: u16 = 255 - @as(u16, sa);
+        dst[dst_off] = @intCast(@as(u16, src[src_off]) + div255(@as(u16, dst[dst_off]) * inv_sa));
+        dst[dst_off + 1] = @intCast(@as(u16, src[src_off + 1]) + div255(@as(u16, dst[dst_off + 1]) * inv_sa));
+        dst[dst_off + 2] = @intCast(@as(u16, src[src_off + 2]) + div255(@as(u16, dst[dst_off + 2]) * inv_sa));
+        dst[dst_off + 3] = @intCast(@as(u16, sa) + div255(@as(u16, dst[dst_off + 3]) * inv_sa));
     }
 }
 
-fn markLayerDirty(self: *Compositor, layer: *Layer) void {
+fn markLayerDirty(self: *Compositor, layer: *Layer, x0: u16, y0: u16, x1: u16, y1: u16) void {
     layer.dirty = true;
     layer.has_content = true;
+    layer.drawn_bbox.expand(x0, y0, x1, y1);
     self.any_dirty = true;
 }
 
