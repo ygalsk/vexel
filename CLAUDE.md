@@ -11,7 +11,7 @@ zig build test                   # unit tests
 ## Design Philosophy — NON-NEGOTIABLE
 - Ousterhout: deep modules, simple interfaces, strategic not tactical programming
 - Aristotelian decomposition: genus/species relationships, reason from first principles
-- Before designing a subsystem: research how LOVE, Raylib, SDL handle the same problem
+- Before designing a subsystem: research how established runtimes (SDL, notcurses, Electron, LÖVE) handle the same problem
 - Prefer fewer, deeper modules
 
 ## Tone — NON-NEGOTIABLE

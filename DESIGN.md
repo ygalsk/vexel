@@ -1,10 +1,10 @@
 # Vexel — Terminal Graphics Runtime
 
-A general-purpose terminal graphics runtime. Zig core handles rendering, input, audio, and protocol negotiation. Lua 5.4 is the scripting language. Projects are directories of Lua scripts + assets.
+Terminal graphics runtime — write Lua, not C. Pixel-perfect rendering, layered compositing, audio, persistence, and an entity system — all in the terminal, all from Lua 5.4.
 
-**Backend: Kitty protocol only.** Pushes kitty graphics protocol and Unicode sub-cell rendering as far as they can go — pixel-perfect graphics, layered compositing, real audio.
+Zig core handles rendering, input, audio, and protocol negotiation. Projects are directories of Lua scripts + assets. Games, dashboards, visualizations, interactive tools — if it runs in a terminal and needs pixels, Vexel runs it.
 
-Think LÖVE, but for the terminal.
+**Backend: Kitty protocol only.** Pushes kitty graphics protocol as far as it can go — pixel-perfect graphics, 8-layer compositing, real audio.
 
 ## Distribution Model
 
@@ -44,7 +44,4 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for module structure and rendering pipeli
 
 ## Open Questions
 
-1. **Coordinate system**: fixed logical pixel grid (e.g., 320×180) scaled to terminal, or dynamic based on terminal dimensions?
-2. **Tilemap format**: Tiled JSON? Custom Lua tables? Both?
-3. **ECS or no**: provide entity-component system, or keep simple (game manages objects in Lua)?
-4. **Networking**: multiplayer / networked play? (probably not for v1)
+1. **Networking**: networked applications? (probably not for v1)

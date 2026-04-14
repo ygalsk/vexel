@@ -1,6 +1,6 @@
-# Vexel Engine — Lua API Reference
+# Vexel — Lua API Reference
 
-Terminal graphics runtime: Zig 0.15.2 + Lua 5.4, Kitty graphics protocol, 60fps.
+Terminal graphics runtime. Write Lua, not C. Zig 0.15.2 + Lua 5.4, Kitty graphics protocol, 60fps.
 
 ## Architecture
 
@@ -66,7 +66,7 @@ local count = engine.graphics.get_frame_count(sheet)
 
 ## Graphics — ECS Sprites (Retained Mode)
 
-**Use for objects that persist across frames** (characters, projectiles, pickups, widgets).
+**Use for objects that persist across frames** (characters, indicators, widgets, animated elements).
 The engine auto-advances animations and auto-renders sprites by layer each frame.
 You do NOT call draw_sprite in draw() for ECS sprites — the engine handles it.
 
@@ -134,9 +134,9 @@ end
 
 | Use case | API |
 |----------|-----|
-| Characters, enemies, projectiles, pickups | ECS sprites (auto-animated, auto-rendered) |
-| UI elements (HP bars, menus, backgrounds) | `pixel.rect` + `draw_text` (manual in draw()) |
-| Particle effects, one-frame flashes | Immediate `draw_sprite` |
+| Persistent animated objects (characters, icons, widgets) | ECS sprites (auto-animated, auto-rendered) |
+| Drawn UI (bars, menus, backgrounds) | `pixel.rect` + `draw_text` (manual in draw()) |
+| Transient effects, one-frame draws | Immediate `draw_sprite` |
 | Tilemaps | `draw_tilemap` (see below) |
 
 ## Graphics — Tilemap

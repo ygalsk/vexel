@@ -61,11 +61,11 @@ Kitty Graphics Protocol
 │         Screen Buffer           │
 │  (pixel buffer, kitty-backed)   │
 ├─────────────────────────────────┤
-│  Layer 0: Background tilemap    │
-│  Layer 1: Sprites / entities    │
-│  Layer 2: Particles / effects   │
-│  Layer 3: UI / HUD              │
-│  Layer 4: Overlay / transitions │
+│  Layer 0: Background            │
+│  Layer 1: Content               │
+│  Layer 2: Detail / effects      │
+│  Layer 3: Interface             │
+│  Layer 4: Overlay               │
 └─────────────────────────────────┘
 ```
 

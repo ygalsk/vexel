@@ -13,7 +13,7 @@
 | 6 | Robustness | Not started |
 | 7 | Entity Component System | Done |
 | 8 | Documentation | Not started |
-| 9 | ~~Codecritter Port~~ | Extracted to separate repo |
+| 9 | ~~Example App Port~~ | Extracted to separate repo |
 
 ## Recent
 - Simplify: kitty.zig — cached KITTY_PID env check (was getenv every frame), comptime-precomputed shm path base64 encodings, replaced cwd-relative absolute paths with proper deleteFileAbsolute/createFileAbsolute, removed unused posix import. Renamed "game" terminology to "project" throughout docs/code/examples, renamed quit_game→quit in Lua API.
