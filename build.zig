@@ -243,24 +243,11 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
         .imports = &.{
-            .{ .name = "renderer", .module = renderer_mod },
-            .{ .name = "image", .module = image_mod },
-            .{ .name = "input", .module = input_mod },
-            .{ .name = "scene", .module = scene_mod },
-            .{ .name = "lua_engine", .module = lua_engine_mod },
-            .{ .name = "lua_api", .module = lua_api_mod },
-            .{ .name = "lua_bind", .module = lua_bind_mod },
             .{ .name = "app", .module = app_mod },
+            .{ .name = "lua_api", .module = lua_api_mod },
             .{ .name = "zlua", .module = zlua_dep.module("zlua") },
-            .{ .name = "timer", .module = timer_mod },
-            .{ .name = "db", .module = db_mod },
-            .{ .name = "ecs_world", .module = ecs_world_mod },
         },
     });
-    // Audio is optional — only wire it if enabled
-    if (audio_mod) |am| {
-        vexel_mod.addImport("audio", am);
-    }
     // Link C libraries into the module so downstream consumers get them automatically
     if (zaudio_dep) |dep| {
         vexel_mod.linkLibrary(dep.artifact("miniaudio"));
@@ -275,23 +262,10 @@ pub fn build(b: *std.Build) void {
             .optimize = optimize,
             .imports = &.{
                 .{ .name = "vaxis", .module = vaxis_dep.module("vaxis") },
-                .{ .name = "zlua", .module = zlua_dep.module("zlua") },
-                .{ .name = "zqlite", .module = zqlite_dep.module("zqlite") },
-                .{ .name = "renderer", .module = renderer_mod },
-                .{ .name = "image", .module = image_mod },
-                .{ .name = "input", .module = input_mod },
-                .{ .name = "scene", .module = scene_mod },
-                .{ .name = "lua_engine", .module = lua_engine_mod },
-                .{ .name = "lua_api", .module = lua_api_mod },
-                .{ .name = "timer", .module = timer_mod },
-                .{ .name = "db", .module = db_mod },
-                .{ .name = "ecs_world", .module = ecs_world_mod },
+                .{ .name = "app", .module = app_mod },
             },
         }),
     });
-    if (audio_mod) |am| {
-        exe.root_module.addImport("audio", am);
-    }
     exe.link_gc_sections = true;
     if (zaudio_dep) |dep| {
         exe.linkLibrary(dep.artifact("miniaudio"));
