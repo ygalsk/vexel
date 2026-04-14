@@ -96,23 +96,32 @@ local phase_idx = 1
 local phase_time = 0
 local PHASE_DURATION = 5.0
 
--- Dissolve particles (one per block)
+-- Dissolve particles (multiple per block for denser effect)
 local particles = nil
+local PARTICLES_PER_BLOCK = 5
 
 local function init_particles()
 	particles = {}
-	for i, b in ipairs(blocks) do
-		local angle = math.random() * 6.2832
-		local dist = 80 + math.random() * 200
-		particles[i] = {
-			x = b.x,
-			y = b.y,
-			home_x = b.x,
-			home_y = b.y,
-			target_x = b.x + cos(angle) * dist,
-			target_y = b.y + sin(angle) * dist,
-			speed = 0.5 + math.random() * 1.5,
-		}
+	local idx = 0
+	for _, b in ipairs(blocks) do
+		for p = 1, PARTICLES_PER_BLOCK do
+			idx = idx + 1
+			local angle = math.random() * 6.2832
+			local dist = 60 + math.random() * 280
+			-- First particle per block is full-size, extras are smaller fragments
+			local size = (p == 1) and SCALE or (2 + math.random() * (SCALE - 4))
+			particles[idx] = {
+				x = b.x + math.random() * SCALE,
+				y = b.y + math.random() * SCALE,
+				home_x = b.x,
+				home_y = b.y,
+				target_x = b.x + cos(angle) * dist,
+				target_y = b.y + sin(angle) * dist,
+				speed = 0.4 + math.random() * 1.8,
+				size = size,
+				color = BASE_COLOR,
+			}
+		end
 	end
 end
 
