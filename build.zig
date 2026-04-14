@@ -210,7 +210,6 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .imports = &.{
             .{ .name = "zlua", .module = zlua_dep.module("zlua") },
-            .{ .name = "lua_api", .module = lua_api_mod },
         },
     });
 
@@ -244,8 +243,6 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .imports = &.{
             .{ .name = "app", .module = app_mod },
-            .{ .name = "lua_api", .module = lua_api_mod },
-            .{ .name = "zlua", .module = zlua_dep.module("zlua") },
         },
     });
     // Link C libraries into the module so downstream consumers get them automatically

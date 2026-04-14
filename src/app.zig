@@ -56,8 +56,6 @@ pub const App = struct {
     save_db: SaveDb,
     ecs_world: EcsWorld,
 
-    engine_ctx: lua_api.EngineContext,
-
     pub const Options = struct {
         project_dir: []const u8,
     };
@@ -89,6 +87,7 @@ pub const App = struct {
         try self.loop.start();
 
         try self.vx.enterAltScreen(writer);
+        try self.vx.setMouseMode(writer, true);
 
         self.vx.queryTerminal(writer, 1_000_000_000) catch {
             stderrPrint("Warning: terminal query timed out, using defaults\n", .{});
@@ -135,7 +134,7 @@ pub const App = struct {
         self.ecs_world = EcsWorld.init(allocator);
 
         const audio_ptr: ?*AudioSystem = if (self.audio_system.available) &self.audio_system else null;
-        self.engine_ctx = .{
+        lua_api.register(self.lua_eng.lua, .{
             .renderer = &self.renderer,
             .scene_mgr = &self.scene_mgr,
             .input_state = &self.input_state,
@@ -143,9 +142,7 @@ pub const App = struct {
             .timer_system = &self.timer_system,
             .save_db = &self.save_db,
             .world = &self.ecs_world,
-        };
-
-        lua_api.register(self.lua_eng.lua, self.engine_ctx);
+        });
 
         return self;
     }
@@ -153,7 +150,7 @@ pub const App = struct {
     /// Register a Zig module's public functions as a Lua global table.
     /// Call this after init() but before run().
     pub fn registerModule(self: *App, comptime name: [:0]const u8, comptime Module: type) void {
-        lua_bind.registerModule(self.lua_eng.lua, name, Module, &self.engine_ctx);
+        lua_bind.registerModule(self.lua_eng.lua, name, Module);
     }
 
     /// Load the Lua project and run the main loop until quit.
