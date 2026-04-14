@@ -91,6 +91,10 @@ See [`examples/fractal-zig/`](examples/fractal-zig/) for a complete example.
 - [Architecture](ARCHITECTURE.md) — module structure, rendering pipeline
 - [Zig example](examples/fractal-zig/) — embedding Vexel in a Zig project
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for how to get involved — whether you write Lua or Zig.
+
 ## License
 
-TBD
+[MIT](LICENSE)

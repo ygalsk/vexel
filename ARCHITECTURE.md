@@ -11,7 +11,8 @@ src/
   engine/
     input.zig         — Key/mouse event translation from vaxis to engine types
     timer.zig         — Timer/tween system: one-shot, repeating, interpolation with easing
-    
+    scene.zig         — Scene stack: push/pop/switch with transitions (fade, slide, wipe)
+
   graphics/
     renderer.zig      — Kitty-based rendering: text, rects, clear, screen info
     kitty.zig         — Kitty graphics protocol: upload, place, animate, z-index
@@ -25,7 +26,9 @@ src/
   scripting/
     lua_engine.zig    — Lua state lifecycle, project loading, callback dispatch
     lua_api.zig       — Register engine.* functions into Lua (graphics, input, etc.)
-    
+    lua_bind.zig      — Two-tier compile-time binding for user Zig modules
+    lua_ecs.zig       — ECS bridge: entity spawning, component access, iteration from Lua
+
   ecs/
     entity.zig        — Entity type (generation-counted IDs), EntityPool
     component_store.zig — Generic ComponentStore(T), LuaComponentStore
@@ -97,6 +100,35 @@ cleanup:
     restore terminal
 ```
 
+## Zig ↔ Lua Boundary
+
+All Lua-callable functions live in `src/scripting/lua_api.zig`. They follow a consistent pattern:
+
+1. **`EngineContext`** (`lua_api.zig:44`) holds pointers to every subsystem (renderer, audio, input, scene, timer, ECS world, persistence). It's the single struct that bridges Zig and Lua.
+
+2. **`getUpvalue()`** extracts the `EngineContext` (or a subsystem pointer) from a Lua C closure's upvalue slot. Every `engine.*` function is registered as a closure with its context pointer baked in. This is the standard Lua C API pattern for threading state through callbacks — it appears ~50 times across the scripting layer because every bound function uses it.
+
+3. **`pushUpvalueClosure()`** is the registration side — it stores a pointer as upvalue 1 and wraps a Zig function as a Lua C closure.
+
+### Two-tier module binding (`lua_bind.zig`)
+
+User-registered Zig modules (via `app.registerModule()`) use a compile-time binding system:
+
+- **Tier 1 — Auto-wrapped**: pure Zig functions with simple types (`f64`, `i32`, `bool`). The binding system generates Lua stack extraction and result pushing at comptime. Zero Lua knowledge required.
+- **Tier 2 — Engine-aware**: functions with signature `fn(ctx: *EngineContext, lua: *Lua) i32`. You manage the Lua stack yourself but get direct access to the renderer, world, etc.
+
+Detection is automatic — if the first two params are `*EngineContext` and `*Lua`, it's tier 2.
+
+## Compositor Internals
+
+`src/graphics/compositing.zig` manages the 8-layer pixel buffer:
+
+- Each layer is an independent RGBA pixel buffer at the virtual resolution
+- `set_layer(n)` directs subsequent pixel draws to layer n
+- Per-frame: layers are alpha-blended bottom-to-top into a single composite buffer
+- **Dirty-rect tracking**: only regions that changed since last frame are recomposed and sent to the terminal
+- The composite buffer is diffed against the previous frame to minimize terminal escape sequences
+
 ## Lua API
 
-See [.claude/rules/vexel-engine.md](.claude/rules/vexel-engine.md) for the full Lua API reference.
+See [docs/lua-api.md](docs/lua-api.md) for the full Lua API reference.
