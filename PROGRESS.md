@@ -16,6 +16,7 @@
 | 9 | ~~Example App Port~~ | Extracted to separate repo |
 
 ## Recent
+- Simplify: fractal demo — deduplicated inlined make_color back to local function, added cos to localized math functions for consistency.
 - Simplify: compositor — extracted clearBBox/rotateBBoxes helpers (eliminated 3× duplicate loops), merged flattenLayers into single-pass, added setCompositeOverride method to encapsulate transition flag, consolidated logShm to single syscall, removed dead layerCompZ.
 - Compositor perf: dirty bounding box per layer (memset only drawn region), premultiplied alpha + SIMD 4-pixel blend (flattenLayers), capability-based shm detection with fallback. See COMPOSITOR_PERF.md.
 - Simplify: kitty.zig — cached KITTY_PID env check (was getenv every frame), comptime-precomputed shm path base64 encodings, replaced cwd-relative absolute paths with proper deleteFileAbsolute/createFileAbsolute, removed unused posix import. Renamed "game" terminology to "project" throughout docs/code/examples, renamed quit_game→quit in Lua API.
