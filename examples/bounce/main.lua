@@ -1,15 +1,21 @@
 -- Bouncing ball demo — Phase 1 test game
 -- Exercises pixel drawing, layers, and cell-based text overlay.
 
-local W, H = 320, 180
-local floor = math.floor
-local ball_x, ball_y = 160.0, 90.0
-local ball_dx, ball_dy = 120.0, 85.0
-local ball_r = 10
+local W, H = 1920, 1080
+local ball_x, ball_y = 960.0, 540.0
+local ball_dx, ball_dy = 720.0, 510.0
+local ball_r = 64   -- collision radius; matches sprite half-size (128px / 2)
+local SPRITE_HALF = 64
 local frame = 0
+local ball_sheet   -- kept at module scope to prevent GC while entity holds the handle
+local ball_entity
 
 function engine.load()
     engine.graphics.set_resolution(W, H)
+    ball_sheet = engine.graphics.load_spritesheet("assets/ball.png", 128, 128)
+    ball_entity = engine.world.spawn()
+    engine.world.set(ball_entity, "position", { x = ball_x - SPRITE_HALF, y = ball_y - SPRITE_HALF })
+    engine.world.set(ball_entity, "sprite", { image = ball_sheet, layer = 2 })
 end
 
 function engine.update(dt)
@@ -34,6 +40,8 @@ function engine.update(dt)
         ball_y = H - ball_r
         ball_dy = -ball_dy
     end
+
+    engine.world.set(ball_entity, "position", { x = ball_x - SPRITE_HALF, y = ball_y - SPRITE_HALF })
 end
 
 function engine.draw()
@@ -52,15 +60,6 @@ function engine.draw()
     engine.graphics.pixel.rect(0, H - 1, W, 1, 0x444488)
     engine.graphics.pixel.rect(0, 0, 1, H, 0x444488)
     engine.graphics.pixel.rect(W - 1, 0, 1, H, 0x444488)
-
-    -- Layer 2: the ball
-    engine.graphics.set_layer(2)
-    engine.graphics.pixel.clear()
-    local bx = floor(ball_x)
-    local by = floor(ball_y)
-    engine.graphics.pixel.circle(bx, by, ball_r, 0xFF4444)
-    -- Highlight on ball
-    engine.graphics.pixel.circle(bx - 3, by - 3, 3, 0xFF8888)
 
     -- Cell-based text overlay (renders above pixel layers)
     engine.graphics.draw_text(1, 0, string.format("Bounce Demo  frame:%d", frame), 0xCCCCCC)
