@@ -390,24 +390,4 @@ pub fn build(b: *std.Build) void {
         test_step.dependOn(&run_test.step);
     }
 
-    // --- Example: fractal-zig (library consumer demo) ---
-    const fractal_zig_exe = b.addExecutable(.{
-        .name = "fractal-zig",
-        .root_module = b.createModule(.{
-            .root_source_file = b.path("examples/fractal-zig/main.zig"),
-            .target = target,
-            .optimize = optimize,
-            .imports = &.{
-                .{ .name = "vexel", .module = vexel_mod },
-            },
-        }),
-    });
-    fractal_zig_exe.link_gc_sections = true;
-    b.installArtifact(fractal_zig_exe);
-
-    const run_fractal_zig = b.addRunArtifact(fractal_zig_exe);
-    run_fractal_zig.step.dependOn(b.getInstallStep());
-    run_fractal_zig.setCwd(b.path("examples/fractal-zig"));
-    const run_fractal_zig_step = b.step("run-fractal-zig", "Run the fractal-zig hybrid example");
-    run_fractal_zig_step.dependOn(&run_fractal_zig.step);
 }

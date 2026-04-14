@@ -304,7 +304,7 @@ pub fn freeImage(self: *Kitty, id: u32) void {
 pub fn placeImageDirect(self: *Kitty, img_id: u32, cols: u16, rows: u16) void {
     // \x1b7 = DECSC (save cursor+attrs), \x1b8 = DECRC (restore)
     self.writer.print(
-        "\x1b7\x1b[1;1H\x1b_Ga=p,i={d},r={d},c={d},z=-10,C=1\x1b\\\x1b8",
+        "\x1b7\x1b[1;1H\x1b_Ga=p,i={d},r={d},c={d},z=-20,C=1\x1b\\\x1b8",
         .{ img_id, rows, cols },
     ) catch {};
     self.writer.flush() catch {};
