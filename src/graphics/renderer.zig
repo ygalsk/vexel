@@ -319,8 +319,8 @@ pub fn drawSprite(self: *Renderer, handle: ImageHandle, x: i32, y: i32, opts: Dr
     const off_x: u16 = @intCast(px % cw);
     const off_y: u16 = @intCast(py % ch);
 
-    const span_cols: u16 = @intCast(@min((@as(u32, off_x) + display_w + cw - 1) / cw, si.cols - col));
-    const span_rows: u16 = @intCast(@min((@as(u32, off_y) + display_h + ch - 1) / ch, si.rows - row));
+    const span_cols: u16 = @intCast(@min((display_w + cw - 1) / cw, si.cols - col));
+    const span_rows: u16 = @intCast(@min((display_h + ch - 1) / ch, si.rows - row));
 
     const z_index: i32 = Compositing.layerSpriteZ(pm.compositor.getActiveLayer());
 
