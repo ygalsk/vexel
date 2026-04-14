@@ -2,5 +2,5 @@ perf*
 .zig-cache/
 zig-out/
 assets/
-graphify-out/cache/
-graphify-out/.graphify_python
+.claude/
+graphify-out/
