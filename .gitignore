@@ -1,3 +1,4 @@
+perf*
 .zig-cache/
 zig-out/
 assets/
