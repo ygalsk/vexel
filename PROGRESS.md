@@ -1,5 +1,13 @@
 # Vexel Progress
 
+## 2026-04-15
+
+### simplify: pixel shader system cleanup
+- Eliminated per-frame alloc+memcpy in `lPixelShade` — shaders now write directly into compositor layer buffer via `getActiveLayerSlice()` (was: alloc w*h*4 bytes, fill, memcpy, free — every frame)
+- Removed dead `n_uniforms` runtime parameter from `ShaderDispatch` (value was already baked at comptime)
+- Flattened `ShaderEntry` single-field wrapper — `ShaderRegistry` stores `ShaderDispatch` directly
+- Removed narrating comments in shader dispatch closure
+
 ## 2026-04-14
 
 ### simplify: tier-2 binding removal cleanup

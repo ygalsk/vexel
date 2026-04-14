@@ -253,6 +253,15 @@ pub fn blitBuffer(self: *Compositor, x: i32, y: i32, w: i32, h: i32, colors: []c
     self.markLayerDirty(layer, @intCast(x0), @intCast(y0), @intCast(x1), @intCast(y1));
 }
 
+/// Return the active layer's pixel buffer as a mutable u32 slice and mark it fully dirty.
+pub fn getActiveLayerSlice(self: *Compositor) []u32 {
+    const layer = &self.layers[self.active_layer];
+    const total = @as(usize, self.width) * @as(usize, self.height) * 4;
+    const aligned: []align(@alignOf(u32)) u8 = @alignCast(layer.pixels[0..total]);
+    self.markLayerDirty(layer, 0, 0, self.width, self.height);
+    return std.mem.bytesAsSlice(u32, aligned);
+}
+
 pub fn drawRect(self: *Compositor, x: i32, y: i32, w: i32, h: i32, color: Color) void {
     // Clip to buffer bounds
     const x0: usize = @intCast(@max(0, x));

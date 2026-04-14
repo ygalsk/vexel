@@ -126,6 +126,9 @@ pub fn register(lua: *Lua, ctx: EngineContext) void {
     pushUpvalueClosure(lua, renderer, zlua.wrap(lPixelBuffer));
     lua.setField(-2, "buffer");
 
+    pushUpvalueClosure(lua, renderer, zlua.wrap(lPixelShade));
+    lua.setField(-2, "shade");
+
     lua.setField(-2, "pixel");
 
     pushUpvalueClosure(lua, renderer, zlua.wrap(lDrawTilemap));
@@ -344,6 +347,23 @@ fn lPixelBuffer(lua: *Lua) i32 {
     }
 
     renderer.pixelBlitBuffer(x, y, w, h, colors);
+    return 0;
+}
+
+fn lPixelShade(lua: *Lua) i32 {
+    const renderer = getUpvalue(lua, Renderer);
+    const name = lua.toString(1) catch {
+        lua.raiseErrorStr("pixel.shade: expected shader name as first argument", .{});
+    };
+    const dispatch = renderer.shader_registry.find(name) orelse {
+        lua.raiseErrorStr("pixel.shade: unknown shader '%s'", .{name.ptr});
+    };
+
+    const res = renderer.pixelGetResolution();
+    if (res.w == 0 or res.h == 0) return 0;
+
+    const buf = renderer.pixelGetActiveLayerSlice() orelse return 0;
+    dispatch(buf, res.w, res.h, lua);
     return 0;
 }
 

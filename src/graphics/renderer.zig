@@ -4,6 +4,7 @@ const Kitty = @import("kitty");
 const Compositing = @import("compositing");
 const ImageMod = @import("image");
 const SpritePlacer = @import("sprite_placer");
+const lua_bind = @import("lua_bind");
 
 const Renderer = @This();
 
@@ -62,6 +63,7 @@ screen_info: ScreenInfo,
 pixel_mode: ?PixelMode = null,
 sprite_mode: SpriteMode = .compositor,
 cell_dirty: bool = false,
+shader_registry: lua_bind.ShaderRegistry = .{},
 
 pub fn init(vx: *vaxis.Vaxis, winsize: vaxis.Winsize) Renderer {
     return .{
@@ -155,6 +157,12 @@ pub fn pixelBlitBuffer(self: *Renderer, x: i32, y: i32, w: i32, h: i32, colors: 
     const pm = self.pixel_mode orelse return;
     pm.compositor.blitBuffer(x, y, w, h, colors);
 }
+
+pub fn pixelGetActiveLayerSlice(self: *Renderer) ?[]u32 {
+    const pm = self.pixel_mode orelse return null;
+    return pm.compositor.getActiveLayerSlice();
+}
+
 
 pub fn pixelDrawRect(self: *Renderer, x: i32, y: i32, w: i32, h: i32, color: Color) void {
     const pm = self.pixel_mode orelse return;

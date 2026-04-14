@@ -69,6 +69,16 @@ pub fn build(b: *std.Build) void {
         },
     });
 
+    const lua_bind_mod = b.createModule(.{
+        .root_source_file = b.path("src/scripting/lua_bind.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &.{
+            .{ .name = "zlua", .module = zlua_dep.module("zlua") },
+            .{ .name = "compositing", .module = compositing_mod },
+        },
+    });
+
     const renderer_mod = b.createModule(.{
         .root_source_file = b.path("src/graphics/renderer.zig"),
         .target = target,
@@ -79,6 +89,7 @@ pub fn build(b: *std.Build) void {
             .{ .name = "compositing", .module = compositing_mod },
             .{ .name = "image", .module = image_mod },
             .{ .name = "sprite_placer", .module = sprite_placer_mod },
+            .{ .name = "lua_bind", .module = lua_bind_mod },
         },
     });
 
@@ -204,15 +215,6 @@ pub fn build(b: *std.Build) void {
         lua_api_mod.addImport("audio", am);
     }
 
-    const lua_bind_mod = b.createModule(.{
-        .root_source_file = b.path("src/scripting/lua_bind.zig"),
-        .target = target,
-        .optimize = optimize,
-        .imports = &.{
-            .{ .name = "zlua", .module = zlua_dep.module("zlua") },
-        },
-    });
-
     const app_mod = b.createModule(.{
         .root_source_file = b.path("src/app.zig"),
         .target = target,
@@ -314,6 +316,7 @@ pub fn build(b: *std.Build) void {
             .{ .name = "compositing", .module = compositing_mod },
             .{ .name = "image", .module = image_mod },
             .{ .name = "sprite_placer", .module = sprite_placer_mod },
+            .{ .name = "lua_bind", .module = lua_bind_mod },
         }},
         .{ .path = "src/scripting/lua_engine.zig", .imports = &.{
             .{ .name = "zlua", .module = zlua_dep.module("zlua") },

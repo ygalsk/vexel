@@ -42,10 +42,10 @@ Read [ARCHITECTURE.md](ARCHITECTURE.md) to understand the module structure, rend
 Key things to know:
 
 - **`src/scripting/lua_api.zig`** registers all `engine.*` functions. New Lua-facing functions go here.
-- **`src/scripting/lua_bind.zig`** implements the two-tier binding system for user-registered Zig modules.
+- **`src/scripting/lua_bind.zig`** implements the auto-wrapping binding system for user-registered Zig modules.
 - **`src/scripting/lua_ecs.zig`** bridges the ECS to Lua.
 - **`src/root.zig`** re-exports the public library API. If you add a new subsystem, expose it here.
-- See [`examples/fractal-zig/`](examples/fractal-zig/) for a complete hybrid Zig+Lua example.
+- See [`examples/`](examples/) for complete Lua examples (boids, bounce, fractal).
 
 ### Adding a new `engine.*` function
 

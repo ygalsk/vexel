@@ -1,6 +1,89 @@
 const std = @import("std");
 const zlua = @import("zlua");
 const Lua = zlua.Lua;
+const Compositing = @import("compositing");
+const Color = Compositing.Color;
+
+/// Type-erased pixel shader dispatch function.
+pub const ShaderDispatch = *const fn (buf: []u32, w: u16, h: u16, lua: *Lua) void;
+
+const MAX_SHADERS = 8;
+
+pub const ShaderRegistry = struct {
+    names: [MAX_SHADERS][:0]const u8 = undefined,
+    dispatchers: [MAX_SHADERS]ShaderDispatch = undefined,
+    count: u8 = 0,
+
+    pub fn register(self: *ShaderRegistry, name: [:0]const u8, dispatch: ShaderDispatch) void {
+        if (self.count >= MAX_SHADERS) return;
+        self.names[self.count] = name;
+        self.dispatchers[self.count] = dispatch;
+        self.count += 1;
+    }
+
+    pub fn find(self: *const ShaderRegistry, name: []const u8) ?ShaderDispatch {
+        for (0..self.count) |i| {
+            if (std.mem.eql(u8, self.names[i], name)) return self.dispatchers[i];
+        }
+        return null;
+    }
+};
+
+/// Register a pixel shader function. The function must have the signature:
+///   fn(px: f64, py: f64, w: f64, h: f64, ...uniforms) i32
+/// where uniforms are f64 values passed from Lua.
+pub fn registerPixelShader(
+    registry: *ShaderRegistry,
+    comptime name: [:0]const u8,
+    comptime func: anytype,
+) void {
+    const FnType = @TypeOf(func);
+    const info = @typeInfo(FnType).@"fn";
+
+    // Validate: at least 4 params (px, py, w, h), all f64, returns i32
+    if (info.params.len < 4) @compileError("pixel shader must have at least 4 parameters (px, py, w, h)");
+    if (info.return_type.? != i32) @compileError("pixel shader must return i32");
+    inline for (info.params) |p| {
+        if (p.type.? != f64) @compileError("pixel shader parameters must all be f64");
+    }
+
+    const n_uniforms = info.params.len - 4;
+
+    const dispatch = struct {
+        fn inner(buf: []u32, w: u16, h: u16, lua: *Lua) void {
+            var uniforms: [n_uniforms]f64 = undefined;
+            inline for (0..n_uniforms) |i| {
+                uniforms[i] = @floatCast(lua.toNumber(@intCast(i + 2)) catch 0.0);
+            }
+
+            const wf: f64 = @floatFromInt(w);
+            const hf: f64 = @floatFromInt(h);
+            const stride: usize = @intCast(w);
+
+            for (0..@as(usize, h)) |row| {
+                const py: f64 = @floatFromInt(row);
+                const row_off = row * stride;
+                for (0..@as(usize, w)) |col| {
+                    const px: f64 = @floatFromInt(col);
+
+                    var call_args: std.meta.ArgsTuple(FnType) = undefined;
+                    call_args[0] = px;
+                    call_args[1] = py;
+                    call_args[2] = wf;
+                    call_args[3] = hf;
+                    inline for (0..n_uniforms) |i| {
+                        call_args[4 + i] = uniforms[i];
+                    }
+
+                    const rgb: i32 = @call(.auto, func, call_args);
+                    buf[row_off + col] = Color.fromHex(@intCast(rgb)).pack();
+                }
+            }
+        }
+    }.inner;
+
+    registry.register(name, dispatch);
+}
 
 /// Register a Zig struct's public functions as a Lua global table.
 ///

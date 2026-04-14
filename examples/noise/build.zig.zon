@@ -1,0 +1,15 @@
+.{
+    .name = .noise_demo,
+    .version = "0.0.0",
+    .fingerprint = 0xa826a5a9bba9719d,
+    .dependencies = .{
+        .vexel = .{ .path = "../.." },
+    },
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "main.zig",
+        "noise.zig",
+        "main.lua",
+    },
+}

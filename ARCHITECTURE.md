@@ -110,14 +110,9 @@ All Lua-callable functions live in `src/scripting/lua_api.zig`. They follow a co
 
 3. **`pushUpvalueClosure()`** is the registration side — it stores a pointer as upvalue 1 and wraps a Zig function as a Lua C closure.
 
-### Two-tier module binding (`lua_bind.zig`)
+### Module binding (`lua_bind.zig`)
 
-User-registered Zig modules (via `app.registerModule()`) use a compile-time binding system:
-
-- **Tier 1 — Auto-wrapped**: pure Zig functions with simple types (`f64`, `i32`, `bool`). The binding system generates Lua stack extraction and result pushing at comptime. Zero Lua knowledge required.
-- **Tier 2 — Engine-aware**: functions with signature `fn(ctx: *EngineContext, lua: *Lua) i32`. You manage the Lua stack yourself but get direct access to the renderer, world, etc.
-
-Detection is automatic — if the first two params are `*EngineContext` and `*Lua`, it's tier 2.
+User-registered Zig modules (via `app.registerModule()`) use a compile-time binding system. Pure Zig functions with simple types (`f64`, `i32`, `bool`) are auto-wrapped — the binding system generates Lua stack extraction and result pushing at comptime. Zero Lua knowledge required.
 
 ## Compositor Internals
 

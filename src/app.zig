@@ -153,6 +153,12 @@ pub const App = struct {
         lua_bind.registerModule(self.lua_eng.lua, name, Module);
     }
 
+    /// Register a pixel shader function for batch dispatch via pixel.shade().
+    /// The function must be: fn(px: f64, py: f64, w: f64, h: f64, ...uniforms) i32
+    pub fn registerPixelShader(self: *App, comptime name: [:0]const u8, comptime func: anytype) void {
+        lua_bind.registerPixelShader(&self.renderer.shader_registry, name, func);
+    }
+
     /// Load the Lua project and run the main loop until quit.
     pub fn run(self: *App) !void {
         const writer = self.tty.writer();

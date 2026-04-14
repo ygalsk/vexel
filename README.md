@@ -77,19 +77,13 @@ pub fn main() !void {
 }
 ```
 
-Module functions are either:
-- **Auto-wrapped** (pure Zig types only): `fn myFn(a: f64, b: i32) f64`
-- **Engine-aware** (direct renderer/Lua access): `fn myFn(ctx: *vexel.EngineContext, lua: *vexel.Lua) i32`
-
-Engine-aware functions read args from the Lua stack and return the number of return values. Use `ctx.renderer` for direct pixel access without crossing the Lua boundary.
-
-See [`examples/fractal-zig/`](examples/fractal-zig/) for a complete example.
+Module functions are auto-wrapped — pure Zig types only: `fn myFn(a: f64, b: i32) f64`.
+Supported types: `i32`, `i64`, `f32`, `f64`, `bool`. No Lua knowledge required.
 
 ## Docs
 
 - [Lua API](docs/lua-api.md) — full API surface
 - [Architecture](ARCHITECTURE.md) — module structure, rendering pipeline
-- [Zig example](examples/fractal-zig/) — embedding Vexel in a Zig project
 
 ## Contributing
 

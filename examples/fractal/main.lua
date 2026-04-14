@@ -2,7 +2,7 @@
 -- Exercises the bulk pixel.buffer() API with full-screen per-pixel rendering.
 -- Controls: m = Mandelbrot, j = Julia, r = reset zoom, +/- = zoom speed, q = quit
 
-local W, H = 1920, 1080
+local W, H = 320, 180
 local pixels = {}
 local MAX_ITER = 32
 
