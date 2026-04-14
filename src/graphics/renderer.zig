@@ -11,6 +11,8 @@ const Renderer = @This();
 pub const Color = Compositing.Color;
 pub const ImageHandle = ImageMod.ImageHandle;
 pub const ImageManager = ImageMod;
+pub const TransportMode = Kitty.TransportMode;
+pub const probeTransport = Kitty.probeTransport;
 
 pub fn colorToVaxis(c: Color) vaxis.Cell.Color {
     return .{ .rgb = .{ c.r, c.g, c.b } };
@@ -59,6 +61,7 @@ vx: *vaxis.Vaxis,
 screen_info: ScreenInfo,
 pixel_mode: ?PixelMode = null,
 sprite_mode: SpriteMode = .compositor,
+cell_dirty: bool = false,
 
 pub fn init(vx: *vaxis.Vaxis, winsize: vaxis.Winsize) Renderer {
     return .{
@@ -72,9 +75,9 @@ pub fn init(vx: *vaxis.Vaxis, winsize: vaxis.Winsize) Renderer {
     };
 }
 
-pub fn initPixelMode(self: *Renderer, allocator: std.mem.Allocator, writer: *std.io.Writer) !void {
+pub fn initPixelMode(self: *Renderer, allocator: std.mem.Allocator, writer: *std.io.Writer, transport: Kitty.TransportMode) !void {
     const kitty = try allocator.create(Kitty);
-    kitty.* = try Kitty.init(allocator, self.vx, writer);
+    kitty.* = try Kitty.init(allocator, self.vx, writer, transport);
 
     const comp = try allocator.create(Compositing);
     comp.* = try Compositing.init(allocator, kitty, self.vx);
@@ -319,8 +322,7 @@ pub fn drawSprite(self: *Renderer, handle: ImageHandle, x: i32, y: i32, opts: Dr
     const span_cols: u16 = @intCast(@min((@as(u32, off_x) + display_w + cw - 1) / cw, si.cols - col));
     const span_rows: u16 = @intCast(@min((@as(u32, off_y) + display_h + ch - 1) / ch, si.rows - row));
 
-    const active_layer: i32 = pm.compositor.getActiveLayer();
-    const z_index: i32 = active_layer - 8;
+    const z_index: i32 = Compositing.layerSpriteZ(pm.compositor.getActiveLayer());
 
     pm.sprite_placer.addPlacement(.{
         .terminal_image_id = ti.id,
@@ -433,6 +435,7 @@ pub fn updateSize(self: *Renderer, winsize: vaxis.Winsize) void {
 
 /// Draw text at a cell position
 pub fn drawText(self: *Renderer, col: u16, row: u16, text: []const u8, fg: ?Color, bg: ?Color) void {
+    self.cell_dirty = true;
     const win = self.vx.window();
     const style: vaxis.Cell.Style = .{
         .fg = if (fg) |c| colorToVaxis(c) else .default,
@@ -448,6 +451,7 @@ pub fn drawText(self: *Renderer, col: u16, row: u16, text: []const u8, fg: ?Colo
 
 /// Fill a rectangle with a solid color (cell coordinates)
 pub fn drawRect(self: *Renderer, col: u16, row: u16, w: u16, h: u16, color: Color) void {
+    self.cell_dirty = true;
     const win = self.vx.window();
     const style: vaxis.Cell.Style = .{
         .bg = colorToVaxis(color),
@@ -467,7 +471,25 @@ pub fn drawRect(self: *Renderer, col: u16, row: u16, w: u16, h: u16, color: Colo
 
 /// Clear the screen
 pub fn clear(self: *Renderer) void {
+    self.cell_dirty = true;
     self.vx.window().clear();
+}
+
+/// Whether any cell-layer operations (drawText, drawRect) happened this frame.
+pub fn isCellDirty(self: *const Renderer) bool {
+    return self.cell_dirty;
+}
+
+/// Reset cell dirty flag after rendering.
+pub fn resetCellDirty(self: *Renderer) void {
+    self.cell_dirty = false;
+}
+
+/// Emit the composite image placement directly to the TTY.
+/// Call after flushPixels() and after any vx.render() call.
+pub fn placeCompositeImage(self: *Renderer) void {
+    const pm = self.pixel_mode orelse return;
+    pm.compositor.placeComposite();
 }
 
 /// Get screen dimensions

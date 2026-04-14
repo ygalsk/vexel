@@ -499,8 +499,6 @@ pub fn flush(self: *Compositor) !void {
     // Upload it directly — don't re-flatten (that would overwrite the blend).
     if (self.use_composite_override) {
         const new_img = try self.kitty.uploadRgba(self.composite_buf, self.width, self.height);
-        const win = self.vx.window();
-        new_img.draw(win, .{ .z_index = -10, .scale = .fill }) catch {};
         if (self.composite_image) |old| {
             self.pending_free_id = old.id;
         }
@@ -522,14 +520,8 @@ pub fn flush(self: *Compositor) !void {
     }
 
     if (!content_dirty) {
-        // Nothing with content changed — just re-place existing image
-        if (self.composite_image) |img| {
-            const win = self.vx.window();
-            img.draw(win, .{
-                .z_index = -10,
-                .scale = .fill,
-            }) catch {};
-        }
+        // Nothing with content changed — composite image stays the same.
+        // Caller handles placement via placeComposite().
         if (self.any_dirty) {
             self.rotateBBoxes();
         }
@@ -540,19 +532,21 @@ pub fn flush(self: *Compositor) !void {
 
     const new_img = try self.kitty.uploadRgba(self.composite_buf, self.width, self.height);
 
-    // Place new image (behind text)
-    const win = self.vx.window();
-    new_img.draw(win, .{
-        .z_index = -10,
-        .scale = .fill,
-    }) catch {};
-
     // Schedule the old image for deletion on NEXT flush (after render)
     if (self.composite_image) |old| {
         self.pending_free_id = old.id;
     }
     self.composite_image = new_img;
     self.rotateBBoxes();
+}
+
+/// Emit the composite image placement directly to the TTY, bypassing vaxis cells.
+/// Call this AFTER flush() and AFTER any vx.render() call (resize clears images).
+pub fn placeComposite(self: *Compositor) void {
+    if (self.composite_image) |img| {
+        const win = self.vx.window();
+        self.kitty.placeImageDirect(img.id, win.width, win.height);
+    }
 }
 
 /// Flatten all layers into composite_buf without uploading to the terminal.
@@ -621,17 +615,27 @@ fn flattenLayers(self: *Compositor) void {
         while (y < region.max_y) : (y += 1) {
             const row_start = y * stride + rx0 * 4;
             const row_pixels = rx1 - rx0;
-            const simd_end = (row_pixels / 4) * 4;
+            const simd8_end = (row_pixels / 8) * 8;
+            const simd4_end = (row_pixels / 4) * 4;
 
             var px: usize = 0;
-            while (px < simd_end) : (px += 4) {
+            // AVX2 path: 8 pixels (256-bit) per iteration
+            while (px < simd8_end) : (px += 8) {
+                const off = row_start + px * 4;
+                blendPixels8(
+                    @ptrCast(self.composite_buf[off..][0..32]),
+                    @ptrCast(layer.pixels[off..][0..32]),
+                );
+            }
+            // SSE2 remainder: 4 pixels (128-bit)
+            while (px < simd4_end) : (px += 4) {
                 const off = row_start + px * 4;
                 blendPixels4(
                     @ptrCast(self.composite_buf[off..][0..16]),
                     @ptrCast(layer.pixels[off..][0..16]),
                 );
             }
-
+            // Scalar remainder
             while (px < row_pixels) : (px += 1) {
                 const off = row_start + px * 4;
                 blendPixel(self.composite_buf, off, layer.pixels, off);
@@ -664,18 +668,29 @@ inline fn div255(x: u16) u16 {
     return @intCast((@as(u32, x) + 1 + (@as(u32, x) >> 8)) >> 8);
 }
 
-/// Premultiplied src-over blend of 4 RGBA pixels at once using SIMD.
-/// Maps to SSE2 (128-bit) on x86-64 automatically via @Vector.
-inline fn blendPixels4(dst: *[16]u8, src: *const [16]u8) void {
-    const ones: @Vector(16, u16) = @splat(1);
-    const all255: @Vector(16, u16) = @splat(255);
-    const shift8: @Vector(16, u4) = @splat(8);
+/// Premultiplied src-over blend of N RGBA pixels using SIMD.
+/// N=4 maps to SSE2 (128-bit), N=8 maps to AVX2 (256-bit) or 2× SSE2.
+inline fn blendPixelsN(comptime N: comptime_int, dst: *[N * 4]u8, src: *const [N * 4]u8) void {
+    const len = N * 4;
+    const ones: @Vector(len, u16) = @splat(1);
+    const all255: @Vector(len, u16) = @splat(255);
+    const shift8: @Vector(len, u4) = @splat(8);
 
-    const src_v: @Vector(16, u16) = @as(@Vector(16, u8), src.*);
-    const dst_v: @Vector(16, u16) = @as(@Vector(16, u8), dst.*);
+    const src_v: @Vector(len, u16) = @as(@Vector(len, u8), src.*);
+    const dst_v: @Vector(len, u16) = @as(@Vector(len, u8), dst.*);
 
     // Broadcast each pixel's alpha to all 4 channels: [R,G,B,A] -> [A,A,A,A]
-    const alpha_idx = comptime @Vector(16, i32){ 3, 3, 3, 3, 7, 7, 7, 7, 11, 11, 11, 11, 15, 15, 15, 15 };
+    const alpha_idx = comptime blk: {
+        var idx: [len]i32 = undefined;
+        for (0..N) |i| {
+            const a: i32 = @intCast(i * 4 + 3);
+            idx[i * 4] = a;
+            idx[i * 4 + 1] = a;
+            idx[i * 4 + 2] = a;
+            idx[i * 4 + 3] = a;
+        }
+        break :blk @as(@Vector(len, i32), idx);
+    };
     const src_alpha = @shuffle(u16, src_v, undefined, alpha_idx);
     const inv_alpha = all255 - src_alpha;
 
@@ -684,8 +699,16 @@ inline fn blendPixels4(dst: *[16]u8, src: *const [16]u8) void {
     const divided = (product +% ones +% (product >> shift8)) >> shift8;
     const result = src_v + divided;
 
-    const narrow: @Vector(16, u8) = @truncate(result);
+    const narrow: @Vector(len, u8) = @truncate(result);
     dst.* = narrow;
+}
+
+inline fn blendPixels4(dst: *[16]u8, src: *const [16]u8) void {
+    blendPixelsN(4, dst, src);
+}
+
+inline fn blendPixels8(dst: *[32]u8, src: *const [32]u8) void {
+    blendPixelsN(8, dst, src);
 }
 
 /// Alpha-blend a single pixel (premultiplied src-over). Both offsets must be valid.

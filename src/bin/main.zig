@@ -123,12 +123,17 @@ pub fn main() !void {
     });
     defer vx.deinit(allocator, tty.writer());
 
+    const writer = tty.writer();
+
+    // Probe transport BEFORE event loop starts — requires exclusive TTY read access.
+    // Sends 1×1 test images via t=t and t=s, checks for terminal ACK.
+    const transport = Renderer.probeTransport(tty.fd, writer);
+
     var loop: vaxis.Loop(Event) = .{ .tty = &tty, .vaxis = &vx };
     try loop.init();
     try loop.start();
     defer loop.stop();
 
-    const writer = tty.writer();
     try vx.enterAltScreen(writer);
 
     // Enable panic/signal cleanup now that we're in alt screen
@@ -152,7 +157,7 @@ pub fn main() !void {
 
     var renderer = Renderer.init(&vx, winsize);
 
-    renderer.initPixelMode(allocator, writer) catch |err| {
+    renderer.initPixelMode(allocator, writer, transport) catch |err| {
         if (err == error.NoGraphicsCapability) {
             stderrPrint("Error: terminal does not support kitty graphics protocol\n", .{});
             std.process.exit(1);
@@ -228,6 +233,7 @@ pub fn main() !void {
 
     var timer = try std.time.Timer.start();
     var running = true;
+    var resized = true; // force vx.render() on first frame
 
     while (running) {
         // Check for signal-triggered shutdown
@@ -262,6 +268,7 @@ pub fn main() !void {
                     vx.resize(allocator, writer, ws) catch {};
                     renderer.updateSize(ws);
                     renderer.onResize();
+                    resized = true;
                 },
                 .focus_in, .focus_out => {},
             }
@@ -326,11 +333,21 @@ pub fn main() !void {
             };
         }
 
-        // Flush pixel layers to terminal via kitty graphics
+        // Flush pixel layers to terminal via kitty graphics (composite + upload)
         renderer.flushPixels() catch {};
 
-        // Render to terminal
-        try vx.render(writer);
+        // Only run vaxis cell rendering when cells changed or terminal resized.
+        // Skipping vx.render() on pixel-only frames eliminates ~48% overhead in
+        // non-text scenes (vaxis unconditionally re-emits image placements).
+        if (renderer.isCellDirty() or resized) {
+            try vx.render(writer);
+        }
+
+        // Place composite image directly — after vx.render() so resize-triggered
+        // kitty_graphics_clear doesn't nuke it.
+        renderer.placeCompositeImage();
+        renderer.resetCellDirty();
+        resized = false;
 
         // Cap at ~60fps — skip sleep if already behind
         const frame_ns: u64 = 16_666_667; // ~60fps

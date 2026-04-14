@@ -16,6 +16,7 @@
 | 9 | ~~Example App Port~~ | Extracted to separate repo |
 
 ## Recent
+- Simplify: fixed clear() not setting cell_dirty (vx.render skipped after clear-only frames), deduplicated blendPixels4/8 into comptime-generic blendPixelsN, deduplicated probeTmpfile/probePosixShm into probeMode helper, removed double cleanupShmFiles call, added a==0 fast-path in premultiply-alpha.
 - Simplify: fractal demo — deduplicated inlined make_color back to local function, added cos to localized math functions for consistency.
 - Simplify: compositor — extracted clearBBox/rotateBBoxes helpers (eliminated 3× duplicate loops), merged flattenLayers into single-pass, added setCompositeOverride method to encapsulate transition flag, consolidated logShm to single syscall, removed dead layerCompZ.
 - Compositor perf: dirty bounding box per layer (memset only drawn region), premultiplied alpha + SIMD 4-pixel blend (flattenLayers), capability-based shm detection with fallback. See COMPOSITOR_PERF.md.

@@ -127,6 +127,21 @@ fn loadInternal(self: *ImageManager, path: []const u8, tile_w: u16, tile_h: u16)
     const pixels = try self.allocator.alloc(u8, byte_count);
     @memcpy(pixels, raw[0..byte_count]);
 
+    // Premultiply alpha for correct compositing
+    var px: usize = 0;
+    while (px < byte_count) : (px += 4) {
+        const a: u16 = pixels[px + 3];
+        if (a == 0) {
+            pixels[px] = 0;
+            pixels[px + 1] = 0;
+            pixels[px + 2] = 0;
+        } else if (a < 255) {
+            pixels[px] = @intCast((@as(u16, pixels[px]) * a + 127) / 255);
+            pixels[px + 1] = @intCast((@as(u16, pixels[px + 1]) * a + 127) / 255);
+            pixels[px + 2] = @intCast((@as(u16, pixels[px + 2]) * a + 127) / 255);
+        }
+    }
+
     // Calculate frame grid for sprite sheets
     var frame_cols: u16 = 1;
     var frame_rows: u16 = 1;

@@ -4,6 +4,9 @@
 
 local W, H = 1080, 720
 
+-- Localize math functions — avoids global table lookup in hot loops
+local sin, cos, floor, min = math.sin, math.cos, math.floor, math.min
+
 -- Block-letter pixel font for "VEXEL" (each letter is 7 wide x 9 tall)
 -- 1 = filled pixel, 0 = empty
 local font = {
@@ -60,8 +63,8 @@ local LETTER_W = 7 * SCALE
 local LETTER_H = 9 * SCALE
 local GAP = 2 * SCALE
 local total_w = #letter_order * LETTER_W + (#letter_order - 1) * GAP
-local start_x = math.floor((W - total_w) / 2)
-local start_y = math.floor((H - LETTER_H) / 2)
+local start_x = floor((W - total_w) / 2)
+local start_y = floor((H - LETTER_H) / 2)
 
 -- One entry per font cell (~125 blocks total instead of ~32K pixels)
 local blocks = {}
@@ -106,8 +109,8 @@ local function init_particles()
 			y = b.y,
 			home_x = b.x,
 			home_y = b.y,
-			target_x = b.x + math.cos(angle) * dist,
-			target_y = b.y + math.sin(angle) * dist,
+			target_x = b.x + cos(angle) * dist,
+			target_y = b.y + sin(angle) * dist,
 			speed = 0.5 + math.random() * 1.5,
 		}
 	end
@@ -118,7 +121,7 @@ local BASE_COLOR = 0x44BBFF
 
 local function hsv_to_rgb(h, s, v)
 	h = h % 1.0
-	local i = math.floor(h * 6)
+	local i = floor(h * 6)
 	local f = h * 6 - i
 	local p = v * (1 - s)
 	local q = v * (1 - f * s)
@@ -139,8 +142,15 @@ local function hsv_to_rgb(h, s, v)
 	end
 end
 
-local function rgb_hex(r, g, b)
-	return math.floor(r * 255) * 65536 + math.floor(g * 255) * 256 + math.floor(b * 255)
+-- Cached phase display name — only rebuilt on transition
+local phase_display = "Scanline"
+
+local function advance_phase()
+	phase_time = phase_time - PHASE_DURATION
+	phase_idx = (phase_idx % #phases) + 1
+	particles = nil
+	local name = phases[phase_idx]
+	phase_display = name:sub(1, 1):upper() .. name:sub(2)
 end
 
 function engine.load()
@@ -152,9 +162,7 @@ function engine.update(dt)
 	phase_time = phase_time + dt
 
 	if phase_time >= PHASE_DURATION then
-		phase_time = phase_time - PHASE_DURATION
-		phase_idx = (phase_idx % #phases) + 1
-		particles = nil
+		advance_phase()
 	end
 
 	local phase = phases[phase_idx]
@@ -166,12 +174,12 @@ function engine.update(dt)
 		local t = phase_time / PHASE_DURATION
 		for _, p in ipairs(particles) do
 			if t < 0.5 then
-				local prog = math.min(t * 2, 1.0) * p.speed
+				local prog = min(t * 2, 1.0) * p.speed
 				p.x = p.home_x + (p.target_x - p.home_x) * prog
 				p.y = p.home_y + (p.target_y - p.home_y) * prog
 			else
-				local prog = math.min((t - 0.5) * 2, 1.0) * p.speed
-				prog = math.min(prog, 1.0)
+				local prog = min((t - 0.5) * 2, 1.0) * p.speed
+				prog = min(prog, 1.0)
 				p.x = p.target_x + (p.home_x - p.target_x) * prog
 				p.y = p.target_y + (p.home_y - p.target_y) * prog
 			end
@@ -191,7 +199,7 @@ function engine.draw()
 
 	if phase == "scanline" then
 		-- Letters reveal top-to-bottom with scan line
-		local scan_y = start_y + math.floor(t * LETTER_H * 1.3)
+		local scan_y = start_y + floor(t * LETTER_H * 1.3)
 
 		-- Glow line
 		engine.graphics.set_layer(1)
@@ -218,16 +226,17 @@ function engine.draw()
 		-- Pulsing glow behind each letter
 		engine.graphics.set_layer(1)
 		engine.graphics.pixel.clear()
-		local pulse = 0.5 + 0.5 * math.sin(phase_time * 3.0)
-		local glow_r = math.floor((12 + pulse * 25) * (SCALE / 4))
+		local pt3 = phase_time * 3.0  -- precompute: constant for this frame
+		local pulse = 0.5 + 0.5 * sin(pt3)
+		local glow_r = floor((12 + pulse * 25) * (SCALE / 4))
 		for li, cx in ipairs(letter_centers) do
 			local cy = start_y + LETTER_H / 2
-			local letter_pulse = 0.5 + 0.5 * math.sin(phase_time * 3.0 - li * 0.8)
-			local r = math.floor(glow_r * letter_pulse)
+			local letter_pulse = 0.5 + 0.5 * sin(pt3 - li * 0.8)
+			local r = floor(glow_r * letter_pulse)
 			if r > 4 then
 				engine.graphics.pixel.circle(cx, cy, r, 0x112244)
 				if r > 12 then
-					engine.graphics.pixel.circle(cx, cy, math.floor(r * 0.6), 0x1a3366)
+					engine.graphics.pixel.circle(cx, cy, floor(r * 0.6), 0x1a3366)
 				end
 			end
 		end
@@ -236,10 +245,10 @@ function engine.draw()
 		engine.graphics.set_layer(2)
 		engine.graphics.pixel.clear()
 		for _, b in ipairs(blocks) do
-			local letter_pulse = 0.7 + 0.3 * math.sin(phase_time * 3.0 - b.letter * 0.8)
-			local r = math.min(255, math.floor(0x44 * letter_pulse))
-			local g = math.min(255, math.floor(0xBB * letter_pulse))
-			local bv = math.min(255, math.floor(0xFF * letter_pulse))
+			local letter_pulse = 0.7 + 0.3 * sin(pt3 - b.letter * 0.8)
+			local r = min(255, floor(0x44 * letter_pulse))
+			local g = min(255, floor(0xBB * letter_pulse))
+			local bv = min(255, floor(0xFF * letter_pulse))
 			engine.graphics.pixel.rect(b.x, b.y, S, S, r * 65536 + g * 256 + bv)
 		end
 	elseif phase == "dissolve" then
@@ -251,8 +260,8 @@ function engine.draw()
 
 		if particles then
 			for _, p in ipairs(particles) do
-				local px = math.floor(p.x + 0.5)
-				local py = math.floor(p.y + 0.5)
+				local px = floor(p.x + 0.5)
+				local py = floor(p.y + 0.5)
 				if px >= -S and px < W and py >= -S and py < H then
 					engine.graphics.pixel.rect(px, py, S, S, BASE_COLOR)
 				end
@@ -265,19 +274,20 @@ function engine.draw()
 		engine.graphics.set_layer(2)
 		engine.graphics.pixel.clear()
 
+		local pt04 = phase_time * 0.4  -- precompute: constant for this frame
 		for _, b in ipairs(blocks) do
-			local hue = b.nx + phase_time * 0.4
+			local hue = b.nx + pt04
 			local r, g, bv = hsv_to_rgb(hue, 0.7, 1.0)
-			engine.graphics.pixel.rect(b.x, b.y, S, S, rgb_hex(r, g, bv))
+			engine.graphics.pixel.rect(b.x, b.y, S, S,
+				floor(r * 255) * 65536 + floor(g * 255) * 256 + floor(bv * 255))
 		end
 	end
 
 	-- Phase indicator
-	local phase_name = phase:sub(1, 1):upper() .. phase:sub(2)
 	engine.graphics.draw_text(
 		1,
 		0,
-		string.format("VEXEL  [%s]  %.1fs", phase_name, PHASE_DURATION - phase_time),
+		string.format("VEXEL  [%s]  %.1fs", phase_display, PHASE_DURATION - phase_time),
 		0xCCCCCC
 	)
 	engine.graphics.draw_text(1, 1, "[space] next  [q] quit", 0x666666)
@@ -290,7 +300,6 @@ function engine.on_key(key, action)
 	if key == "q" then
 		engine.quit()
 	elseif key == "space" then
-		phase_time = PHASE_DURATION -- trigger next phase
-		particles = nil
+		phase_time = PHASE_DURATION  -- advance_phase() will fire next update
 	end
 end

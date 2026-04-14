@@ -2,6 +2,7 @@
 -- Exercises pixel drawing, layers, and cell-based text overlay.
 
 local W, H = 320, 180
+local floor = math.floor
 local ball_x, ball_y = 160.0, 90.0
 local ball_dx, ball_dy = 120.0, 85.0
 local ball_r = 10
@@ -55,8 +56,8 @@ function engine.draw()
     -- Layer 2: the ball
     engine.graphics.set_layer(2)
     engine.graphics.pixel.clear()
-    local bx = math.floor(ball_x)
-    local by = math.floor(ball_y)
+    local bx = floor(ball_x)
+    local by = floor(ball_y)
     engine.graphics.pixel.circle(bx, by, ball_r, 0xFF4444)
     -- Highlight on ball
     engine.graphics.pixel.circle(bx - 3, by - 3, 3, 0xFF8888)
