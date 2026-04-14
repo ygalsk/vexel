@@ -288,7 +288,7 @@ function engine.on_key(key, action)
 		return
 	end
 	if key == "q" then
-		engine.quit_game()
+		engine.quit()
 	elseif key == "space" then
 		phase_time = PHASE_DURATION -- trigger next phase
 		particles = nil

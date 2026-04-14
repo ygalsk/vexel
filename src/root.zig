@@ -1,10 +1,10 @@
-//! Vexel — terminal game engine library.
+//! Vexel — terminal graphics runtime library.
 //!
 //! Two usage modes:
-//!   1. Standalone: `zig build run -- path/to/game/` (uses src/bin/main.zig)
+//!   1. Standalone: `zig build run -- path/to/project/` (uses src/bin/main.zig)
 //!   2. Library: import "vexel" in your Zig project, embed the Lua runtime
 //!
-//! See examples/ for Lua game examples.
+//! See examples/ for Lua project examples.
 
 pub const Renderer = @import("renderer");
 pub const ImageManager = @import("image");

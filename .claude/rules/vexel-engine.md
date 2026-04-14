@@ -1,11 +1,11 @@
 # Vexel Engine — Lua API Reference
 
-Terminal game engine: Zig 0.15.2 + Lua 5.4, Kitty graphics protocol, 60fps.
+Terminal graphics runtime: Zig 0.15.2 + Lua 5.4, Kitty graphics protocol, 60fps.
 
 ## Architecture
 
 ```
-Lua game code -> Renderer API -> 8-layer compositor -> Kitty protocol -> terminal
+Lua code -> Renderer API -> 8-layer compositor -> Kitty protocol -> terminal
 ```
 
 - Virtual resolution: 320x180 default (configurable via `set_resolution`)
@@ -14,7 +14,7 @@ Lua game code -> Renderer API -> 8-layer compositor -> Kitty protocol -> termina
 - Main loop: `engine.load() -> [poll input -> engine.update(dt) -> engine.draw() -> composite -> flush]`
 
 ```bash
-zig build run -- examples/bounce/    # game dir must contain main.lua
+zig build run -- examples/bounce/    # project dir must contain main.lua
 ```
 
 ## Lifecycle Callbacks
@@ -26,7 +26,7 @@ function engine.draw()                          -- every frame after update
 function engine.on_key(key, action)             -- action: "press"/"release"
 function engine.on_mouse(x, y, button, action)  -- button: left/right/middle/scroll_up/scroll_down
 function engine.quit()                          -- on shutdown
-engine.quit_game()                              -- call to exit
+engine.quit()                                   -- call to exit
 ```
 
 ## Graphics — Text + Primitives
@@ -66,7 +66,7 @@ local count = engine.graphics.get_frame_count(sheet)
 
 ## Graphics — ECS Sprites (Retained Mode)
 
-**Use for game objects that persist across frames** (characters, projectiles, pickups).
+**Use for objects that persist across frames** (characters, projectiles, pickups, widgets).
 The engine auto-advances animations and auto-renders sprites by layer each frame.
 You do NOT call draw_sprite in draw() for ECS sprites — the engine handles it.
 
@@ -220,7 +220,7 @@ engine.tween(target, { x = 100 }, 1.0, "ease_in_out", function() end)
 ## Persistence
 
 ```lua
--- Key-value (auto-creates save.db in game dir)
+-- Key-value (auto-creates save.db in project dir)
 engine.save.set("high_score", "9001")
 local score = engine.save.get("high_score")  -- string or nil
 engine.save.set("key", nil)                  -- delete

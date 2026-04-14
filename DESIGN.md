@@ -1,6 +1,6 @@
-# Vexel — Terminal Game Engine
+# Vexel — Terminal Graphics Runtime
 
-A general-purpose terminal game engine. Zig core handles rendering, input, audio, and protocol negotiation. Lua 5.4 is the game scripting language. Games are directories of Lua scripts + assets.
+A general-purpose terminal graphics runtime. Zig core handles rendering, input, audio, and protocol negotiation. Lua 5.4 is the scripting language. Projects are directories of Lua scripts + assets.
 
 **Backend: Kitty protocol only.** Pushes kitty graphics protocol and Unicode sub-cell rendering as far as they can go — pixel-perfect graphics, layered compositing, real audio.
 
@@ -10,8 +10,8 @@ Think LÖVE, but for the terminal.
 
 Both library and standalone binary (same architecture):
 
-- **Standalone binary** (primary): `vexel run mygame/` — loads `main.lua` from a game directory. Game authors write pure Lua. No Zig toolchain needed.
-- **Zig library** (power users): engine is a Zig package. Games can mix Zig + Lua or use the engine API directly from Zig.
+- **Standalone binary** (primary): `vexel run myproject/` — loads `main.lua` from a project directory. Authors write pure Lua. No Zig toolchain needed.
+- **Zig library** (power users): engine is a Zig package. Projects can mix Zig + Lua or use the engine API directly from Zig.
 
 ## Architecture
 

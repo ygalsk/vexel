@@ -265,7 +265,7 @@ pub fn build(b: *std.Build) void {
     if (b.args) |args| {
         run_cmd.addArgs(args);
     }
-    const run_step = b.step("run", "Run a game: zig build run -- path/to/game/");
+    const run_step = b.step("run", "Run a project: zig build run -- path/to/project/");
     run_step.dependOn(&run_cmd.step);
 
     // --- Test step ---

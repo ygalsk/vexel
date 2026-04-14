@@ -101,16 +101,16 @@ pub fn main() !void {
     defer _ = gpa.deinit();
     const allocator = gpa.allocator();
 
-    // Parse args: vexel <game_dir>
+    // Parse args: vexel <project_dir>
     const args = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, args);
 
     if (args.len < 2) {
-        stderrPrint("Usage: vexel <game_directory>\n", .{});
+        stderrPrint("Usage: vexel <project_directory>\n", .{});
         std.process.exit(1);
     }
 
-    const game_dir = args[1];
+    const project_dir = args[1];
 
     var tty_buf: [4096]u8 = undefined;
     var tty = try vaxis.Tty.init(&tty_buf);
@@ -161,7 +161,7 @@ pub fn main() !void {
     };
     defer renderer.deinitPixelMode();
 
-    var image_mgr = ImageManager.init(allocator, game_dir);
+    var image_mgr = ImageManager.init(allocator, project_dir);
     defer image_mgr.deinit();
     renderer.setImageManager(&image_mgr);
 
@@ -169,13 +169,13 @@ pub fn main() !void {
     var input_state = input_mod.InputState.init(allocator);
     defer input_state.deinit();
 
-    var audio_system = AudioSystem.init(allocator, game_dir);
+    var audio_system = AudioSystem.init(allocator, project_dir);
     defer audio_system.deinit();
     if (!audio_system.available) {
         stderrPrint("Warning: audio device not available, audio disabled\n", .{});
     }
 
-    var lua_eng = try lua_engine_mod.init(allocator, game_dir);
+    var lua_eng = try lua_engine_mod.init(allocator, project_dir);
     defer lua_eng.deinit();
 
     var scene_mgr = SceneManager.init(allocator, lua_eng.lua, &renderer);
@@ -184,7 +184,7 @@ pub fn main() !void {
     var timer_system = TimerSystem.init(allocator, lua_eng.lua);
     defer timer_system.deinit();
 
-    var save_db = SaveDb.init(allocator, game_dir);
+    var save_db = SaveDb.init(allocator, project_dir);
     defer save_db.deinit();
 
     var ecs_world = EcsWorld.init(allocator);

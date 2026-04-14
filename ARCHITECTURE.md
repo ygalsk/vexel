@@ -6,7 +6,7 @@
 src/
   root.zig            — Library entry point: re-exports public engine types
   bin/
-    main.zig          — Standalone binary: parse args, load game dir, run main loop
+    main.zig          — Standalone binary: parse args, load project dir, run main loop
 
   engine/
     input.zig         — Key/mouse event translation from vaxis to engine types
@@ -23,7 +23,7 @@ src/
     audio.zig         — miniaudio wrapper via zaudio: device management, sound slots, playback
     
   scripting/
-    lua_engine.zig    — Lua state lifecycle, game loading, callback dispatch
+    lua_engine.zig    — Lua state lifecycle, project loading, callback dispatch
     lua_api.zig       — Register engine.* functions into Lua (graphics, input, etc.)
     
   ecs/
@@ -38,7 +38,7 @@ src/
 ## Rendering Pipeline
 
 ```
-Game code (Lua)
+Lua code
     │
     ▼
 Rendering API  ←  draw_sprite, draw_rect, draw_text, draw_tilemap, ...
@@ -78,7 +78,7 @@ init:
     detect terminal capabilities (kitty graphics, keyboard protocol)
     init audio system (graceful fallback if no device)
     init Lua state + sandbox
-    load game/main.lua
+    load project/main.lua
     call engine.load()
 
 loop (~60fps):
@@ -97,6 +97,6 @@ cleanup:
     restore terminal
 ```
 
-## Lua Game API
+## Lua API
 
 See [.claude/rules/vexel-engine.md](.claude/rules/vexel-engine.md) for the full Lua API reference.

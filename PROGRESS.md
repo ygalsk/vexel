@@ -16,6 +16,8 @@
 | 9 | ~~Codecritter Port~~ | Extracted to separate repo |
 
 ## Recent
+- Simplify: kitty.zig — cached KITTY_PID env check (was getenv every frame), comptime-precomputed shm path base64 encodings, replaced cwd-relative absolute paths with proper deleteFileAbsolute/createFileAbsolute, removed unused posix import. Renamed "game" terminology to "project" throughout docs/code/examples, renamed quit_game→quit in Lua API.
+- Compositor: file-based Kitty upload via /dev/shm — upload went from 35% → 0% CPU on Kitty terminal at 1080×720. Ghostty falls back to base64. See COMPOSITOR_PERF.md.
 - Simplify: consolidated Lua API docs into single source of truth (.claude/rules/vexel-engine.md), deleted registry.lua in favor of frame-count-based ANIM_TEMPLATES, migrated battle_screen sprites from manual animation to ECS, fixed placeholder anim speed=0 bug, eliminated dead on_complete closures for idle anims
 - Simplify battle UI: removed dead widgets (message_log, archetype_badge), hoisted per-frame table allocations (status_icon, rarity_stars), extracted menu background helper and minion labels constant
 
@@ -28,7 +30,7 @@
 - Input translation (keyboard + mouse)
 - Basic cell-based text and rectangle rendering
 - 60fps frame cap with delta timing
-- Test game: `examples/hello/`
+- Test example: `examples/hello/`
 
 ### Phase 1 — Kitty Graphics (adapted)
 Phase 1's original plan included sub-cell/sextant rendering. The implementation instead went full pixel via the kitty graphics protocol compositor, which is strictly more capable. Sub-cell primitives were not needed.
@@ -39,7 +41,7 @@ Phase 1's original plan included sub-cell/sextant rendering. The implementation 
 - Virtual resolution system (`set_resolution` / `get_resolution`)
 - Layer control (`set_layer`, `clear_all`)
 - Sprite placer mode for per-frame kitty image placements (avoids re-compositing)
-- Test game: `examples/bounce/`
+- Test example: `examples/bounce/`
 
 ### Phase 2 — Image & Sprite Support
 - PNG loading via zigimg with RGBA conversion
@@ -50,22 +52,22 @@ Phase 1's original plan included sub-cell/sextant rendering. The implementation 
 - Flip variants (x/y/both) with lazy pixel buffer generation
 - Pre-scaled terminal image upload for crisp pixel art
 - GC finalizers for automatic resource cleanup
-- Test games: `examples/sprites/`, `examples/platformer/`
+- Test examples: `examples/sprites/`, `examples/platformer/`
 
 ### Phase 3 — Input & Scene Management
-- Input state tracker: key-down table, mouse position/buttons, gamepad abstraction
+- Input state tracker: key-down table, mouse position/buttons, controller abstraction
 - Input state queries: `engine.input.is_key_down(key)`, `engine.input.get_mouse()`, `engine.input.get_gamepad()`
 - Scene manager with push/pop/switch stack operations
 - Scene callbacks: load, update, draw, on_key, on_mouse, unload, pause, resume
 - Scene-to-scene data passing via registry refs
 - Transition system: fade (alpha lerp), slide_left, slide_right, wipe
 - Custom transition duration with compositor snapshot blending
-- Legacy mode: existing games without scenes work unchanged
-- Lua `require()` support from game directories
-- Test game: `examples/scenes/` (menu → dragon flight → pause)
+- Legacy mode: existing projects without scenes work unchanged
+- Lua `require()` support from project directories
+- Test example: `examples/scenes/` (menu → dragon flight → pause)
 
 ### Phase 4 — Audio
-- miniaudio integration via zaudio (zig-gamedev) with high-level `ma_engine` API
+- miniaudio integration via zaudio with high-level `ma_engine` API
 - Audio device init/deinit with graceful fallback when no device available
 - Load WAV, OGG, MP3 files (preloaded or streaming)
 - Slot-based sound handle management with free list recycling
@@ -75,8 +77,8 @@ Phase 1's original plan included sub-cell/sextant rendering. The implementation 
 - Fade in/out with millisecond duration
 - Sound handles as Lua userdata with GC finalizers
 - Optional build flag: `-Daudio=false` disables audio compilation
-- Game-relative path resolution for asset loading
-- Test game: `examples/rhythm/` (4-lane rhythm game with music + SFX)
+- Project-relative path resolution for asset loading
+- Test example: `examples/rhythm/` (4-lane rhythm app with music + SFX)
 
 ### Phase 5 — Tilemap & Persistence
 - Timer system: one-shot (`after`) and repeating (`every`) timers with cancel
@@ -85,13 +87,13 @@ Phase 1's original plan included sub-cell/sextant rendering. The implementation 
   - On-complete callbacks
 - SQLite persistence via zqlite
   - Raw SQL: `engine.db.open/exec/query/close` with bind parameters
-  - Key-value sugar: `engine.save.set/get` (auto-creates save.db in game dir)
+  - Key-value sugar: `engine.save.set/get` (auto-creates save.db in project dir)
   - DB handles as Lua userdata with GC finalizers
 - Tilemap renderer: draw tile-based maps with sprite sheet tilesets
   - Viewport culling (only renders visible tiles)
   - Smooth scrolling via sub-pixel camera offsets
   - Dev-assigned compositor layers
-- Test game: `examples/roguelike/` (procedural dungeon, save/load, tween camera)
+- Test example: `examples/roguelike/` (procedural dungeon, save/load, tween camera)
 
 ### Phase 7 — Entity Component System
 - Sparse-set ECS with generation-counted entity IDs
@@ -104,7 +106,7 @@ Phase 1's original plan included sub-cell/sextant rendering. The implementation 
 - Animation events fire Lua on_complete callbacks
 - Layer-sorted rendering (0-7)
 - Accepts VexelImage userdata or integer handles for sprite images
-- Test game: `examples/ecs-demo/` (knight + spawnable fire skulls)
+- Test example: `examples/ecs-demo/` (knight + spawnable fire skulls)
 
 ## Source Files
 

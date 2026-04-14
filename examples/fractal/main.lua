@@ -105,7 +105,7 @@ end
 
 function engine.on_key(key, action)
     if action ~= "press" then return end
-    if key == "q" then engine.quit_game()
+    if key == "q" then engine.quit()
     elseif key == "m" then
         mode = "mandelbrot"
         zoom = 1.0

@@ -69,6 +69,6 @@ end
 
 function engine.on_key(key, action)
     if action == "press" and key == "q" then
-        engine.quit_game()
+        engine.quit()
     end
 end

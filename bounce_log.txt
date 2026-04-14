@@ -1,0 +1,57 @@
+unexpected errno: 6
+Unwind error at address `:0x11545fd` (error.MissingFDE), trace may be incomplete
+
+/usr/lib/zig/std/debug.zig:347:27: 0x1154cfa in dumpCurrentStackTraceToWriter (std.zig)
+    writeCurrentStackTrace(writer, debug_info, io.tty.detectConfig(.stderr()), start_addr) catch |err| {
+                          ^
+/usr/lib/zig/std/debug.zig:328:44: 0x11b3b6b in dumpCurrentStackTrace (std.zig)
+    nosuspend dumpCurrentStackTraceToWriter(start_addr, stderr) catch return;
+                                           ^
+/usr/lib/zig/std/posix.zig:7344:40: 0x1199582 in unexpectedErrno (std.zig)
+        std.debug.dumpCurrentStackTrace(null);
+                                       ^
+/usr/lib/zig/std/posix.zig:1701:49: 0x12a835e in openZ (std.zig)
+            else => |err| return unexpectedErrno(err),
+                                                ^
+/usr/lib/zig/std/posix.zig:1656:17: 0x1279851 in open (std.zig)
+    return openZ(&file_path_c, flags, perm);
+                ^
+/home/dkremer/.cache/zig/p/vaxis-0.5.1-BWNV_JJOCQAtdJyLvrYCKbKIhX9q3liQkKMAzujWS4HJ/src/tty.zig:56:34: 0x1243afd in init (main.zig)
+        const fd = try posix.open("/dev/tty", .{ .ACCMODE = .RDWR }, 0);
+                                 ^
+/home/dkremer/Documents/vexel/src/bin/main.zig:116:33: 0x1273aa1 in main (main.zig)
+    var tty = try vaxis.Tty.init(&tty_buf);
+                                ^
+/usr/lib/zig/std/start.zig:627:37: 0x12783a1 in main (std.zig)
+            const result = root.main() catch |err| {
+                                    ^
+???:?:?: 0x7faa4b4685b4 in ??? (libc.so.6)
+???:?:?: 0x7faa4b468667 in ??? (libc.so.6)
+???:?:?: 0x16d7a34 in ??? (???)
+error: Unexpected
+/usr/lib/zig/std/posix.zig:7346:5: 0x1199587 in unexpectedErrno (std.zig)
+    return error.Unexpected;
+    ^
+/usr/lib/zig/std/posix.zig:1701:27: 0x12a836d in openZ (std.zig)
+            else => |err| return unexpectedErrno(err),
+                          ^
+/usr/lib/zig/std/posix.zig:1656:5: 0x127987a in open (std.zig)
+    return openZ(&file_path_c, flags, perm);
+    ^
+/home/dkremer/.cache/zig/p/vaxis-0.5.1-BWNV_JJOCQAtdJyLvrYCKbKIhX9q3liQkKMAzujWS4HJ/src/tty.zig:56:20: 0x1243b25 in init (main.zig)
+        const fd = try posix.open("/dev/tty", .{ .ACCMODE = .RDWR }, 0);
+                   ^
+/home/dkremer/Documents/vexel/src/bin/main.zig:116:15: 0x1273b43 in main (main.zig)
+    var tty = try vaxis.Tty.init(&tty_buf);
+              ^
+run
++- run exe vexel failure
+error: the following command exited with error code 1:
+/home/dkremer/Documents/vexel/zig-out/bin/vexel examples/bounce/
+
+Build Summary: 15/17 steps succeeded; 1 failed
+run transitive failure
++- run exe vexel failure
+
+error: the following build command failed with exit code 1:
+.zig-cache/o/90c138addfd2f477c48586d8d6c3c833/build /usr/bin/zig /usr/lib/zig /home/dkremer/Documents/vexel .zig-cache /home/dkremer/.cache/zig --seed 0xcaa4421 -Z2dbaac62ce4a04cb run -- examples/bounce/

@@ -1,10 +1,10 @@
 # Vexel
-Terminal game engine. Zig 0.15.2 + libvaxis + ziglua (Lua 5.4) + zqlite + zaudio (miniaudio).
+Terminal graphics runtime. Zig 0.15.2 + libvaxis + ziglua (Lua 5.4) + zqlite + zaudio (miniaudio).
 
 ## Build
 ```
 zig build                        # compile
-zig build run -- examples/bounce/   # run an example game
+zig build run -- examples/bounce/   # run an example project
 zig build test                   # unit tests
 ```
 

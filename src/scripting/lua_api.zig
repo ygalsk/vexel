@@ -217,7 +217,7 @@ pub fn register(lua: *Lua, ctx: EngineContext) void {
     }
 
     lua.pushFunction(zlua.wrap(lQuitGame));
-    lua.setField(-2, "quit_game");
+    lua.setField(-2, "quit");
     lua.pushBoolean(false);
     lua.setField(-2, "should_quit");
 
