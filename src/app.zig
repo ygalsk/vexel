@@ -3,12 +3,13 @@ const vaxis = @import("vaxis");
 const lua_engine_mod = @import("lua_engine");
 const lua_api = @import("lua_api");
 const lua_bind = @import("lua_bind");
-const Renderer = @import("renderer");
+const Kitty = @import("kitty");
+const Compositing = @import("compositing");
+const SpritePlacer = @import("sprite_placer");
 const ImageManager = @import("image");
 const input_mod = @import("input");
-const config = @import("config");
 const AudioSystem = @import("audio").AudioSystem;
-const SaveDb = if (config.has_db) @import("db").SaveDb else void;
+const SaveFs = @import("save").SaveFs;
 
 const posix = std.posix;
 const Winsize = vaxis.Winsize;
@@ -41,18 +42,34 @@ pub const App = struct {
     vx: vaxis.Vaxis,
     loop: vaxis.Loop(Event),
 
-    renderer: Renderer,
+    kitty: *Kitty,
+    compositor: *Compositing,
+    sprite_placer: *SpritePlacer,
     image_mgr: ImageManager,
+    screen_info: SpritePlacer.ScreenInfo,
+    sprite_mode: SpritePlacer.SpriteMode,
+    shader_registry: lua_bind.ShaderRegistry,
+    cell_dirty: bool,
+    cell_ctx: lua_api.CellContext,
+
     input_state: input_mod.InputState,
     audio_system: AudioSystem,
     lua_eng: lua_engine_mod,
-    save_db: if (config.has_db) SaveDb else void,
+    save_fs: SaveFs,
     project_dir: []const u8,
 
     // Error overlay state
     error_msg_buf: [512]u8 = undefined,
     error_msg_len: usize = 0,
     error_display_timer: f64 = 0,
+
+    // FPS overlay state
+    show_fps: bool = false,
+    fps_accum: f64 = 0,
+    fps_frame_count: u32 = 0,
+    fps_display: f64 = 0,
+    fps_buf: [16]u8 = undefined,
+    fps_buf_len: usize = 0,
 
     pub const Options = struct {
         project_dir: []const u8,
@@ -78,7 +95,7 @@ pub const App = struct {
         const writer = self.tty.writer();
 
         // Probe transport before event loop starts
-        const transport = Renderer.probeTransport(self.tty.fd, writer);
+        const transport = Kitty.probeTransport(self.tty.fd, writer);
 
         self.loop = .{ .tty = &self.tty, .vaxis = &self.vx };
         try self.loop.init();
@@ -102,8 +119,15 @@ pub const App = struct {
         };
         try self.vx.resize(allocator, writer, winsize);
 
-        self.renderer = Renderer.init(&self.vx, winsize);
-        self.renderer.initPixelMode(allocator, writer, transport) catch |err| {
+        self.screen_info = .{
+            .cols = winsize.cols,
+            .rows = winsize.rows,
+            .x_pixel = winsize.x_pixel,
+            .y_pixel = winsize.y_pixel,
+        };
+
+        self.kitty = try allocator.create(Kitty);
+        self.kitty.* = Kitty.init(allocator, &self.vx, writer, transport) catch |err| {
             if (err == error.NoGraphicsCapability) {
                 stderrPrint("Error: terminal does not support kitty graphics protocol\n", .{});
                 std.process.exit(1);
@@ -111,8 +135,28 @@ pub const App = struct {
             return err;
         };
 
-        self.image_mgr = ImageManager.init(allocator, opts.project_dir);
-        self.renderer.setImageManager(&self.image_mgr);
+        self.compositor = try allocator.create(Compositing);
+        self.compositor.* = try Compositing.init(allocator, self.kitty, &self.vx);
+
+        self.image_mgr = ImageManager.init(allocator, opts.project_dir, self.kitty);
+
+        self.sprite_mode = .compositor;
+        self.sprite_placer = try allocator.create(SpritePlacer);
+        self.sprite_placer.* = SpritePlacer.init(
+            allocator,
+            &self.image_mgr,
+            self.compositor,
+            &self.screen_info,
+            &self.sprite_mode,
+        );
+
+        self.shader_registry = .{};
+        self.cell_dirty = false;
+        self.cell_ctx = .{
+            .vx = &self.vx,
+            .screen_info = &self.screen_info,
+            .cell_dirty = &self.cell_dirty,
+        };
 
         self.input_state = input_mod.InputState.init(allocator);
 
@@ -123,7 +167,7 @@ pub const App = struct {
 
         self.lua_eng = try lua_engine_mod.init(allocator, opts.project_dir);
 
-        self.save_db = if (config.has_db) SaveDb.init(allocator, opts.project_dir) else {};
+        self.save_fs = SaveFs.init(allocator, opts.project_dir);
 
         self.project_dir = opts.project_dir;
 
@@ -141,13 +185,13 @@ pub const App = struct {
     /// Register a pixel shader function for batch dispatch via pixel.shade().
     /// The function must be: fn(px: f64, py: f64, w: f64, h: f64, ...uniforms) i32
     pub fn registerPixelShader(self: *App, comptime name: [:0]const u8, comptime func: anytype) void {
-        lua_bind.registerPixelShader(&self.renderer.shader_registry, name, func);
+        lua_bind.registerPixelShader(&self.shader_registry, name, func);
     }
 
     /// Register a simulation shader for serial whole-buffer dispatch via pixel.shade().
     /// The function must be: fn(buf: []u32, w: u16, h: u16, uniforms: []const f64) void
     pub fn registerSimulation(self: *App, comptime name: [:0]const u8, comptime func: fn ([]u32, u16, u16, []const f64) void) void {
-        lua_bind.registerSimulation(&self.renderer.shader_registry, name, func);
+        lua_bind.registerSimulation(&self.shader_registry, name, func);
     }
 
     /// Load the Lua project and run the main loop until quit.
@@ -163,7 +207,7 @@ pub const App = struct {
             self.fatalLuaError(writer, "engine.load()", err);
         };
 
-        self.renderer.sprite_mode = .placer;
+        self.sprite_mode = .placer;
 
         // Signal handlers
         const sa: posix.Sigaction = .{
@@ -192,6 +236,12 @@ pub const App = struct {
                             self.hotReload();
                             continue;
                         }
+                        if (key.codepoint == vaxis.Key.f3) {
+                            if (self.lua_eng.isDebugMode()) {
+                                self.show_fps = !self.show_fps;
+                            }
+                            continue;
+                        }
                         self.handleKey(key, .press);
                     },
                     .key_release => |key| {
@@ -200,11 +250,11 @@ pub const App = struct {
                     .mouse => |mouse| {
                         var ev = input_mod.translateMouse(mouse);
                         // Convert cell coords to virtual pixel coords
-                        const res = self.renderer.pixelGetResolution();
-                        const info = self.renderer.getScreenInfo();
-                        if (info.cols > 0 and info.rows > 0) {
-                            ev.x = @intCast(@divTrunc(@as(i64, ev.x) * @as(i64, res.w), @as(i64, info.cols)));
-                            ev.y = @intCast(@divTrunc(@as(i64, ev.y) * @as(i64, res.h), @as(i64, info.rows)));
+                        const res_w: i64 = self.compositor.width;
+                        const res_h: i64 = self.compositor.height;
+                        if (self.screen_info.cols > 0 and self.screen_info.rows > 0) {
+                            ev.x = @intCast(@divTrunc(@as(i64, ev.x) * res_w, @as(i64, self.screen_info.cols)));
+                            ev.y = @intCast(@divTrunc(@as(i64, ev.y) * res_h, @as(i64, self.screen_info.rows)));
                         }
                         self.input_state.processMouseEvent(ev);
                         self.lua_eng.callOnMouse(ev.x, ev.y, ev.button.name(), ev.action.name()) catch |err| {
@@ -213,8 +263,14 @@ pub const App = struct {
                     },
                     .winsize => |ws| {
                         self.vx.resize(self.allocator, writer, ws) catch {};
-                        self.renderer.updateSize(ws);
-                        self.renderer.onResize();
+                        self.screen_info = .{
+                            .cols = ws.cols,
+                            .rows = ws.rows,
+                            .x_pixel = ws.x_pixel,
+                            .y_pixel = ws.y_pixel,
+                        };
+                        self.compositor.markAllDirty();
+                        self.image_mgr.invalidateAllTerminal();
                         resized = true;
                     },
                     .focus_in, .focus_out => {},
@@ -226,18 +282,30 @@ pub const App = struct {
             const dt_ns = timer.lap();
             const dt: f64 = @as(f64, @floatFromInt(dt_ns)) / 1_000_000_000.0;
 
+            if (self.show_fps) {
+                self.fps_frame_count += 1;
+                self.fps_accum += dt;
+                if (self.fps_accum >= 0.5) {
+                    self.fps_display = @as(f64, @floatFromInt(self.fps_frame_count)) / self.fps_accum;
+                    self.fps_frame_count = 0;
+                    self.fps_accum = 0;
+                    self.fps_buf_len = (std.fmt.bufPrint(&self.fps_buf, "FPS: {d:.0}", .{self.fps_display}) catch &.{}).len;
+                }
+            }
+
             self.lua_eng.callUpdate(dt) catch |err| {
                 self.logLuaError("engine.update()", err);
             };
 
-            self.renderer.clear();
-            self.renderer.clearSprites();
+            self.cell_ctx.clear();
+            self.sprite_placer.clear();
 
             self.lua_eng.callDraw() catch |err| {
                 self.logLuaError("engine.draw()", err);
             };
 
-            self.renderer.flushPixels() catch {};
+            try self.compositor.flush();
+            self.sprite_placer.flush(&self.vx);
 
             // Error overlay (drawn after flush so it appears on top of everything)
             if (self.error_display_timer > 0) {
@@ -245,12 +313,16 @@ pub const App = struct {
                 self.renderErrorOverlay();
             }
 
-            if (self.renderer.isCellDirty() or resized) {
+            if (self.show_fps) {
+                self.renderFpsOverlay();
+            }
+
+            if (self.cell_dirty or resized) {
                 try self.vx.render(writer);
             }
 
-            self.renderer.placeCompositeImage();
-            self.renderer.resetCellDirty();
+            self.compositor.placeComposite();
+            self.cell_dirty = false;
             resized = false;
 
             const frame_ns: u64 = 16_666_667;
@@ -268,12 +340,16 @@ pub const App = struct {
         const allocator = self.allocator;
         const writer = self.tty.writer();
 
-        if (config.has_db) self.save_db.deinit();
         self.lua_eng.deinit();
         self.audio_system.deinit();
         self.input_state.deinit();
         self.image_mgr.deinit();
-        self.renderer.deinitPixelMode();
+        self.sprite_placer.deinit();
+        allocator.destroy(self.sprite_placer);
+        self.compositor.deinit();
+        allocator.destroy(self.compositor);
+        self.kitty.deinit();
+        allocator.destroy(self.kitty);
         self.loop.stop();
         self.vx.deinit(allocator, writer);
         self.tty.deinit();
@@ -316,10 +392,14 @@ pub const App = struct {
     fn registerLuaApi(self: *App) void {
         const audio_ptr: ?*AudioSystem = if (self.audio_system.available) &self.audio_system else null;
         lua_api.register(self.lua_eng.lua, .{
-            .renderer = &self.renderer,
+            .cell_ctx = &self.cell_ctx,
+            .compositor = self.compositor,
+            .sprite_placer = self.sprite_placer,
+            .image_manager = &self.image_mgr,
+            .shader_registry = &self.shader_registry,
             .input_state = &self.input_state,
             .audio_system = audio_ptr,
-            .save_db = if (config.has_db) &self.save_db else {},
+            .save_fs = &self.save_fs,
         });
     }
 
@@ -348,9 +428,17 @@ pub const App = struct {
 
     fn renderErrorOverlay(self: *App) void {
         const text = self.error_msg_buf[0..self.error_msg_len];
-        const cols = self.renderer.getScreenInfo().cols;
+        const cols = self.screen_info.cols;
         const display_len = if (text.len > cols) cols else @as(u16, @intCast(text.len));
-        self.renderer.drawText(0, 0, text[0..display_len], .{ .r = 255, .g = 60, .b = 60 }, .{ .r = 0, .g = 0, .b = 0 });
+        self.cell_ctx.drawText(0, 0, text[0..display_len], .{ .r = 255, .g = 60, .b = 60 }, .{ .r = 0, .g = 0, .b = 0 });
+    }
+
+    fn renderFpsOverlay(self: *App) void {
+        if (self.fps_buf_len == 0) return;
+        const cols = self.screen_info.cols;
+        const len: u16 = @intCast(@min(self.fps_buf_len, cols));
+        const col: u16 = cols -| len;
+        self.cell_ctx.drawText(col, 0, self.fps_buf[0..self.fps_buf_len], .{ .r = 0, .g = 255, .b = 0 }, .{ .r = 0, .g = 0, .b = 0 });
     }
 
     fn fatalLuaError(self: *App, writer: *IoWriter, comptime context: []const u8, err: anyerror) noreturn {

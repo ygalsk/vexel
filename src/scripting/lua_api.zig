@@ -1,8 +1,11 @@
 const std = @import("std");
 const zlua = @import("zlua");
 const Lua = zlua.Lua;
-const config = @import("config");
-const Renderer = @import("renderer");
+const vaxis = @import("vaxis");
+const Compositing = @import("compositing");
+const SpritePlacer = @import("sprite_placer");
+const ImageMod = @import("image");
+const lua_bind = @import("lua_bind");
 const input_mod = @import("input");
 const InputState = input_mod.InputState;
 const audio_mod_ = @import("audio");
@@ -10,16 +13,61 @@ const AudioSystem = audio_mod_.AudioSystem;
 const SoundId = audio_mod_.SoundId;
 const AudioLoadOpts = audio_mod_.LoadOpts;
 const AudioPlayOpts = audio_mod_.PlayOpts;
-const db_mod_ = if (config.has_db) @import("db") else struct {};
-const SaveDb = if (config.has_db) db_mod_.SaveDb else void;
-const PersistDb = if (config.has_db) db_mod_.Db else void;
+const SaveFs = @import("save").SaveFs;
 const METATABLE_IMAGE = "VexelImage";
 const METATABLE_SOUND = "VexelSound";
-const METATABLE_DB = "VexelDb";
+
+const Color = Compositing.Color;
+
+pub const CellContext = struct {
+    vx: *vaxis.Vaxis,
+    screen_info: *SpritePlacer.ScreenInfo,
+    cell_dirty: *bool,
+
+    fn colorToVaxis(c: Color) vaxis.Cell.Color {
+        return .{ .rgb = .{ c.r, c.g, c.b } };
+    }
+
+    pub fn drawText(self: *CellContext, col: u16, row: u16, text: []const u8, fg: ?Color, bg: ?Color) void {
+        self.cell_dirty.* = true;
+        const style: vaxis.Cell.Style = .{
+            .fg = if (fg) |c| colorToVaxis(c) else .default,
+            .bg = if (bg) |c| colorToVaxis(c) else .default,
+        };
+        _ = self.vx.window().print(&.{.{ .text = text, .style = style }}, .{
+            .row_offset = row,
+            .col_offset = col,
+            .wrap = .none,
+        });
+    }
+
+    pub fn drawRect(self: *CellContext, col: u16, row: u16, w: u16, h: u16, color: Color) void {
+        self.cell_dirty.* = true;
+        const win = self.vx.window();
+        const style: vaxis.Cell.Style = .{
+            .bg = colorToVaxis(color),
+        };
+        var y: u16 = row;
+        while (y < row +| h and y < win.height) : (y += 1) {
+            var x: u16 = col;
+            while (x < col +| w and x < win.width) : (x += 1) {
+                win.writeCell(x, y, .{
+                    .char = .{ .grapheme = " ", .width = 1 },
+                    .style = style,
+                });
+            }
+        }
+    }
+
+    pub fn clear(self: *CellContext) void {
+        self.cell_dirty.* = true;
+        self.vx.window().clear();
+    }
+};
 
 /// Userdata stored inside each Lua image handle.
 pub const LuaImageHandle = struct {
-    handle: Renderer.ImageHandle,
+    handle: ImageMod.ImageHandle,
     valid: bool,
 };
 
@@ -29,29 +77,51 @@ fn pushUpvalueClosure(lua: *Lua, ptr: anytype, func: zlua.CFn) void {
     lua.pushClosure(func, 1);
 }
 
+/// Push a C closure with two pointers as upvalues.
+fn pushUpvalueClosure2(lua: *Lua, ptr1: anytype, ptr2: anytype, func: zlua.CFn) void {
+    lua.pushLightUserdata(ptr1);
+    lua.pushLightUserdata(ptr2);
+    lua.pushClosure(func, 2);
+}
+
 /// Extract a typed pointer from upvalue 1 of a C closure.
 fn getUpvalue(lua: *Lua, comptime T: type) *T {
     const ptr = lua.toPointer(Lua.upvalueIndex(1)) catch unreachable;
     return @ptrCast(@constCast(@alignCast(ptr)));
 }
 
+/// Extract a typed pointer from upvalue 2 of a C closure.
+fn getUpvalue2(lua: *Lua, comptime T: type) *T {
+    const ptr = lua.toPointer(Lua.upvalueIndex(2)) catch unreachable;
+    return @ptrCast(@constCast(@alignCast(ptr)));
+}
+
 pub const EngineContext = struct {
-    renderer: *Renderer,
+    cell_ctx: *CellContext,
+    compositor: *Compositing,
+    sprite_placer: *SpritePlacer,
+    image_manager: *ImageMod,
+    shader_registry: *lua_bind.ShaderRegistry,
     input_state: *InputState,
     audio_system: ?*AudioSystem,
-    save_db: if (config.has_db) *SaveDb else void,
+    save_fs: *SaveFs,
 };
 
 /// Register all engine.* API functions into the Lua state.
 /// Call this after LuaEngine.init() but before loadGame().
 pub fn register(lua: *Lua, ctx: EngineContext) void {
-    const renderer = ctx.renderer;
+    const cell_ctx = ctx.cell_ctx;
+    const compositor = ctx.compositor;
+    const sprite_placer = ctx.sprite_placer;
+    const image_manager = ctx.image_manager;
+    const shader_registry = ctx.shader_registry;
     const input_state = ctx.input_state;
     const audio_system = ctx.audio_system;
-    const save_db = if (config.has_db) ctx.save_db else {};
+    const save_fs = ctx.save_fs;
+
     // Create VexelImage metatable with __gc
     lua.newMetatable(METATABLE_IMAGE) catch {};
-    pushUpvalueClosure(lua, renderer, zlua.wrap(lImageGc));
+    pushUpvalueClosure(lua, image_manager, zlua.wrap(lImageGc));
     lua.setField(-2, "__gc");
     lua.pop(1);
 
@@ -61,61 +131,62 @@ pub fn register(lua: *Lua, ctx: EngineContext) void {
     // engine.graphics
     lua.newTable();
 
-    pushUpvalueClosure(lua, renderer, zlua.wrap(lDrawText));
+    pushUpvalueClosure(lua, cell_ctx, zlua.wrap(lDrawText));
     lua.setField(-2, "draw_text");
-    pushUpvalueClosure(lua, renderer, zlua.wrap(lDrawRect));
+    pushUpvalueClosure(lua, cell_ctx, zlua.wrap(lDrawRect));
     lua.setField(-2, "draw_rect");
-    pushUpvalueClosure(lua, renderer, zlua.wrap(lClear));
+    pushUpvalueClosure(lua, cell_ctx, zlua.wrap(lClear));
     lua.setField(-2, "clear");
-    pushUpvalueClosure(lua, renderer, zlua.wrap(lGetSize));
+    pushUpvalueClosure(lua, cell_ctx, zlua.wrap(lGetSize));
     lua.setField(-2, "get_size");
-    pushUpvalueClosure(lua, renderer, zlua.wrap(lGetPixelSize));
+    pushUpvalueClosure(lua, cell_ctx, zlua.wrap(lGetPixelSize));
     lua.setField(-2, "get_pixel_size");
-    pushUpvalueClosure(lua, renderer, zlua.wrap(lSetResolution));
+
+    pushUpvalueClosure(lua, compositor, zlua.wrap(lSetResolution));
     lua.setField(-2, "set_resolution");
-    pushUpvalueClosure(lua, renderer, zlua.wrap(lGetResolution));
+    pushUpvalueClosure(lua, compositor, zlua.wrap(lGetResolution));
     lua.setField(-2, "get_resolution");
-    pushUpvalueClosure(lua, renderer, zlua.wrap(lSetLayer));
+    pushUpvalueClosure(lua, compositor, zlua.wrap(lSetLayer));
     lua.setField(-2, "set_layer");
-    pushUpvalueClosure(lua, renderer, zlua.wrap(lClearAll));
+    pushUpvalueClosure(lua, compositor, zlua.wrap(lClearAll));
     lua.setField(-2, "clear_all");
 
     // Image/sprite functions
-    pushUpvalueClosure(lua, renderer, zlua.wrap(lLoadImage));
+    pushUpvalueClosure(lua, image_manager, zlua.wrap(lLoadImage));
     lua.setField(-2, "load_image");
-    pushUpvalueClosure(lua, renderer, zlua.wrap(lLoadSpriteSheet));
+    pushUpvalueClosure(lua, image_manager, zlua.wrap(lLoadSpriteSheet));
     lua.setField(-2, "load_spritesheet");
-    pushUpvalueClosure(lua, renderer, zlua.wrap(lDrawSprite));
+    pushUpvalueClosure(lua, sprite_placer, zlua.wrap(lDrawSprite));
     lua.setField(-2, "draw_sprite");
-    pushUpvalueClosure(lua, renderer, zlua.wrap(lDrawFrame));
+    pushUpvalueClosure(lua, sprite_placer, zlua.wrap(lDrawFrame));
     lua.setField(-2, "draw_frame");
-    pushUpvalueClosure(lua, renderer, zlua.wrap(lUnloadImage));
+    pushUpvalueClosure(lua, image_manager, zlua.wrap(lUnloadImage));
     lua.setField(-2, "unload_image");
-    pushUpvalueClosure(lua, renderer, zlua.wrap(lGetFrameCount));
+    pushUpvalueClosure(lua, image_manager, zlua.wrap(lGetFrameCount));
     lua.setField(-2, "get_frame_count");
 
     // engine.graphics.pixel
     lua.newTable();
 
-    pushUpvalueClosure(lua, renderer, zlua.wrap(lPixelRect));
+    pushUpvalueClosure(lua, compositor, zlua.wrap(lPixelRect));
     lua.setField(-2, "rect");
 
-    pushUpvalueClosure(lua, renderer, zlua.wrap(lPixelLine));
+    pushUpvalueClosure(lua, compositor, zlua.wrap(lPixelLine));
     lua.setField(-2, "line");
 
-    pushUpvalueClosure(lua, renderer, zlua.wrap(lPixelCircle));
+    pushUpvalueClosure(lua, compositor, zlua.wrap(lPixelCircle));
     lua.setField(-2, "circle");
 
-    pushUpvalueClosure(lua, renderer, zlua.wrap(lPixelClear));
+    pushUpvalueClosure(lua, compositor, zlua.wrap(lPixelClear));
     lua.setField(-2, "clear");
 
-    pushUpvalueClosure(lua, renderer, zlua.wrap(lPixelSet));
+    pushUpvalueClosure(lua, compositor, zlua.wrap(lPixelSet));
     lua.setField(-2, "set");
 
-    pushUpvalueClosure(lua, renderer, zlua.wrap(lPixelBuffer));
+    pushUpvalueClosure(lua, compositor, zlua.wrap(lPixelBuffer));
     lua.setField(-2, "buffer");
 
-    pushUpvalueClosure(lua, renderer, zlua.wrap(lPixelShade));
+    pushUpvalueClosure2(lua, compositor, shader_registry, zlua.wrap(lPixelShade));
     lua.setField(-2, "shade");
 
     lua.setField(-2, "pixel");
@@ -152,27 +223,17 @@ pub fn register(lua: *Lua, ctx: EngineContext) void {
         lua.setField(-2, "audio");
     }
 
-    // engine.db + engine.save (only when SQLite is compiled in)
-    if (config.has_db) {
-        lua.newMetatable(METATABLE_DB) catch {};
-        lua.pushFunction(zlua.wrap(lDbGc));
-        lua.setField(-2, "__gc");
-        lua.pushFunction(zlua.wrap(lDbIndex));
-        lua.setField(-2, "__index");
-        lua.pop(1);
-
-        lua.newTable();
-        pushUpvalueClosure(lua, save_db, zlua.wrap(lDbOpen));
-        lua.setField(-2, "open");
-        lua.setField(-2, "db");
-
-        lua.newTable();
-        pushUpvalueClosure(lua, save_db, zlua.wrap(lSaveSet));
-        lua.setField(-2, "set");
-        pushUpvalueClosure(lua, save_db, zlua.wrap(lSaveGet));
-        lua.setField(-2, "get");
-        lua.setField(-2, "save");
-    }
+    // engine.save
+    lua.newTable();
+    pushUpvalueClosure(lua, save_fs, zlua.wrap(lSaveWriteFile));
+    lua.setField(-2, "write_file");
+    pushUpvalueClosure(lua, save_fs, zlua.wrap(lSaveReadFile));
+    lua.setField(-2, "read_file");
+    pushUpvalueClosure(lua, save_fs, zlua.wrap(lSaveDeleteFile));
+    lua.setField(-2, "delete_file");
+    pushUpvalueClosure(lua, save_fs, zlua.wrap(lSaveListFiles));
+    lua.setField(-2, "list_files");
+    lua.setField(-2, "save");
 
     lua.pushFunction(zlua.wrap(lQuitGame));
     lua.setField(-2, "quit");
@@ -180,106 +241,104 @@ pub fn register(lua: *Lua, ctx: EngineContext) void {
     lua.setField(-2, "should_quit");
 
     lua.setGlobal("engine");
+
+    // Install Lua-side serializer (engine.save.write / engine.save.read)
+    lua.doString(save_serializer_lua) catch {
+        std.debug.print("Failed to load save serializer\n", .{});
+    };
 }
 
 // --- Helpers ---
 
-fn luaOptionalColor(lua: *Lua, idx: i32) ?Renderer.Color {
+fn luaOptionalColor(lua: *Lua, idx: i32) ?Color {
     const v = lua.toInteger(idx) catch return null;
-    return Renderer.Color.fromHex(@intCast(@as(i64, v)));
+    return Color.fromHex(@intCast(@as(i64, v)));
 }
 
-fn luaHexColor(lua: *Lua, idx: i32, default: u32) Renderer.Color {
-    return luaOptionalColor(lua, idx) orelse Renderer.Color.fromHex(default);
+fn luaHexColor(lua: *Lua, idx: i32, default: u32) Color {
+    return luaOptionalColor(lua, idx) orelse Color.fromHex(default);
 }
 
 fn lDrawText(lua: *Lua) i32 {
-    const renderer = getUpvalue(lua, Renderer);
+    const ctx = getUpvalue(lua, CellContext);
     const col: u16 = @intCast(lua.toInteger(1) catch 0);
     const row: u16 = @intCast(lua.toInteger(2) catch 0);
     const text = lua.toString(3) catch "?";
-
-    const fg = luaOptionalColor(lua, 4);
-    const bg = luaOptionalColor(lua, 5);
-
-    renderer.drawText(col, row, text, fg, bg);
+    ctx.drawText(col, row, text, luaOptionalColor(lua, 4), luaOptionalColor(lua, 5));
     return 0;
 }
 
 fn lDrawRect(lua: *Lua) i32 {
-    const renderer = getUpvalue(lua, Renderer);
+    const ctx = getUpvalue(lua, CellContext);
     const col: u16 = @intCast(lua.toInteger(1) catch 0);
     const row: u16 = @intCast(lua.toInteger(2) catch 0);
     const w: u16 = @intCast(lua.toInteger(3) catch 1);
     const h: u16 = @intCast(lua.toInteger(4) catch 1);
-    renderer.drawRect(col, row, w, h, luaHexColor(lua, 5, 0xFFFFFF));
+    ctx.drawRect(col, row, w, h, luaHexColor(lua, 5, 0xFFFFFF));
     return 0;
 }
 
 fn lClear(lua: *Lua) i32 {
-    const renderer = getUpvalue(lua, Renderer);
-    renderer.clear();
+    const ctx = getUpvalue(lua, CellContext);
+    ctx.clear();
     return 0;
 }
 
 fn lGetSize(lua: *Lua) i32 {
-    const renderer = getUpvalue(lua, Renderer);
-    const info = renderer.getScreenInfo();
-    lua.pushInteger(@intCast(info.cols));
-    lua.pushInteger(@intCast(info.rows));
+    const ctx = getUpvalue(lua, CellContext);
+    lua.pushInteger(@intCast(ctx.screen_info.cols));
+    lua.pushInteger(@intCast(ctx.screen_info.rows));
     return 2;
 }
 
 fn lGetPixelSize(lua: *Lua) i32 {
-    const renderer = getUpvalue(lua, Renderer);
-    const info = renderer.getScreenInfo();
-    lua.pushInteger(@intCast(info.x_pixel));
-    lua.pushInteger(@intCast(info.y_pixel));
+    const ctx = getUpvalue(lua, CellContext);
+    lua.pushInteger(@intCast(ctx.screen_info.x_pixel));
+    lua.pushInteger(@intCast(ctx.screen_info.y_pixel));
     return 2;
 }
 
-// --- Pixel drawing functions ---
+// --- Pixel drawing functions (upvalue: *Compositing) ---
 
 fn lPixelRect(lua: *Lua) i32 {
-    const renderer = getUpvalue(lua, Renderer);
+    const comp = getUpvalue(lua, Compositing);
     const x: i32 = @intCast(lua.toInteger(1) catch 0);
     const y: i32 = @intCast(lua.toInteger(2) catch 0);
     const w: i32 = @intCast(lua.toInteger(3) catch 1);
     const h: i32 = @intCast(lua.toInteger(4) catch 1);
-    renderer.pixelDrawRect(x, y, w, h, luaHexColor(lua, 5, 0xFFFFFF));
+    comp.drawRect(x, y, w, h, luaHexColor(lua, 5, 0xFFFFFF));
     return 0;
 }
 
 fn lPixelLine(lua: *Lua) i32 {
-    const renderer = getUpvalue(lua, Renderer);
+    const comp = getUpvalue(lua, Compositing);
     const x1: i32 = @intCast(lua.toInteger(1) catch 0);
     const y1: i32 = @intCast(lua.toInteger(2) catch 0);
     const x2: i32 = @intCast(lua.toInteger(3) catch 0);
     const y2: i32 = @intCast(lua.toInteger(4) catch 0);
-    renderer.pixelDrawLine(x1, y1, x2, y2, luaHexColor(lua, 5, 0xFFFFFF));
+    comp.drawLine(x1, y1, x2, y2, luaHexColor(lua, 5, 0xFFFFFF));
     return 0;
 }
 
 fn lPixelCircle(lua: *Lua) i32 {
-    const renderer = getUpvalue(lua, Renderer);
+    const comp = getUpvalue(lua, Compositing);
     const cx: i32 = @intCast(lua.toInteger(1) catch 0);
     const cy: i32 = @intCast(lua.toInteger(2) catch 0);
     const r: i32 = @intCast(lua.toInteger(3) catch 1);
-    renderer.pixelDrawCircle(cx, cy, r, luaHexColor(lua, 4, 0xFFFFFF));
+    comp.drawCircle(cx, cy, r, luaHexColor(lua, 4, 0xFFFFFF));
     return 0;
 }
 
 fn lPixelSet(lua: *Lua) i32 {
-    const renderer = getUpvalue(lua, Renderer);
+    const comp = getUpvalue(lua, Compositing);
     const x: i32 = @intCast(lua.toInteger(1) catch 0);
     const y: i32 = @intCast(lua.toInteger(2) catch 0);
-    renderer.pixelSetPixel(x, y, luaHexColor(lua, 3, 0xFFFFFF));
+    comp.setPixel(x, y, luaHexColor(lua, 3, 0xFFFFFF));
     return 0;
 }
 
 fn lPixelBuffer(lua: *Lua) i32 {
-    const renderer = getUpvalue(lua, Renderer);
-    // Args: table, x, y, w, h
+    const comp = getUpvalue(lua, Compositing);
     if (lua.typeOf(1) != .table) {
         lua.raiseErrorStr("pixel.buffer: expected table as first argument", .{});
     }
@@ -290,104 +349,101 @@ fn lPixelBuffer(lua: *Lua) i32 {
     if (w <= 0 or h <= 0) return 0;
 
     const count: usize = @intCast(w * h);
-    const allocator = renderer.getPixelAllocator() orelse return 0;
-    const colors = allocator.alloc(u32, count) catch return 0;
-    defer allocator.free(colors);
+    const colors = comp.allocator.alloc(u32, count) catch return 0;
+    defer comp.allocator.free(colors);
 
     for (0..count) |i| {
         _ = lua.rawGetIndex(1, @intCast(i + 1));
         const val = lua.toInteger(-1) catch 0;
-        colors[i] = Renderer.Color.fromHex(@intCast(@as(i64, val))).pack();
+        colors[i] = Color.fromHex(@intCast(@as(i64, val))).pack();
         lua.pop(1);
     }
 
-    renderer.pixelBlitBuffer(x, y, w, h, colors);
+    comp.blitBuffer(x, y, w, h, colors);
     return 0;
 }
 
 fn lPixelShade(lua: *Lua) i32 {
-    const renderer = getUpvalue(lua, Renderer);
+    const comp = getUpvalue(lua, Compositing);
+    const registry = getUpvalue2(lua, lua_bind.ShaderRegistry);
     const name = lua.toString(1) catch {
         lua.raiseErrorStr("pixel.shade: expected shader name as first argument", .{});
     };
-    const dispatch = renderer.shader_registry.find(name) orelse {
+    const dispatch = registry.find(name) orelse {
         lua.raiseErrorStr("pixel.shade: unknown shader '%s'", .{name.ptr});
     };
 
-    const res = renderer.pixelGetResolution();
-    if (res.w == 0 or res.h == 0) return 0;
+    if (comp.width == 0 or comp.height == 0) return 0;
 
-    const buf = renderer.pixelGetActiveLayerSlice() orelse return 0;
-    dispatch(buf, res.w, res.h, lua);
+    const buf = comp.getActiveLayerSlice();
+    dispatch(buf, comp.width, comp.height, lua);
     return 0;
 }
 
 fn lPixelClear(lua: *Lua) i32 {
-    const renderer = getUpvalue(lua, Renderer);
-    renderer.pixelClearLayer();
+    const comp = getUpvalue(lua, Compositing);
+    comp.clearLayer();
     return 0;
 }
 
 fn lSetResolution(lua: *Lua) i32 {
-    const renderer = getUpvalue(lua, Renderer);
+    const comp = getUpvalue(lua, Compositing);
     const w: u16 = @intCast(lua.toInteger(1) catch 320);
     const h: u16 = @intCast(lua.toInteger(2) catch 180);
-    renderer.pixelSetResolution(w, h) catch {
+    comp.setResolution(w, h) catch {
         lua.raiseErrorStr("failed to set resolution", .{});
     };
     return 0;
 }
 
 fn lGetResolution(lua: *Lua) i32 {
-    const renderer = getUpvalue(lua, Renderer);
-    const res = renderer.pixelGetResolution();
-    lua.pushInteger(@intCast(res.w));
-    lua.pushInteger(@intCast(res.h));
+    const comp = getUpvalue(lua, Compositing);
+    lua.pushInteger(@intCast(comp.width));
+    lua.pushInteger(@intCast(comp.height));
     return 2;
 }
 
 fn lSetLayer(lua: *Lua) i32 {
-    const renderer = getUpvalue(lua, Renderer);
+    const comp = getUpvalue(lua, Compositing);
     const layer: u8 = @intCast(lua.toInteger(1) catch 0);
-    renderer.pixelSetLayer(layer);
+    comp.setActiveLayer(layer);
     return 0;
 }
 
 fn lClearAll(lua: *Lua) i32 {
-    const renderer = getUpvalue(lua, Renderer);
-    renderer.pixelClearAll();
+    const comp = getUpvalue(lua, Compositing);
+    comp.clearAll();
     return 0;
 }
 
 // --- Image/sprite functions ---
 
-/// Push a new VexelImage userdata onto the stack.
-fn pushImageUserdata(lua: *Lua, handle: Renderer.ImageHandle) void {
+fn pushImageUserdata(lua: *Lua, handle: ImageMod.ImageHandle) void {
     const ud = lua.newUserdata(LuaImageHandle, 0);
     ud.* = .{ .handle = handle, .valid = true };
     _ = lua.getField(zlua.registry_index, METATABLE_IMAGE);
     lua.setMetatable(-2);
 }
 
-/// Get the LuaImageHandle from a Lua argument, validating the metatable.
 fn checkImageHandle(lua: *Lua, arg: i32) *LuaImageHandle {
     return lua.checkUserdata(LuaImageHandle, arg, METATABLE_IMAGE);
 }
 
 fn lLoadImage(lua: *Lua) i32 {
-    const renderer = getUpvalue(lua, Renderer);
+    const mgr = getUpvalue(lua, ImageMod);
     const path = lua.toString(1) catch {
         lua.raiseErrorStr("load_image: expected string path", .{});
     };
-    const handle = renderer.loadImage(path) catch {
+    const handle = mgr.loadImage(path) catch {
         lua.raiseErrorStr("load_image: failed to load '%s'", .{path.ptr});
     };
+    mgr.uploadVariant(handle, .none, 1);
     pushImageUserdata(lua, handle);
     return 1;
 }
 
 fn lLoadSpriteSheet(lua: *Lua) i32 {
-    const renderer = getUpvalue(lua, Renderer);
+    const mgr = getUpvalue(lua, ImageMod);
     const path = lua.toString(1) catch {
         lua.raiseErrorStr("load_spritesheet: expected string path", .{});
     };
@@ -397,40 +453,36 @@ fn lLoadSpriteSheet(lua: *Lua) i32 {
     const tile_h: u16 = @intCast(lua.toInteger(3) catch {
         lua.raiseErrorStr("load_spritesheet: expected tile_h", .{});
     });
-    const handle = renderer.loadSpriteSheet(path, tile_w, tile_h) catch {
+    const handle = mgr.loadSpriteSheet(path, tile_w, tile_h) catch {
         lua.raiseErrorStr("load_spritesheet: failed to load '%s'", .{path.ptr});
     };
+    mgr.uploadVariant(handle, .none, 1);
     pushImageUserdata(lua, handle);
     return 1;
 }
 
 fn lDrawSprite(lua: *Lua) i32 {
-    const renderer = getUpvalue(lua, Renderer);
+    const placer = getUpvalue(lua, SpritePlacer);
     const ud = checkImageHandle(lua, 1);
     if (!ud.valid) return 0;
 
     const x: i32 = @intCast(lua.toInteger(2) catch 0);
     const y: i32 = @intCast(lua.toInteger(3) catch 0);
 
-    // Parse optional opts table (arg 4)
-    var opts = Renderer.DrawSpriteOpts{};
+    var opts = SpritePlacer.DrawSpriteOpts{};
     if (lua.typeOf(4) == .table) {
-        // frame
         if (lua.getField(4, "frame") == .number) {
             opts.frame = @intCast(lua.toInteger(-1) catch 0);
         }
         lua.pop(1);
-        // flip_x
         if (lua.getField(4, "flip_x") == .boolean) {
             opts.flip_x = lua.toBoolean(-1);
         }
         lua.pop(1);
-        // flip_y
         if (lua.getField(4, "flip_y") == .boolean) {
             opts.flip_y = lua.toBoolean(-1);
         }
         lua.pop(1);
-        // scale
         if (lua.getField(4, "scale") == .number) {
             const s = lua.toInteger(-1) catch 1;
             opts.scale = if (s < 1) 1 else if (s > 8) 8 else @intCast(s);
@@ -438,12 +490,12 @@ fn lDrawSprite(lua: *Lua) i32 {
         lua.pop(1);
     }
 
-    renderer.drawSprite(ud.handle, x, y, opts);
+    placer.drawSprite(ud.handle, x, y, opts);
     return 0;
 }
 
 fn lDrawFrame(lua: *Lua) i32 {
-    const renderer = getUpvalue(lua, Renderer);
+    const placer = getUpvalue(lua, SpritePlacer);
     const ud = checkImageHandle(lua, 1);
     if (!ud.valid) return 0;
 
@@ -451,7 +503,7 @@ fn lDrawFrame(lua: *Lua) i32 {
     const x: i32 = @intCast(lua.toInteger(3) catch 0);
     const y: i32 = @intCast(lua.toInteger(4) catch 0);
 
-    renderer.drawSprite(ud.handle, x, y, .{ .frame = frame_idx });
+    placer.drawSprite(ud.handle, x, y, .{ .frame = frame_idx });
     return 0;
 }
 
@@ -461,13 +513,13 @@ fn lUnloadImage(lua: *Lua) i32 {
 }
 
 fn lGetFrameCount(lua: *Lua) i32 {
-    const renderer = getUpvalue(lua, Renderer);
+    const mgr = getUpvalue(lua, ImageMod);
     const ud = checkImageHandle(lua, 1);
     if (!ud.valid) {
         lua.pushInteger(0);
         return 1;
     }
-    lua.pushInteger(@intCast(renderer.getFrameCount(ud.handle)));
+    lua.pushInteger(@intCast(mgr.getFrameCount(ud.handle)));
     return 1;
 }
 
@@ -478,8 +530,8 @@ fn lImageGc(lua: *Lua) i32 {
 
 fn releaseImageHandle(lua: *Lua, ud: *LuaImageHandle) void {
     if (!ud.valid) return;
-    const renderer = getUpvalue(lua, Renderer);
-    renderer.unloadImage(ud.handle);
+    const mgr = getUpvalue(lua, ImageMod);
+    mgr.unloadImage(ud.handle);
     ud.valid = false;
 }
 
@@ -544,241 +596,154 @@ fn lQuitGame(lua: *Lua) i32 {
     return 0;
 }
 
-// --- DB functions ---
-
-const LuaDbHandle = struct {
-    db: PersistDb,
-    open: bool,
-};
-
-fn checkDbHandle(lua: *Lua, arg: i32) *LuaDbHandle {
-    return lua.checkUserdata(LuaDbHandle, arg, METATABLE_DB);
-}
-
-/// engine.db.open(path) -> db userdata
-fn lDbOpen(lua: *Lua) i32 {
-    const save_db = getUpvalue(lua, SaveDb);
-    const rel_path = lua.toString(1) catch {
-        lua.raiseErrorStr("db.open: expected string path", .{});
-    };
-
-    // Resolve path relative to game dir
-    const abs_path = std.fs.path.joinZ(save_db.allocator, &.{ save_db.game_dir, rel_path }) catch {
-        lua.raiseErrorStr("db.open: failed to resolve path", .{});
-    };
-    defer save_db.allocator.free(abs_path);
-
-    const db = PersistDb.open(abs_path) catch {
-        lua.raiseErrorStr("db.open: failed to open database '%s'", .{rel_path.ptr});
-    };
-
-    const ud = lua.newUserdata(LuaDbHandle, 0);
-    ud.* = .{ .db = db, .open = true };
-    _ = lua.getField(zlua.registry_index, METATABLE_DB);
-    lua.setMetatable(-2);
-    return 1;
-}
-
-/// __gc for db handle
-fn lDbGc(lua: *Lua) i32 {
-    const ud = checkDbHandle(lua, 1);
-    if (ud.open) {
-        ud.db.close();
-        ud.open = false;
-    }
-    return 0;
-}
-
-/// __index for db handle — dispatch methods
-fn lDbIndex(lua: *Lua) i32 {
-    const key = lua.toString(2) catch return 0;
-
-    const methods = std.StaticStringMap(zlua.CFn).initComptime(.{
-        .{ "exec", zlua.wrap(lDbExec) },
-        .{ "query", zlua.wrap(lDbQuery) },
-        .{ "close", zlua.wrap(lDbClose) },
-    });
-
-    if (methods.get(key)) |func| {
-        lua.pushClosure(func, 0);
-        return 1;
-    }
-    return 0;
-}
-
-/// Bind Lua arguments (from arg position `start_arg` upward) to a zqlite statement.
-fn bindLuaParams(lua: *Lua, stmt: anytype, start_arg: i32) void {
-    const top = lua.getTop();
-    var bind_idx: usize = 1;
-    var arg_idx: i32 = start_arg;
-    while (arg_idx <= top) : ({
-        arg_idx += 1;
-        bind_idx += 1;
-    }) {
-        switch (lua.typeOf(arg_idx)) {
-            .number => {
-                if (lua.toInteger(arg_idx)) |int_val| {
-                    stmt.bindValue(int_val, bind_idx) catch {
-                        lua.raiseErrorStr("db: bind failed", .{});
-                    };
-                } else |_| {
-                    const float_val: f64 = @floatCast(lua.toNumber(arg_idx) catch 0.0);
-                    stmt.bindValue(float_val, bind_idx) catch {
-                        lua.raiseErrorStr("db: bind failed", .{});
-                    };
-                }
-            },
-            .string => {
-                const str = lua.toString(arg_idx) catch "";
-                stmt.bindValue(str, bind_idx) catch {
-                    lua.raiseErrorStr("db: bind failed", .{});
-                };
-            },
-            .nil => {
-                stmt.bindValue(@as(?[]const u8, null), bind_idx) catch {
-                    lua.raiseErrorStr("db: bind failed", .{});
-                };
-            },
-            else => {
-                lua.raiseErrorStr("db: unsupported bind type", .{});
-            },
-        }
-    }
-}
-
-/// db:exec(sql, ...) — execute SQL with bind params
-fn lDbExec(lua: *Lua) i32 {
-    const ud = checkDbHandle(lua, 1);
-    if (!ud.open) {
-        lua.raiseErrorStr("db:exec: database is closed", .{});
-    }
-    const sql = lua.toString(2) catch {
-        lua.raiseErrorStr("db:exec: expected string SQL", .{});
-    };
-
-    var stmt = ud.db.conn.prepare(sql) catch {
-        lua.raiseErrorStr("db:exec: prepare failed: %s", .{ud.db.conn.lastError()});
-    };
-    defer stmt.deinit();
-
-    bindLuaParams(lua, &stmt, 3);
-
-    stmt.stepToCompletion() catch {
-        lua.raiseErrorStr("db:exec: execution failed: %s", .{ud.db.conn.lastError()});
-    };
-    return 0;
-}
-
-/// db:query(sql, ...) -> array of row tables
-fn lDbQuery(lua: *Lua) i32 {
-    const ud = checkDbHandle(lua, 1);
-    if (!ud.open) {
-        lua.raiseErrorStr("db:query: database is closed", .{});
-    }
-    const sql = lua.toString(2) catch {
-        lua.raiseErrorStr("db:query: expected string SQL", .{});
-    };
-
-    var stmt = ud.db.conn.prepare(sql) catch {
-        lua.raiseErrorStr("db:query: prepare failed: %s", .{ud.db.conn.lastError()});
-    };
-    defer stmt.deinit();
-
-    bindLuaParams(lua, &stmt, 3);
-
-    // Build result table
-    lua.newTable(); // results array
-    var row_num: i32 = 1;
-    const col_count: usize = @intCast(stmt.columnCount());
-
-    while (stmt.step() catch {
-        lua.raiseErrorStr("db:query: step failed: %s", .{ud.db.conn.lastError()});
-    }) {
-        lua.newTable(); // row table
-
-        for (0..col_count) |col| {
-            const col_name: [:0]const u8 = std.mem.span(stmt.columnName(col));
-            switch (stmt.columnType(col)) {
-                .int => lua.pushInteger(stmt.int(col)),
-                .float => lua.pushNumber(@floatCast(stmt.float(col))),
-                .text => _ = lua.pushString(stmt.text(col)),
-                .null => lua.pushNil(),
-                else => lua.pushNil(),
-            }
-            lua.setField(-2, col_name);
-        }
-
-        lua.rawSetIndex(-2, row_num);
-        row_num += 1;
-    }
-
-    return 1;
-}
-
-/// db:close()
-fn lDbClose(lua: *Lua) i32 {
-    const ud = checkDbHandle(lua, 1);
-    if (ud.open) {
-        ud.db.close();
-        ud.open = false;
-    }
-    return 0;
-}
-
 // --- Save functions ---
 
-/// engine.save.set(key, value)
-fn lSaveSet(lua: *Lua) i32 {
-    const save_db = getUpvalue(lua, SaveDb);
-    const key = lua.toString(1) catch {
-        lua.raiseErrorStr("save.set: expected string key", .{});
+/// engine.save.write_file(name, content)
+fn lSaveWriteFile(lua: *Lua) i32 {
+    const save_fs = getUpvalue(lua, SaveFs);
+    const name = lua.toString(1) catch {
+        lua.raiseErrorStr("save.write_file: expected string name", .{});
+    };
+    const content = lua.toString(2) catch {
+        lua.raiseErrorStr("save.write_file: expected string content", .{});
     };
 
-    // Convert value to string — use Lua's built-in tostring for numbers
-    const value: [:0]const u8 = switch (lua.typeOf(2)) {
-        .string => lua.toString(2) catch "",
-        .number => lua.toString(2) catch "0",
-        .boolean => if (lua.toBoolean(2)) @as([:0]const u8, "true") else "false",
-        .nil => {
-            // nil means delete
-            save_db.set(key, "") catch {
-                lua.raiseErrorStr("save.set: failed to write", .{});
-            };
-            return 0;
-        },
-        else => {
-            lua.raiseErrorStr("save.set: unsupported value type", .{});
-        },
-    };
-
-    save_db.set(key, value) catch {
-        lua.raiseErrorStr("save.set: failed to write", .{});
+    save_fs.writeFile(name, content) catch |err| {
+        if (err == error.InvalidName) {
+            lua.raiseErrorStr("save.write_file: invalid name '%s'", .{name.ptr});
+        }
+        lua.raiseErrorStr("save.write_file: write failed", .{});
     };
     return 0;
 }
 
-/// engine.save.get(key) -> value or nil
-fn lSaveGet(lua: *Lua) i32 {
-    const save_db = getUpvalue(lua, SaveDb);
-    const key = lua.toString(1) catch {
-        lua.raiseErrorStr("save.get: expected string key", .{});
+/// engine.save.read_file(name) -> string or nil
+fn lSaveReadFile(lua: *Lua) i32 {
+    const save_fs = getUpvalue(lua, SaveFs);
+    const name = lua.toString(1) catch {
+        lua.raiseErrorStr("save.read_file: expected string name", .{});
     };
 
-    const value = save_db.get(key) catch {
-        lua.raiseErrorStr("save.get: failed to read", .{});
-    };
-
-    if (value) |v| {
-        if (v.len == 0) {
-            lua.pushNil();
-        } else {
-            _ = lua.pushString(v);
+    const content = save_fs.readFile(name) catch |err| {
+        if (err == error.InvalidName) {
+            lua.raiseErrorStr("save.read_file: invalid name '%s'", .{name.ptr});
         }
+        lua.raiseErrorStr("save.read_file: read failed", .{});
+    };
+
+    if (content) |c| {
+        _ = lua.pushString(c);
+        save_fs.allocator.free(c);
     } else {
         lua.pushNil();
     }
     return 1;
 }
+
+/// engine.save.delete_file(name)
+fn lSaveDeleteFile(lua: *Lua) i32 {
+    const save_fs = getUpvalue(lua, SaveFs);
+    const name = lua.toString(1) catch {
+        lua.raiseErrorStr("save.delete_file: expected string name", .{});
+    };
+
+    save_fs.deleteFile(name) catch |err| {
+        if (err == error.InvalidName) {
+            lua.raiseErrorStr("save.delete_file: invalid name '%s'", .{name.ptr});
+        }
+        lua.raiseErrorStr("save.delete_file: delete failed", .{});
+    };
+    return 0;
+}
+
+/// engine.save.list_files() -> array of name strings
+fn lSaveListFiles(lua: *Lua) i32 {
+    const save_fs = getUpvalue(lua, SaveFs);
+
+    const names = save_fs.listFiles(save_fs.allocator) catch {
+        lua.raiseErrorStr("save.list_files: failed to list", .{});
+    };
+    defer {
+        for (names) |n| save_fs.allocator.free(n);
+        save_fs.allocator.free(names);
+    }
+
+    lua.newTable();
+    for (names, 1..) |name, i| {
+        _ = lua.pushString(name);
+        lua.rawSetIndex(-2, @intCast(i));
+    }
+    return 1;
+}
+
+/// Bundled Lua serializer — installs engine.save.write() and engine.save.read()
+const save_serializer_lua =
+    \\local function serialize_value(v, indent)
+    \\    local t = type(v)
+    \\    if t == "string" then
+    \\        return string.format("%q", v)
+    \\    elseif t == "number" then
+    \\        if v ~= v then return "0/0"
+    \\        elseif v == 1/0 then return "1/0"
+    \\        elseif v == -1/0 then return "-1/0"
+    \\        elseif v == math.floor(v) then return string.format("%d", v)
+    \\        else return string.format("%.17g", v)
+    \\        end
+    \\    elseif t == "boolean" then
+    \\        return tostring(v)
+    \\    elseif t == "nil" then
+    \\        return "nil"
+    \\    elseif t == "table" then
+    \\        if getmetatable(v) then error("cannot serialize table with metatable") end
+    \\        local inner = indent .. "  "
+    \\        local parts = {}
+    \\        -- Array part
+    \\        local n = #v
+    \\        for i = 1, n do
+    \\            parts[#parts+1] = inner .. serialize_value(v[i], inner)
+    \\        end
+    \\        -- Hash part
+    \\        local seen = {}
+    \\        for i = 1, n do seen[i] = true end
+    \\        local keys = {}
+    \\        for k in pairs(v) do
+    \\            if not seen[k] then keys[#keys+1] = k end
+    \\        end
+    \\        table.sort(keys, function(a, b)
+    \\            if type(a) == type(b) then return a < b end
+    \\            return type(a) < type(b)
+    \\        end)
+    \\        for _, k in ipairs(keys) do
+    \\            local ks
+    \\            if type(k) == "string" and k:match("^[%a_][%w_]*$") then
+    \\                ks = k
+    \\            else
+    \\                ks = "[" .. serialize_value(k, inner) .. "]"
+    \\            end
+    \\            parts[#parts+1] = inner .. ks .. " = " .. serialize_value(v[k], inner)
+    \\        end
+    \\        if #parts == 0 then return "{}" end
+    \\        return "{\n" .. table.concat(parts, ",\n") .. "\n" .. indent .. "}"
+    \\    else
+    \\        error("cannot serialize " .. t)
+    \\    end
+    \\end
+    \\
+    \\engine.save.write = function(name, tbl)
+    \\    if type(tbl) ~= "table" then
+    \\        error("save.write: expected table, got " .. type(tbl))
+    \\    end
+    \\    engine.save.write_file(name, "return " .. serialize_value(tbl, "") .. "\n")
+    \\end
+    \\
+    \\engine.save.read = function(name)
+    \\    local str = engine.save.read_file(name)
+    \\    if not str then return nil end
+    \\    local fn, err = load(str, "save:" .. name, "t", {})
+    \\    if not fn then error("corrupt save '" .. name .. "': " .. err) end
+    \\    return fn()
+    \\end
+;
 
 // --- Audio functions ---
 
@@ -969,6 +934,5 @@ fn lSoundFadeOut(lua: *Lua) i32 {
 }
 
 test "register creates engine global" {
-    // Minimal smoke test — just verify it doesn't crash
-    _ = Renderer;
+    _ = Compositing;
 }

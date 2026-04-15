@@ -1,5 +1,6 @@
 const std = @import("std");
 const zigimg = @import("zigimg");
+const Kitty = @import("kitty");
 
 const ImageManager = @This();
 
@@ -50,14 +51,16 @@ const Slot = union(enum) {
 
 allocator: std.mem.Allocator,
 game_dir: []const u8,
+kitty: ?*Kitty,
 slots: std.ArrayList(Slot),
 first_free: ?u32,
 path_cache: std.StringHashMap(ImageHandle),
 
-pub fn init(allocator: std.mem.Allocator, game_dir: []const u8) ImageManager {
+pub fn init(allocator: std.mem.Allocator, game_dir: []const u8, kitty: ?*Kitty) ImageManager {
     return .{
         .allocator = allocator,
         .game_dir = game_dir,
+        .kitty = kitty,
         .slots = .{},
         .first_free = null,
         .path_cache = std.StringHashMap(ImageHandle).init(allocator),
@@ -182,6 +185,7 @@ pub fn unloadImage(self: *ImageManager, handle: ImageHandle) void {
         img.ref_count -= 1;
         return;
     }
+    self.freeTerminalData(handle);
     _ = self.path_cache.remove(img.path_key);
     self.freeImageData(img);
     self.slots.items[handle] = .{ .free = self.first_free };
@@ -247,16 +251,6 @@ pub fn setTerminalImage(self: *ImageManager, handle: ImageHandle, variant: FlipV
     img.terminal_images[@intFromEnum(variant)] = ti;
 }
 
-pub fn getAllTerminalIds(self: *const ImageManager, handle: ImageHandle) [4]?u32 {
-    const img = self.getOccupiedConst(handle) orelse return .{ null, null, null, null };
-    return .{
-        if (img.terminal_images[0]) |ti| ti.id else null,
-        if (img.terminal_images[1]) |ti| ti.id else null,
-        if (img.terminal_images[2]) |ti| ti.id else null,
-        if (img.terminal_images[3]) |ti| ti.id else null,
-    };
-}
-
 /// Generate (or return cached) flipped pixel data for a variant.
 pub fn getFlippedPixels(self: *ImageManager, handle: ImageHandle, variant: FlipVariant) ?[]const u8 {
     if (variant == .none) {
@@ -306,11 +300,14 @@ pub fn getFlippedPixels(self: *ImageManager, handle: ImageHandle, variant: FlipV
     return buf;
 }
 
-/// Free terminal-side data for an image (flipped pixel buffers + clear terminal IDs).
-/// Returns the terminal IDs that were active so caller can call kitty.freeImage on each.
-pub fn freeTerminalData(self: *ImageManager, handle: ImageHandle) [4]?u32 {
-    const ids = self.getAllTerminalIds(handle);
-    const img = self.getOccupied(handle) orelse return ids;
+/// Free terminal-side data for an image (flipped pixel buffers + terminal images).
+pub fn freeTerminalData(self: *ImageManager, handle: ImageHandle) void {
+    const img = self.getOccupied(handle) orelse return;
+    if (self.kitty) |k| {
+        for (img.terminal_images) |maybe_ti| {
+            if (maybe_ti) |ti| k.freeImage(ti.id);
+        }
+    }
     img.terminal_images = .{ null, null, null, null };
     for (&img.flipped_pixels) |*fp| {
         if (fp.*) |buf| {
@@ -318,7 +315,60 @@ pub fn freeTerminalData(self: *ImageManager, handle: ImageHandle) [4]?u32 {
             fp.* = null;
         }
     }
-    return ids;
+}
+
+/// Invalidate all cached terminal images (e.g. after resize when upscale factor is stale).
+pub fn invalidateAllTerminal(self: *ImageManager) void {
+    for (0..self.slots.items.len) |i| {
+        self.freeTerminalData(@intCast(i));
+    }
+}
+
+/// Upload a flip variant of an image to the terminal, pre-scaled for crisp rendering.
+pub fn uploadVariant(self: *ImageManager, handle: ImageHandle, variant: FlipVariant, upscale: u16) void {
+    const kitty = self.kitty orelse return;
+
+    if (self.getTerminalImage(handle, variant) != null) return;
+
+    const pixels = self.getFlippedPixels(handle, variant) orelse return;
+    const info = self.getImageInfo(handle) orelse return;
+
+    const scale: u32 = @max(1, upscale);
+
+    if (scale <= 1) {
+        const img = kitty.uploadRgba(pixels, @intCast(info.width), @intCast(info.height)) catch return;
+        self.setTerminalImage(handle, variant, .{
+            .id = img.id,
+            .width = @intCast(info.width),
+            .height = @intCast(info.height),
+        });
+        return;
+    }
+
+    // Pre-scale using nearest-neighbor for crisp pixel art
+    const new_w: u32 = info.width * scale;
+    const new_h: u32 = info.height * scale;
+    const byte_count = @as(usize, new_w) * @as(usize, new_h) * 4;
+    const scaled = self.allocator.alloc(u8, byte_count) catch return;
+    defer self.allocator.free(scaled);
+
+    const ow: usize = @intCast(info.width);
+    for (0..@as(usize, new_h)) |dy| {
+        const sy = dy / scale;
+        const src_row = sy * ow * 4;
+        const dst_row = dy * @as(usize, new_w) * 4;
+        for (0..@as(usize, new_w)) |dx| {
+            const sx = dx / scale;
+            @memcpy(scaled[dst_row + dx * 4 ..][0..4], pixels[src_row + sx * 4 ..][0..4]);
+        }
+    }
+
+    const img = kitty.uploadRgba(scaled, @intCast(new_w), @intCast(new_h)) catch return;
+    self.setTerminalImage(handle, variant, .{
+        .id = img.id,
+        .width = @intCast(new_w),
+        .height = @intCast(new_h),
+    });
 }
 
 // --- Internal ---

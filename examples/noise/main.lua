@@ -354,10 +354,7 @@ local time = 0
 local use_zig = true
 local pixels = {}
 
--- FPS tracking
-local frame_count = 0
-local fps_timer = 0
-local fps = 0
+engine.debug = true
 
 -- Color: map noise [-1,1] -> RGB via hue rotation
 local function noise_to_color(val, hue_shift)
@@ -402,15 +399,6 @@ end
 function engine.update(dt)
 	time = time + dt
 
-	-- FPS counter
-	frame_count = frame_count + 1
-	fps_timer = fps_timer + dt
-	if fps_timer >= 0.5 then
-		fps = frame_count / fps_timer
-		frame_count = 0
-		fps_timer = 0
-	end
-
 	-- Pick noise function
 	local noisefn
 	if use_zig then
@@ -439,7 +427,7 @@ function engine.draw()
 	engine.graphics.pixel.buffer(pixels, 0, 0, W, H)
 
 	local mode = use_zig and "ZIG" or "LUA"
-	local label = string.format("MODE: %s  |  FPS: %.0f  |  %dx%d = %d calls/frame", mode, fps, W, H, W * H)
+	local label = string.format("MODE: %s  |  %dx%d = %d calls/frame", mode, W, H, W * H)
 	engine.graphics.draw_text(1, 0, label, 0xFFFFFF, 0x000000)
 	engine.graphics.draw_text(1, 1, "TAB: toggle  |  ESC: quit", 0xAAAAAA, 0x000000)
 end

@@ -11,7 +11,8 @@
 
 ## Workflow
 - Discuss major steps and design decisions with user BEFORE implementing or writing up a plan
-- After every `/simplify`: update `PROGRESS.md`, stage all files, write a commit
+- After every `/simplify`: stage all files, write a commit
+- Subsystem design rationale lives in `design/` (Obsidian vault) — update the relevant doc when decisions change
 
 ## Coding Discipline
 - **Surface confusion**: state assumptions explicitly; if multiple interpretations exist, present them — don't pick silently
@@ -23,7 +24,7 @@
 ---
 
 # Vexel
-Terminal graphics runtime. Zig 0.15.2 + libvaxis + ziglua (Lua 5.4) + zqlite + zaudio (miniaudio).
+Terminal graphics runtime. Zig 0.15.2 + libvaxis + ziglua (Lua 5.4) + zaudio (miniaudio).
 
 ## Build
 ```

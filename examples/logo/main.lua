@@ -12,10 +12,7 @@ local time = 0
 local phase_idx = 0
 local phase_time = 0
 
--- FPS tracking
-local frame_count = 0
-local fps_timer = 0
-local fps = 0
+engine.debug = true
 
 function engine.load()
     engine.graphics.set_resolution(W, H)
@@ -30,14 +27,6 @@ function engine.update(dt)
         phase_idx = (phase_idx + 1) % NUM_PHASES
     end
 
-    -- FPS counter
-    frame_count = frame_count + 1
-    fps_timer = fps_timer + dt
-    if fps_timer >= 0.5 then
-        fps = frame_count / fps_timer
-        frame_count = 0
-        fps_timer = 0
-    end
 end
 
 function engine.draw()
@@ -48,8 +37,8 @@ function engine.draw()
 
     local remaining = PHASE_DURATION - phase_time
     local label = string.format(
-        "VEXEL  [%s]  %.1fs  |  FPS: %.0f  |  %dx%d",
-        phase_names[phase_idx + 1], remaining, fps, W, H
+        "VEXEL  [%s]  %.1fs  |  %dx%d",
+        phase_names[phase_idx + 1], remaining, W, H
     )
     engine.graphics.draw_text(1, 0, label, 0xCCCCCC)
     engine.graphics.draw_text(1, 1, "[space] next  [q] quit", 0x666666)

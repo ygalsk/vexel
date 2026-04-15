@@ -113,6 +113,17 @@ pub fn shouldQuit(self: *LuaEngine) bool {
     return self.lua.toBoolean(-1);
 }
 
+pub fn isDebugMode(self: *LuaEngine) bool {
+    if (!self.pushEngineTable()) return false;
+    defer self.lua.pop(1);
+
+    const field_type = self.lua.getField(-1, "debug");
+    defer self.lua.pop(1);
+    if (field_type != .boolean) return false;
+
+    return self.lua.toBoolean(-1);
+}
+
 // --- helpers ---
 
 fn cacheEngineRef(self: *LuaEngine) void {

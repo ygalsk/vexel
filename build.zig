@@ -16,13 +16,6 @@ pub fn build(b: *std.Build) void {
         .lang = .lua54,
     });
 
-    const db_enabled = b.option(bool, "db", "Enable database/SQLite support") orelse true;
-
-    const zqlite_dep = if (db_enabled) b.lazyDependency("zqlite", .{
-        .target = target,
-        .optimize = optimize,
-    }) else null;
-
     const zigimg_dep = b.dependency("zigimg", .{
         .target = target,
         .optimize = optimize,
@@ -31,13 +24,6 @@ pub fn build(b: *std.Build) void {
     const audio_enabled = b.option(bool, "audio", "Enable audio support (requires audio device)") orelse true;
 
     const zaudio_dep = if (audio_enabled) b.dependency("zaudio", .{}) else null;
-
-    // Feature flags exposed to source code
-    const has_db = zqlite_dep != null;
-
-    const config_options = b.addOptions();
-    config_options.addOption(bool, "has_db", has_db);
-    const config_mod = config_options.createModule();
 
     // --- Engine modules ---
     const kitty_mod = b.createModule(.{
@@ -55,15 +41,7 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .imports = &.{
             .{ .name = "zigimg", .module = zigimg_dep.module("zigimg") },
-        },
-    });
-
-    const sprite_placer_mod = b.createModule(.{
-        .root_source_file = b.path("src/graphics/sprite_placer.zig"),
-        .target = target,
-        .optimize = optimize,
-        .imports = &.{
-            .{ .name = "vaxis", .module = vaxis_dep.module("vaxis") },
+            .{ .name = "kitty", .module = kitty_mod },
         },
     });
 
@@ -78,6 +56,18 @@ pub fn build(b: *std.Build) void {
         },
     });
 
+    const sprite_placer_mod = b.createModule(.{
+        .root_source_file = b.path("src/graphics/sprite_placer.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &.{
+            .{ .name = "vaxis", .module = vaxis_dep.module("vaxis") },
+            .{ .name = "compositing", .module = compositing_mod },
+            .{ .name = "image", .module = image_mod },
+            .{ .name = "kitty", .module = kitty_mod },
+        },
+    });
+
     const lua_bind_mod = b.createModule(.{
         .root_source_file = b.path("src/scripting/lua_bind.zig"),
         .target = target,
@@ -85,20 +75,6 @@ pub fn build(b: *std.Build) void {
         .imports = &.{
             .{ .name = "zlua", .module = zlua_dep.module("zlua") },
             .{ .name = "compositing", .module = compositing_mod },
-        },
-    });
-
-    const renderer_mod = b.createModule(.{
-        .root_source_file = b.path("src/graphics/renderer.zig"),
-        .target = target,
-        .optimize = optimize,
-        .imports = &.{
-            .{ .name = "vaxis", .module = vaxis_dep.module("vaxis") },
-            .{ .name = "kitty", .module = kitty_mod },
-            .{ .name = "compositing", .module = compositing_mod },
-            .{ .name = "image", .module = image_mod },
-            .{ .name = "sprite_placer", .module = sprite_placer_mod },
-            .{ .name = "lua_bind", .module = lua_bind_mod },
         },
     });
 
@@ -111,14 +87,11 @@ pub fn build(b: *std.Build) void {
         },
     });
 
-    const db_mod = if (zqlite_dep) |dep| b.createModule(.{
-        .root_source_file = b.path("src/persistence/db.zig"),
+    const save_mod = b.createModule(.{
+        .root_source_file = b.path("src/persistence/save.zig"),
         .target = target,
         .optimize = optimize,
-        .imports = &.{
-            .{ .name = "zqlite", .module = dep.module("zqlite") },
-        },
-    }) else null;
+    });
 
     const audio_mod = if (zaudio_dep) |dep| b.createModule(.{
         .root_source_file = b.path("src/audio/audio.zig"),
@@ -144,15 +117,15 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .imports = &.{
             .{ .name = "zlua", .module = zlua_dep.module("zlua") },
-            .{ .name = "renderer", .module = renderer_mod },
+            .{ .name = "vaxis", .module = vaxis_dep.module("vaxis") },
+            .{ .name = "compositing", .module = compositing_mod },
+            .{ .name = "sprite_placer", .module = sprite_placer_mod },
             .{ .name = "image", .module = image_mod },
+            .{ .name = "lua_bind", .module = lua_bind_mod },
             .{ .name = "input", .module = input_mod },
-            .{ .name = "config", .module = config_mod },
+            .{ .name = "save", .module = save_mod },
         },
     });
-    if (db_mod) |dm| {
-        lua_api_mod.addImport("db", dm);
-    }
     if (audio_mod) |am| {
         lua_api_mod.addImport("audio", am);
     }
@@ -164,18 +137,17 @@ pub fn build(b: *std.Build) void {
         .imports = &.{
             .{ .name = "vaxis", .module = vaxis_dep.module("vaxis") },
             .{ .name = "zlua", .module = zlua_dep.module("zlua") },
-            .{ .name = "renderer", .module = renderer_mod },
+            .{ .name = "kitty", .module = kitty_mod },
+            .{ .name = "compositing", .module = compositing_mod },
+            .{ .name = "sprite_placer", .module = sprite_placer_mod },
             .{ .name = "image", .module = image_mod },
             .{ .name = "input", .module = input_mod },
             .{ .name = "lua_engine", .module = lua_engine_mod },
             .{ .name = "lua_api", .module = lua_api_mod },
             .{ .name = "lua_bind", .module = lua_bind_mod },
-            .{ .name = "config", .module = config_mod },
+            .{ .name = "save", .module = save_mod },
         },
     });
-    if (db_mod) |dm| {
-        app_mod.addImport("db", dm);
-    }
     if (audio_mod) |am| {
         app_mod.addImport("audio", am);
     }
@@ -235,6 +207,7 @@ pub fn build(b: *std.Build) void {
         }},
         .{ .path = "src/graphics/image.zig", .imports = &.{
             .{ .name = "zigimg", .module = zigimg_dep.module("zigimg") },
+            .{ .name = "kitty", .module = kitty_mod },
         }},
         .{ .path = "src/graphics/compositing.zig", .imports = &.{
             .{ .name = "vaxis", .module = vaxis_dep.module("vaxis") },
@@ -243,17 +216,14 @@ pub fn build(b: *std.Build) void {
         }},
         .{ .path = "src/graphics/sprite_placer.zig", .imports = &.{
             .{ .name = "vaxis", .module = vaxis_dep.module("vaxis") },
-        }},
-        .{ .path = "src/graphics/renderer.zig", .imports = &.{
-            .{ .name = "vaxis", .module = vaxis_dep.module("vaxis") },
-            .{ .name = "kitty", .module = kitty_mod },
             .{ .name = "compositing", .module = compositing_mod },
             .{ .name = "image", .module = image_mod },
-            .{ .name = "sprite_placer", .module = sprite_placer_mod },
-            .{ .name = "lua_bind", .module = lua_bind_mod },
+            .{ .name = "kitty", .module = kitty_mod },
         }},
         .{ .path = "src/scripting/lua_engine.zig", .imports = &.{
             .{ .name = "zlua", .module = zlua_dep.module("zlua") },
+        }},
+        .{ .path = "src/persistence/save.zig", .imports = &.{
         }},
     };
 
@@ -271,22 +241,6 @@ pub fn build(b: *std.Build) void {
         test_step.dependOn(&run_test.step);
     }
 
-    // Conditional tests: db and lua_api depend on optional features
-    if (zqlite_dep) |dep| {
-        const db_test = b.addTest(.{
-            .root_module = b.createModule(.{
-                .root_source_file = b.path("src/persistence/db.zig"),
-                .target = target,
-                .optimize = optimize,
-                .imports = &.{
-                    .{ .name = "zqlite", .module = dep.module("zqlite") },
-                },
-            }),
-        });
-        db_test.link_gc_sections = true;
-        test_step.dependOn(&b.addRunArtifact(db_test).step);
-    }
-
     {
         const lua_api_test = b.addTest(.{
             .root_module = b.createModule(.{
@@ -295,14 +249,16 @@ pub fn build(b: *std.Build) void {
                 .optimize = optimize,
                 .imports = &.{
                     .{ .name = "zlua", .module = zlua_dep.module("zlua") },
-                    .{ .name = "renderer", .module = renderer_mod },
+                    .{ .name = "vaxis", .module = vaxis_dep.module("vaxis") },
+                    .{ .name = "compositing", .module = compositing_mod },
+                    .{ .name = "sprite_placer", .module = sprite_placer_mod },
                     .{ .name = "image", .module = image_mod },
+                    .{ .name = "lua_bind", .module = lua_bind_mod },
                     .{ .name = "input", .module = input_mod },
-                    .{ .name = "config", .module = config_mod },
+                    .{ .name = "save", .module = save_mod },
                 },
             }),
         });
-        if (db_mod) |dm| lua_api_test.root_module.addImport("db", dm);
         if (audio_mod) |am| lua_api_test.root_module.addImport("audio", am);
         lua_api_test.link_gc_sections = true;
         test_step.dependOn(&b.addRunArtifact(lua_api_test).step);
