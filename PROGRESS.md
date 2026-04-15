@@ -2,6 +2,12 @@
 
 ## 2026-04-15
 
+### simplify: optional db, hot-reload, shader threading
+- Extracted `registerLuaApi()` helper — `lua_api.register(...)` was duplicated verbatim in `init()` and `hotReload()`
+- Removed redundant error overlay field init in `init()` body (struct field defaults already cover it)
+- Renamed `game_dir` → `project_dir` to match `Options` vocabulary
+- Removed narrating comments in `hotReload()` and `renderErrorOverlay()`
+
 ### simplify: pixel shader system cleanup
 - Eliminated per-frame alloc+memcpy in `lPixelShade` — shaders now write directly into compositor layer buffer via `getActiveLayerSlice()` (was: alloc w*h*4 bytes, fill, memcpy, free — every frame)
 - Removed dead `n_uniforms` runtime parameter from `ShaderDispatch` (value was already baked at comptime)

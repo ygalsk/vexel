@@ -7,9 +7,10 @@ const Renderer = @import("renderer");
 const ImageManager = @import("image");
 const input_mod = @import("input");
 const SceneManager = @import("scene");
+const config = @import("config");
 const AudioSystem = @import("audio").AudioSystem;
 const TimerSystem = @import("timer").TimerSystem;
-const SaveDb = @import("db").SaveDb;
+const SaveDb = if (config.has_db) @import("db").SaveDb else void;
 const zlua = @import("zlua");
 const ecs_world_mod = @import("ecs_world");
 const EcsWorld = ecs_world_mod.World;
@@ -53,8 +54,14 @@ pub const App = struct {
     lua_eng: lua_engine_mod,
     scene_mgr: SceneManager,
     timer_system: TimerSystem,
-    save_db: SaveDb,
+    save_db: if (config.has_db) SaveDb else void,
     ecs_world: EcsWorld,
+    project_dir: []const u8,
+
+    // Error overlay state
+    error_msg_buf: [512]u8 = undefined,
+    error_msg_len: usize = 0,
+    error_display_timer: f64 = 0,
 
     pub const Options = struct {
         project_dir: []const u8,
@@ -129,20 +136,12 @@ pub const App = struct {
 
         self.timer_system = TimerSystem.init(allocator, self.lua_eng.lua);
 
-        self.save_db = SaveDb.init(allocator, opts.project_dir);
+        self.save_db = if (config.has_db) SaveDb.init(allocator, opts.project_dir) else {};
 
         self.ecs_world = EcsWorld.init(allocator);
+        self.project_dir = opts.project_dir;
 
-        const audio_ptr: ?*AudioSystem = if (self.audio_system.available) &self.audio_system else null;
-        lua_api.register(self.lua_eng.lua, .{
-            .renderer = &self.renderer,
-            .scene_mgr = &self.scene_mgr,
-            .input_state = &self.input_state,
-            .audio_system = audio_ptr,
-            .timer_system = &self.timer_system,
-            .save_db = &self.save_db,
-            .world = &self.ecs_world,
-        });
+        self.registerLuaApi();
 
         return self;
     }
@@ -157,6 +156,12 @@ pub const App = struct {
     /// The function must be: fn(px: f64, py: f64, w: f64, h: f64, ...uniforms) i32
     pub fn registerPixelShader(self: *App, comptime name: [:0]const u8, comptime func: anytype) void {
         lua_bind.registerPixelShader(&self.renderer.shader_registry, name, func);
+    }
+
+    /// Register a simulation shader for serial whole-buffer dispatch via pixel.shade().
+    /// The function must be: fn(buf: []u32, w: u16, h: u16, uniforms: []const f64) void
+    pub fn registerSimulation(self: *App, comptime name: [:0]const u8, comptime func: fn ([]u32, u16, u16, []const f64) void) void {
+        lua_bind.registerSimulation(&self.renderer.shader_registry, name, func);
     }
 
     /// Load the Lua project and run the main loop until quit.
@@ -182,7 +187,7 @@ pub const App = struct {
         posix.sigaction(posix.SIG.INT, &sa, null);
         posix.sigaction(posix.SIG.TERM, &sa, null);
 
-        const has_scenes = self.scene_mgr.hasScenes();
+        var has_scenes = self.scene_mgr.hasScenes();
 
         var frame_arena = std.heap.ArenaAllocator.init(self.allocator);
         defer frame_arena.deinit();
@@ -201,13 +206,25 @@ pub const App = struct {
                             running = false;
                             break;
                         }
+                        if (key.codepoint == vaxis.Key.f5) {
+                            self.hotReload();
+                            has_scenes = self.scene_mgr.hasScenes();
+                            continue;
+                        }
                         self.handleKey(key, .press, has_scenes);
                     },
                     .key_release => |key| {
                         self.handleKey(key, .release, has_scenes);
                     },
                     .mouse => |mouse| {
-                        const ev = input_mod.translateMouse(mouse);
+                        var ev = input_mod.translateMouse(mouse);
+                        // Convert cell coords to virtual pixel coords
+                        const res = self.renderer.pixelGetResolution();
+                        const info = self.renderer.getScreenInfo();
+                        if (info.cols > 0 and info.rows > 0) {
+                            ev.x = @intCast(@divTrunc(@as(i64, ev.x) * @as(i64, res.w), @as(i64, info.cols)));
+                            ev.y = @intCast(@divTrunc(@as(i64, ev.y) * @as(i64, res.h), @as(i64, info.rows)));
+                        }
                         self.input_state.processMouseEvent(ev);
                         if (has_scenes) {
                             self.scene_mgr.onMouse(ev.x, ev.y, ev.button.name(), ev.action.name());
@@ -284,6 +301,12 @@ pub const App = struct {
 
             self.renderer.flushPixels() catch {};
 
+            // Error overlay (drawn after flush so it appears on top of everything)
+            if (self.error_display_timer > 0) {
+                self.error_display_timer -= dt;
+                self.renderErrorOverlay();
+            }
+
             if (self.renderer.isCellDirty() or resized) {
                 try self.vx.render(writer);
             }
@@ -307,7 +330,7 @@ pub const App = struct {
         const writer = self.tty.writer();
 
         self.ecs_world.deinit();
-        self.save_db.deinit();
+        if (config.has_db) self.save_db.deinit();
         self.timer_system.deinit();
         self.scene_mgr.deinit();
         self.lua_eng.deinit();
@@ -320,6 +343,57 @@ pub const App = struct {
         self.tty.deinit();
 
         allocator.destroy(self);
+    }
+
+    fn hotReload(self: *App) void {
+        self.audio_system.stopAll();
+
+        self.ecs_world.deinit();
+        self.timer_system.deinit();
+        self.scene_mgr.deinit();
+        self.lua_eng.deinit();
+        self.input_state.reset();
+
+        self.lua_eng = lua_engine_mod.init(self.allocator, self.project_dir) catch {
+            self.setErrorOverlay("[reload] failed to init Lua VM");
+            return;
+        };
+        self.scene_mgr = SceneManager.init(self.allocator, self.lua_eng.lua, &self.renderer);
+        self.timer_system = TimerSystem.init(self.allocator, self.lua_eng.lua);
+        self.ecs_world = EcsWorld.init(self.allocator);
+        self.registerLuaApi();
+
+        self.lua_eng.loadGame() catch |err| {
+            self.logLuaError("reload.loadGame", err);
+            return;
+        };
+        self.lua_eng.callLoad() catch |err| {
+            self.logLuaError("reload.engine.load()", err);
+            return;
+        };
+
+        self.error_display_timer = 0;
+        self.error_msg_len = 0;
+    }
+
+    fn setErrorOverlay(self: *App, msg: []const u8) void {
+        const len = @min(msg.len, self.error_msg_buf.len);
+        @memcpy(self.error_msg_buf[0..len], msg[0..len]);
+        self.error_msg_len = len;
+        self.error_display_timer = 5.0;
+    }
+
+    fn registerLuaApi(self: *App) void {
+        const audio_ptr: ?*AudioSystem = if (self.audio_system.available) &self.audio_system else null;
+        lua_api.register(self.lua_eng.lua, .{
+            .renderer = &self.renderer,
+            .scene_mgr = &self.scene_mgr,
+            .input_state = &self.input_state,
+            .audio_system = audio_ptr,
+            .timer_system = &self.timer_system,
+            .save_db = if (config.has_db) &self.save_db else null,
+            .world = &self.ecs_world,
+        });
     }
 
     fn handleKey(self: *App, key: vaxis.Key, action: input_mod.KeyEvent.Action, has_scenes: bool) void {
@@ -338,6 +412,22 @@ pub const App = struct {
         const msg = self.lua_eng.lua.toString(-1) catch "unknown error";
         stderrPrint("Lua error in {s}: {s} ({any})\n", .{ context, msg, err });
         self.lua_eng.lua.pop(1);
+
+        // Store for on-screen overlay
+        const prefix = "[Lua] " ++ context ++ ": ";
+        const max_msg = self.error_msg_buf.len - prefix.len;
+        const clamped = if (msg.len > max_msg) msg[0..max_msg] else msg;
+        @memcpy(self.error_msg_buf[0..prefix.len], prefix);
+        @memcpy(self.error_msg_buf[prefix.len..][0..clamped.len], clamped);
+        self.error_msg_len = prefix.len + clamped.len;
+        self.error_display_timer = 5.0;
+    }
+
+    fn renderErrorOverlay(self: *App) void {
+        const text = self.error_msg_buf[0..self.error_msg_len];
+        const cols = self.renderer.getScreenInfo().cols;
+        const display_len = if (text.len > cols) cols else @as(u16, @intCast(text.len));
+        self.renderer.drawText(0, 0, text[0..display_len], .{ .r = 255, .g = 60, .b = 60 }, .{ .r = 0, .g = 0, .b = 0 });
     }
 
     fn fatalLuaError(self: *App, writer: *IoWriter, comptime context: []const u8, err: anyerror) noreturn {
