@@ -160,7 +160,7 @@ end
 -- Demo
 ----------------------------------------------------------------------
 
-local W, H = 960, 540
+local W, H = 512, 288
 local time = 0
 local use_zig = true
 local pixels = {}

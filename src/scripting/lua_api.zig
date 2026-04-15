@@ -1,6 +1,7 @@
 const std = @import("std");
 const zlua = @import("zlua");
 const Lua = zlua.Lua;
+const config = @import("config");
 const Renderer = @import("renderer");
 const SceneManager = @import("scene");
 const input_mod = @import("input");
@@ -12,9 +13,9 @@ const AudioLoadOpts = audio_mod_.LoadOpts;
 const AudioPlayOpts = audio_mod_.PlayOpts;
 const timer_mod_ = @import("timer");
 const TimerSystem = timer_mod_.TimerSystem;
-const db_mod_ = @import("db");
-const SaveDb = db_mod_.SaveDb;
-const PersistDb = db_mod_.Db;
+const db_mod_ = if (config.has_db) @import("db") else struct {};
+const SaveDb = if (config.has_db) db_mod_.SaveDb else void;
+const PersistDb = if (config.has_db) db_mod_.Db else void;
 const tilemap = @import("tilemap");
 const lua_ecs = @import("lua_ecs");
 const ecs_world = @import("ecs_world");
@@ -47,7 +48,7 @@ pub const EngineContext = struct {
     input_state: *InputState,
     audio_system: ?*AudioSystem,
     timer_system: *TimerSystem,
-    save_db: *SaveDb,
+    save_db: if (config.has_db) *SaveDb else void,
     world: ?*EcsWorld = null,
 };
 
@@ -59,7 +60,7 @@ pub fn register(lua: *Lua, ctx: EngineContext) void {
     const input_state = ctx.input_state;
     const audio_system = ctx.audio_system;
     const timer_system = ctx.timer_system;
-    const save_db = ctx.save_db;
+    const save_db = if (config.has_db) ctx.save_db else {};
     // Create VexelImage metatable with __gc
     lua.newMetatable(METATABLE_IMAGE) catch {};
     pushUpvalueClosure(lua, renderer, zlua.wrap(lImageGc));
@@ -192,26 +193,27 @@ pub fn register(lua: *Lua, ctx: EngineContext) void {
     pushUpvalueClosure(lua, timer_system, zlua.wrap(lTween));
     lua.setField(-2, "tween");
 
-    // engine.db
-    lua.newMetatable(METATABLE_DB) catch {};
-    lua.pushFunction(zlua.wrap(lDbGc));
-    lua.setField(-2, "__gc");
-    lua.pushFunction(zlua.wrap(lDbIndex));
-    lua.setField(-2, "__index");
-    lua.pop(1);
+    // engine.db + engine.save (only when SQLite is compiled in)
+    if (config.has_db) {
+        lua.newMetatable(METATABLE_DB) catch {};
+        lua.pushFunction(zlua.wrap(lDbGc));
+        lua.setField(-2, "__gc");
+        lua.pushFunction(zlua.wrap(lDbIndex));
+        lua.setField(-2, "__index");
+        lua.pop(1);
 
-    lua.newTable();
-    pushUpvalueClosure(lua, save_db, zlua.wrap(lDbOpen));
-    lua.setField(-2, "open");
-    lua.setField(-2, "db");
+        lua.newTable();
+        pushUpvalueClosure(lua, save_db, zlua.wrap(lDbOpen));
+        lua.setField(-2, "open");
+        lua.setField(-2, "db");
 
-    // engine.save
-    lua.newTable();
-    pushUpvalueClosure(lua, save_db, zlua.wrap(lSaveSet));
-    lua.setField(-2, "set");
-    pushUpvalueClosure(lua, save_db, zlua.wrap(lSaveGet));
-    lua.setField(-2, "get");
-    lua.setField(-2, "save");
+        lua.newTable();
+        pushUpvalueClosure(lua, save_db, zlua.wrap(lSaveSet));
+        lua.setField(-2, "set");
+        pushUpvalueClosure(lua, save_db, zlua.wrap(lSaveGet));
+        lua.setField(-2, "get");
+        lua.setField(-2, "save");
+    }
 
     // engine.world (ECS)
     if (ctx.world) |world| {

@@ -16,10 +16,12 @@ pub fn build(b: *std.Build) void {
         .lang = .lua54,
     });
 
-    const zqlite_dep = b.dependency("zqlite", .{
+    const db_enabled = b.option(bool, "db", "Enable database/SQLite support") orelse true;
+
+    const zqlite_dep = if (db_enabled) b.lazyDependency("zqlite", .{
         .target = target,
         .optimize = optimize,
-    });
+    }) else null;
 
     const zigimg_dep = b.dependency("zigimg", .{
         .target = target,
@@ -29,6 +31,13 @@ pub fn build(b: *std.Build) void {
     const audio_enabled = b.option(bool, "audio", "Enable audio support (requires audio device)") orelse true;
 
     const zaudio_dep = if (audio_enabled) b.dependency("zaudio", .{}) else null;
+
+    // Feature flags exposed to source code
+    const has_db = zqlite_dep != null;
+
+    const config_options = b.addOptions();
+    config_options.addOption(bool, "has_db", has_db);
+    const config_mod = config_options.createModule();
 
     // --- Engine modules ---
     const kitty_mod = b.createModule(.{
@@ -157,14 +166,14 @@ pub fn build(b: *std.Build) void {
         },
     });
 
-    const db_mod = b.createModule(.{
+    const db_mod = if (zqlite_dep) |dep| b.createModule(.{
         .root_source_file = b.path("src/persistence/db.zig"),
         .target = target,
         .optimize = optimize,
         .imports = &.{
-            .{ .name = "zqlite", .module = zqlite_dep.module("zqlite") },
+            .{ .name = "zqlite", .module = dep.module("zqlite") },
         },
-    });
+    }) else null;
 
     const audio_mod = if (zaudio_dep) |dep| b.createModule(.{
         .root_source_file = b.path("src/audio/audio.zig"),
@@ -205,12 +214,15 @@ pub fn build(b: *std.Build) void {
             .{ .name = "scene", .module = scene_mod },
             .{ .name = "input", .module = input_mod },
             .{ .name = "timer", .module = timer_mod },
-            .{ .name = "db", .module = db_mod },
             .{ .name = "tilemap", .module = tilemap_mod },
             .{ .name = "lua_ecs", .module = lua_ecs_mod },
             .{ .name = "ecs_world", .module = ecs_world_mod },
+            .{ .name = "config", .module = config_mod },
         },
     });
+    if (db_mod) |dm| {
+        lua_api_mod.addImport("db", dm);
+    }
     if (audio_mod) |am| {
         lua_api_mod.addImport("audio", am);
     }
@@ -230,10 +242,13 @@ pub fn build(b: *std.Build) void {
             .{ .name = "lua_api", .module = lua_api_mod },
             .{ .name = "lua_bind", .module = lua_bind_mod },
             .{ .name = "timer", .module = timer_mod },
-            .{ .name = "db", .module = db_mod },
             .{ .name = "ecs_world", .module = ecs_world_mod },
+            .{ .name = "config", .module = config_mod },
         },
     });
+    if (db_mod) |dm| {
+        app_mod.addImport("db", dm);
+    }
     if (audio_mod) |am| {
         app_mod.addImport("audio", am);
     }
@@ -332,22 +347,6 @@ pub fn build(b: *std.Build) void {
         .{ .path = "src/graphics/tilemap.zig", .imports = &.{
             .{ .name = "renderer", .module = renderer_mod },
         }},
-        .{ .path = "src/persistence/db.zig", .imports = &.{
-            .{ .name = "zqlite", .module = zqlite_dep.module("zqlite") },
-        }},
-        .{ .path = "src/scripting/lua_api.zig", .imports = &.{
-            .{ .name = "zlua", .module = zlua_dep.module("zlua") },
-            .{ .name = "renderer", .module = renderer_mod },
-            .{ .name = "image", .module = image_mod },
-            .{ .name = "scene", .module = scene_mod },
-            .{ .name = "input", .module = input_mod },
-            .{ .name = "timer", .module = timer_mod },
-            .{ .name = "db", .module = db_mod },
-            .{ .name = "tilemap", .module = tilemap_mod },
-            .{ .name = "audio", .module = audio_mod.? },
-            .{ .name = "lua_ecs", .module = lua_ecs_mod },
-            .{ .name = "ecs_world", .module = ecs_world_mod },
-        }},
     };
 
     for (test_modules) |tm| {
@@ -362,6 +361,48 @@ pub fn build(b: *std.Build) void {
         unit_test.link_gc_sections = true;
         const run_test = b.addRunArtifact(unit_test);
         test_step.dependOn(&run_test.step);
+    }
+
+    // Conditional tests: db and lua_api depend on optional features
+    if (zqlite_dep) |dep| {
+        const db_test = b.addTest(.{
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("src/persistence/db.zig"),
+                .target = target,
+                .optimize = optimize,
+                .imports = &.{
+                    .{ .name = "zqlite", .module = dep.module("zqlite") },
+                },
+            }),
+        });
+        db_test.link_gc_sections = true;
+        test_step.dependOn(&b.addRunArtifact(db_test).step);
+    }
+
+    {
+        const lua_api_test = b.addTest(.{
+            .root_module = b.createModule(.{
+                .root_source_file = b.path("src/scripting/lua_api.zig"),
+                .target = target,
+                .optimize = optimize,
+                .imports = &.{
+                    .{ .name = "zlua", .module = zlua_dep.module("zlua") },
+                    .{ .name = "renderer", .module = renderer_mod },
+                    .{ .name = "image", .module = image_mod },
+                    .{ .name = "scene", .module = scene_mod },
+                    .{ .name = "input", .module = input_mod },
+                    .{ .name = "timer", .module = timer_mod },
+                    .{ .name = "tilemap", .module = tilemap_mod },
+                    .{ .name = "lua_ecs", .module = lua_ecs_mod },
+                    .{ .name = "ecs_world", .module = ecs_world_mod },
+                    .{ .name = "config", .module = config_mod },
+                },
+            }),
+        });
+        if (db_mod) |dm| lua_api_test.root_module.addImport("db", dm);
+        if (audio_mod) |am| lua_api_test.root_module.addImport("audio", am);
+        lua_api_test.link_gc_sections = true;
+        test_step.dependOn(&b.addRunArtifact(lua_api_test).step);
     }
 
 }

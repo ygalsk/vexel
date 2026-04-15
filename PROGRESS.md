@@ -2,6 +2,11 @@
 
 ## 2026-04-15
 
+### simplify: thread pool lifecycle, type cleanup
+- Fixed thread pool leak: `g_pool` now has explicit `initPool()`/`deinitPool()` called from `App.run()`/`App.deinit()` (was: lazy-init on first shader dispatch, never cleaned up)
+- Fixed `save_db` type: `?*void` → `void` when `!config.has_db` (nullable pointer-to-void is meaningless)
+- Extracted `MAX_SIMULATION_UNIFORMS` constant (was magic `16`)
+
 ### simplify: optional db, hot-reload, shader threading
 - Extracted `registerLuaApi()` helper — `lua_api.register(...)` was duplicated verbatim in `init()` and `hotReload()`
 - Removed redundant error overlay field init in `init()` body (struct field defaults already cover it)

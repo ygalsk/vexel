@@ -166,6 +166,7 @@ pub const App = struct {
 
     /// Load the Lua project and run the main loop until quit.
     pub fn run(self: *App) !void {
+        lua_bind.initPool();
         const writer = self.tty.writer();
 
         self.lua_eng.loadGame() catch |err| {
@@ -326,6 +327,7 @@ pub const App = struct {
     }
 
     pub fn deinit(self: *App) void {
+        lua_bind.deinitPool();
         const allocator = self.allocator;
         const writer = self.tty.writer();
 
@@ -391,7 +393,7 @@ pub const App = struct {
             .input_state = &self.input_state,
             .audio_system = audio_ptr,
             .timer_system = &self.timer_system,
-            .save_db = if (config.has_db) &self.save_db else null,
+            .save_db = if (config.has_db) &self.save_db else {},
             .world = &self.ecs_world,
         });
     }

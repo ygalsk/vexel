@@ -148,6 +148,15 @@ pub const InputState = struct {
         self.keys_down.deinit(self.allocator);
     }
 
+    pub fn reset(self: *InputState) void {
+        self.keys_down.clearRetainingCapacity();
+        self.mouse_x = 0;
+        self.mouse_y = 0;
+        self.mouse_left = false;
+        self.mouse_right = false;
+        self.mouse_middle = false;
+    }
+
     pub fn processKeyEvent(self: *InputState, ev: KeyEvent) void {
         switch (ev.action) {
             .press => {

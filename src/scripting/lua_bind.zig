@@ -4,10 +4,26 @@ const Lua = zlua.Lua;
 const Compositing = @import("compositing");
 const Color = Compositing.Color;
 
+var g_pool: std.Thread.Pool = undefined;
+var g_pool_initialized: bool = false;
+
+pub fn initPool() void {
+    if (g_pool_initialized) return;
+    g_pool.init(.{ .allocator = std.heap.page_allocator }) catch return;
+    g_pool_initialized = true;
+}
+
+pub fn deinitPool() void {
+    if (!g_pool_initialized) return;
+    g_pool.deinit();
+    g_pool_initialized = false;
+}
+
 /// Type-erased pixel shader dispatch function.
 pub const ShaderDispatch = *const fn (buf: []u32, w: u16, h: u16, lua: *Lua) void;
 
 const MAX_SHADERS = 8;
+const MAX_SIMULATION_UNIFORMS = 16;
 
 pub const ShaderRegistry = struct {
     names: [MAX_SHADERS][:0]const u8 = undefined,
@@ -50,6 +66,35 @@ pub fn registerPixelShader(
     const n_uniforms = info.params.len - 4;
 
     const dispatch = struct {
+        const WorkCtx = struct {
+            buf: []u32,
+            w: u16,
+            stride: usize,
+            wf: f64,
+            hf: f64,
+            uniforms: [n_uniforms]f64,
+            row_start: usize,
+            row_end: usize,
+
+            fn run(ctx: WorkCtx) void {
+                for (ctx.row_start..ctx.row_end) |row| {
+                    const py: f64 = @floatFromInt(row);
+                    const row_off = row * ctx.stride;
+                    for (0..@as(usize, ctx.w)) |col| {
+                        const px: f64 = @floatFromInt(col);
+                        var call_args: std.meta.ArgsTuple(FnType) = undefined;
+                        call_args[0] = px;
+                        call_args[1] = py;
+                        call_args[2] = ctx.wf;
+                        call_args[3] = ctx.hf;
+                        inline for (0..n_uniforms) |i| call_args[4 + i] = ctx.uniforms[i];
+                        const rgb: i32 = @call(.auto, func, call_args);
+                        ctx.buf[row_off + col] = Color.fromHex(@intCast(rgb)).pack();
+                    }
+                }
+            }
+        };
+
         fn inner(buf: []u32, w: u16, h: u16, lua: *Lua) void {
             var uniforms: [n_uniforms]f64 = undefined;
             inline for (0..n_uniforms) |i| {
@@ -60,28 +105,53 @@ pub fn registerPixelShader(
             const hf: f64 = @floatFromInt(h);
             const stride: usize = @intCast(w);
 
-            for (0..@as(usize, h)) |row| {
-                const py: f64 = @floatFromInt(row);
-                const row_off = row * stride;
-                for (0..@as(usize, w)) |col| {
-                    const px: f64 = @floatFromInt(col);
+            const n_threads = if (g_pool_initialized) g_pool.threads.len else 1;
+            const rows_per = (@as(usize, h) + n_threads - 1) / n_threads;
 
-                    var call_args: std.meta.ArgsTuple(FnType) = undefined;
-                    call_args[0] = px;
-                    call_args[1] = py;
-                    call_args[2] = wf;
-                    call_args[3] = hf;
-                    inline for (0..n_uniforms) |i| {
-                        call_args[4 + i] = uniforms[i];
-                    }
-
-                    const rgb: i32 = @call(.auto, func, call_args);
-                    buf[row_off + col] = Color.fromHex(@intCast(rgb)).pack();
-                }
+            var wg: std.Thread.WaitGroup = .{};
+            var tid: usize = 0;
+            while (tid < n_threads) : (tid += 1) {
+                const rs = tid * rows_per;
+                const re = @min(rs + rows_per, @as(usize, h));
+                if (rs >= @as(usize, h)) break;
+                g_pool.spawnWg(&wg, WorkCtx.run, .{WorkCtx{
+                    .buf = buf,
+                    .w = w,
+                    .stride = stride,
+                    .wf = wf,
+                    .hf = hf,
+                    .uniforms = uniforms,
+                    .row_start = rs,
+                    .row_end = re,
+                }});
             }
+            g_pool.waitAndWork(&wg);
         }
     }.inner;
 
+    registry.register(name, dispatch);
+}
+
+/// Register a simulation shader function. The function receives the whole pixel buffer
+/// and runs serially (not parallelized) — suitable for simulations with neighbor reads.
+/// The function must have the signature:
+///   fn(buf: []u32, w: u16, h: u16, uniforms: []const f64) void
+pub fn registerSimulation(
+    registry: *ShaderRegistry,
+    comptime name: [:0]const u8,
+    comptime func: fn ([]u32, u16, u16, []const f64) void,
+) void {
+    const dispatch = struct {
+        fn inner(buf: []u32, w: u16, h: u16, lua: *Lua) void {
+            const n: usize = @intCast(@max(0, lua.getTop() - 1));
+            var uniforms: [MAX_SIMULATION_UNIFORMS]f64 = undefined;
+            const count = @min(n, MAX_SIMULATION_UNIFORMS);
+            for (0..count) |i| {
+                uniforms[i] = @floatCast(lua.toNumber(@intCast(i + 2)) catch 0.0);
+            }
+            func(buf, w, h, uniforms[0..count]);
+        }
+    }.inner;
     registry.register(name, dispatch);
 }
 
