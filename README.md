@@ -2,10 +2,10 @@
 
 **Terminal graphics runtime — write Lua, not C.**
 
-Pixel-perfect rendering, 8-layer compositing, audio, persistence, and an entity system. All in the terminal. All from Lua.
+Pixel-perfect rendering, 8-layer compositing, audio, and persistence. All in the terminal. All from Lua.
 
-<!-- Record GIFs with: vhs media/bounce.tape  or  asciinema rec + agg -->
-![bounce demo](media/bounce.gif) ![fractal demo](media/fractal.gif)
+<!-- Record GIFs with: vhs media/demo.tape  or  asciinema rec + agg -->
+![fractal demo](media/fractal.gif)
 
 ```lua
 function engine.load()
@@ -26,12 +26,9 @@ zig build run -- my-project/    # project dir must contain main.lua
 
 | Module | What it does |
 |--------|-------------|
-| **Graphics** | 8-layer pixel compositor, primitives, images, spritesheets, tilemaps |
-| **Scenes** | Screen stack with push/pop/switch and transitions (fade, slide, wipe) |
-| **ECS** | Sparse-set entity system with built-in movement, animation, and rendering |
+| **Graphics** | 8-layer pixel compositor, primitives, images, spritesheets |
 | **Audio** | WAV/OGG/MP3 playback, volume, panning, fade in/out |
 | **Input** | Keyboard, mouse, virtual gamepad |
-| **Timers** | One-shot, repeating, tweens with easing |
 | **Persistence** | Key-value store + raw SQLite |
 
 ## Build
@@ -40,7 +37,7 @@ Requires Zig 0.15.2. Terminal must support the Kitty graphics protocol (Kitty, G
 
 ```bash
 zig build                           # compile
-zig build run -- examples/bounce/  # run an example
+zig build run -- examples/boids/   # run an example
 zig build test                      # unit tests
 ```
 
@@ -79,15 +76,6 @@ pub fn main() !void {
 
 Module functions are auto-wrapped — pure Zig types only: `fn myFn(a: f64, b: i32) f64`.
 Supported types: `i32`, `i64`, `f32`, `f64`, `bool`. No Lua knowledge required.
-
-## Docs
-
-- [Lua API](docs/lua-api.md) — full API surface
-- [Architecture](ARCHITECTURE.md) — module structure, rendering pipeline
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for how to get involved — whether you write Lua or Zig.
 
 ## License
 

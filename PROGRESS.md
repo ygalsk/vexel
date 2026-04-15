@@ -2,6 +2,18 @@
 
 ## 2026-04-15
 
+### simplify: clean dead scene-transition code from compositor
+- Removed `setCompositeOverride()`, `compositeOnly()`, `use_composite_override` field and its dead branch in `flush()` from compositing.zig — orphaned by scene.zig deletion
+
+### strip: remove ECS, scenes, timers/tweens, tilemap
+- Removed 7 Zig source files (~2,100 lines): entity.zig, component_store.zig, world.zig, lua_ecs.zig, scene.zig, timer.zig, tilemap.zig
+- Removed ecs/ directory entirely
+- Simplified app.zig main loop: no scene branching, no ECS ticking, no timer dispatch
+- Simplified lua_api.zig: removed engine.scene, engine.timer, engine.tween, engine.world, engine.graphics.draw_tilemap
+- Removed examples/cozy/ and examples/bounce/ (depended on ECS/scenes)
+- Removed stale docs: ARCHITECTURE.md, DESIGN.md, CONTRIBUTING.md, docs/lua-api.md
+- Rationale: no comparable framework (LOVE, Pyxel, Raylib, PICO-8) ships ECS/scenes/tweens as built-in — these are universally implemented as user-land Lua libraries
+
 ### simplify: thread pool lifecycle, type cleanup
 - Fixed thread pool leak: `g_pool` now has explicit `initPool()`/`deinitPool()` called from `App.run()`/`App.deinit()` (was: lazy-init on first shader dispatch, never cleaned up)
 - Fixed `save_db` type: `?*void` → `void` when `!config.has_db` (nullable pointer-to-void is meaningless)

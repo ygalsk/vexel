@@ -6,15 +6,9 @@ const lua_bind = @import("lua_bind");
 const Renderer = @import("renderer");
 const ImageManager = @import("image");
 const input_mod = @import("input");
-const SceneManager = @import("scene");
 const config = @import("config");
 const AudioSystem = @import("audio").AudioSystem;
-const TimerSystem = @import("timer").TimerSystem;
 const SaveDb = if (config.has_db) @import("db").SaveDb else void;
-const zlua = @import("zlua");
-const ecs_world_mod = @import("ecs_world");
-const EcsWorld = ecs_world_mod.World;
-const AnimationEvent = ecs_world_mod.AnimationEvent;
 
 const posix = std.posix;
 const Winsize = vaxis.Winsize;
@@ -52,10 +46,7 @@ pub const App = struct {
     input_state: input_mod.InputState,
     audio_system: AudioSystem,
     lua_eng: lua_engine_mod,
-    scene_mgr: SceneManager,
-    timer_system: TimerSystem,
     save_db: if (config.has_db) SaveDb else void,
-    ecs_world: EcsWorld,
     project_dir: []const u8,
 
     // Error overlay state
@@ -132,13 +123,8 @@ pub const App = struct {
 
         self.lua_eng = try lua_engine_mod.init(allocator, opts.project_dir);
 
-        self.scene_mgr = SceneManager.init(allocator, self.lua_eng.lua, &self.renderer);
-
-        self.timer_system = TimerSystem.init(allocator, self.lua_eng.lua);
-
         self.save_db = if (config.has_db) SaveDb.init(allocator, opts.project_dir) else {};
 
-        self.ecs_world = EcsWorld.init(allocator);
         self.project_dir = opts.project_dir;
 
         self.registerLuaApi();
@@ -188,11 +174,6 @@ pub const App = struct {
         posix.sigaction(posix.SIG.INT, &sa, null);
         posix.sigaction(posix.SIG.TERM, &sa, null);
 
-        var has_scenes = self.scene_mgr.hasScenes();
-
-        var frame_arena = std.heap.ArenaAllocator.init(self.allocator);
-        defer frame_arena.deinit();
-
         var timer = try std.time.Timer.start();
         var running = true;
         var resized = true;
@@ -209,13 +190,12 @@ pub const App = struct {
                         }
                         if (key.codepoint == vaxis.Key.f5) {
                             self.hotReload();
-                            has_scenes = self.scene_mgr.hasScenes();
                             continue;
                         }
-                        self.handleKey(key, .press, has_scenes);
+                        self.handleKey(key, .press);
                     },
                     .key_release => |key| {
-                        self.handleKey(key, .release, has_scenes);
+                        self.handleKey(key, .release);
                     },
                     .mouse => |mouse| {
                         var ev = input_mod.translateMouse(mouse);
@@ -227,13 +207,9 @@ pub const App = struct {
                             ev.y = @intCast(@divTrunc(@as(i64, ev.y) * @as(i64, res.h), @as(i64, info.rows)));
                         }
                         self.input_state.processMouseEvent(ev);
-                        if (has_scenes) {
-                            self.scene_mgr.onMouse(ev.x, ev.y, ev.button.name(), ev.action.name());
-                        } else {
-                            self.lua_eng.callOnMouse(ev.x, ev.y, ev.button.name(), ev.action.name()) catch |err| {
-                                self.logLuaError("engine.on_mouse()", err);
-                            };
-                        }
+                        self.lua_eng.callOnMouse(ev.x, ev.y, ev.button.name(), ev.action.name()) catch |err| {
+                            self.logLuaError("engine.on_mouse()", err);
+                        };
                     },
                     .winsize => |ws| {
                         self.vx.resize(self.allocator, writer, ws) catch {};
@@ -250,55 +226,16 @@ pub const App = struct {
             const dt_ns = timer.lap();
             const dt: f64 = @as(f64, @floatFromInt(dt_ns)) / 1_000_000_000.0;
 
-            if (has_scenes) {
-                self.scene_mgr.update(dt);
-            } else {
-                self.lua_eng.callUpdate(dt) catch |err| {
-                    self.logLuaError("engine.update()", err);
-                };
-            }
-            self.timer_system.tick(dt);
-            self.ecs_world.updateMovement(@floatCast(dt));
-
-            _ = frame_arena.reset(.retain_capacity);
-            const frame_alloc = frame_arena.allocator();
-
-            var anim_events: std.ArrayList(AnimationEvent) = .{};
-            self.ecs_world.tickAnimations(@floatCast(dt), frame_alloc, &anim_events);
-            for (anim_events.items) |event| {
-                if (event.on_complete_ref != ecs_world_mod.ref_none) {
-                    _ = self.lua_eng.lua.rawGetIndex(zlua.registry_index, event.on_complete_ref);
-                    self.lua_eng.lua.protectedCall(.{ .args = 0, .results = 0 }) catch {};
-                }
-            }
+            self.lua_eng.callUpdate(dt) catch |err| {
+                self.logLuaError("engine.update()", err);
+            };
 
             self.renderer.clear();
             self.renderer.clearSprites();
 
-            var sprite_entries: std.ArrayList(EcsWorld.SpriteRenderEntry) = .{};
-            self.ecs_world.collectSprites(frame_alloc, &sprite_entries);
-            std.sort.pdq(EcsWorld.SpriteRenderEntry, sprite_entries.items, {}, struct {
-                fn lessThan(_: void, a: EcsWorld.SpriteRenderEntry, b: EcsWorld.SpriteRenderEntry) bool {
-                    return a.layer < b.layer;
-                }
-            }.lessThan);
-            for (sprite_entries.items) |entry| {
-                self.renderer.pixelSetLayer(entry.layer);
-                self.renderer.drawSprite(entry.image_handle, entry.x, entry.y, .{
-                    .frame = entry.frame,
-                    .flip_x = entry.flip_x,
-                    .flip_y = entry.flip_y,
-                    .scale = entry.scale,
-                });
-            }
-
-            if (has_scenes) {
-                self.scene_mgr.draw();
-            } else {
-                self.lua_eng.callDraw() catch |err| {
-                    self.logLuaError("engine.draw()", err);
-                };
-            }
+            self.lua_eng.callDraw() catch |err| {
+                self.logLuaError("engine.draw()", err);
+            };
 
             self.renderer.flushPixels() catch {};
 
@@ -331,10 +268,7 @@ pub const App = struct {
         const allocator = self.allocator;
         const writer = self.tty.writer();
 
-        self.ecs_world.deinit();
         if (config.has_db) self.save_db.deinit();
-        self.timer_system.deinit();
-        self.scene_mgr.deinit();
         self.lua_eng.deinit();
         self.audio_system.deinit();
         self.input_state.deinit();
@@ -350,9 +284,6 @@ pub const App = struct {
     fn hotReload(self: *App) void {
         self.audio_system.stopAll();
 
-        self.ecs_world.deinit();
-        self.timer_system.deinit();
-        self.scene_mgr.deinit();
         self.lua_eng.deinit();
         self.input_state.reset();
 
@@ -360,9 +291,6 @@ pub const App = struct {
             self.setErrorOverlay("[reload] failed to init Lua VM");
             return;
         };
-        self.scene_mgr = SceneManager.init(self.allocator, self.lua_eng.lua, &self.renderer);
-        self.timer_system = TimerSystem.init(self.allocator, self.lua_eng.lua);
-        self.ecs_world = EcsWorld.init(self.allocator);
         self.registerLuaApi();
 
         self.lua_eng.loadGame() catch |err| {
@@ -389,25 +317,18 @@ pub const App = struct {
         const audio_ptr: ?*AudioSystem = if (self.audio_system.available) &self.audio_system else null;
         lua_api.register(self.lua_eng.lua, .{
             .renderer = &self.renderer,
-            .scene_mgr = &self.scene_mgr,
             .input_state = &self.input_state,
             .audio_system = audio_ptr,
-            .timer_system = &self.timer_system,
             .save_db = if (config.has_db) &self.save_db else {},
-            .world = &self.ecs_world,
         });
     }
 
-    fn handleKey(self: *App, key: vaxis.Key, action: input_mod.KeyEvent.Action, has_scenes: bool) void {
+    fn handleKey(self: *App, key: vaxis.Key, action: input_mod.KeyEvent.Action) void {
         const ev = input_mod.translateKey(key, action);
         self.input_state.processKeyEvent(ev);
-        if (has_scenes) {
-            self.scene_mgr.onKey(ev.name, @tagName(ev.action));
-        } else {
-            self.lua_eng.callOnKey(ev.name, @tagName(ev.action)) catch |err| {
-                self.logLuaError("engine.on_key()", err);
-            };
-        }
+        self.lua_eng.callOnKey(ev.name, @tagName(ev.action)) catch |err| {
+            self.logLuaError("engine.on_key()", err);
+        };
     }
 
     fn logLuaError(self: *App, comptime context: []const u8, err: anyerror) void {

@@ -121,7 +121,6 @@ active_layer: u8,
 composite_buf: []u8,
 composite_image: ?vaxis.Image,
 pending_free_id: ?u32,
-use_composite_override: bool, // when true, flush() uploads composite_buf as-is (transitions)
 any_dirty: bool,
 
 pub fn init(allocator: std.mem.Allocator, kitty: *Kitty, vx: *vaxis.Vaxis) !Compositor {
@@ -138,7 +137,6 @@ pub fn init(allocator: std.mem.Allocator, kitty: *Kitty, vx: *vaxis.Vaxis) !Comp
         .composite_buf = try allocator.alloc(u8, buf_size),
         .composite_image = null,
         .pending_free_id = null,
-        .use_composite_override = false,
         .any_dirty = false,
     };
     @memset(comp.composite_buf, 0);
@@ -477,13 +475,7 @@ fn clearBBox(layer: *Layer, width: u16) void {
     }
 }
 
-/// Tell flush() to upload composite_buf as-is, skipping flattenLayers.
-/// Used by scene transitions that blend directly into composite_buf.
-pub fn setCompositeOverride(self: *Compositor) void {
-    self.use_composite_override = true;
-}
-
-/// Mark all layers as dirty (e.g., after terminal resize or scene transition).
+/// Mark all layers as dirty (e.g., after terminal resize).
 pub fn markAllDirty(self: *Compositor) void {
     const full = BBox{ .min_x = 0, .min_y = 0, .max_x = self.width, .max_y = self.height };
     for (&self.layers) |*layer| {
@@ -502,19 +494,6 @@ pub fn flush(self: *Compositor) !void {
     if (self.pending_free_id) |old_id| {
         self.kitty.freeImage(old_id);
         self.pending_free_id = null;
-    }
-
-    // Transition path: composite_buf already has the blended result from scene.zig.
-    // Upload it directly — don't re-flatten (that would overwrite the blend).
-    if (self.use_composite_override) {
-        const new_img = try self.kitty.uploadRgba(self.composite_buf, self.width, self.height);
-        if (self.composite_image) |old| {
-            self.pending_free_id = old.id;
-        }
-        self.composite_image = new_img;
-        self.rotateBBoxes();
-        self.use_composite_override = false;
-        return;
     }
 
     // Check if any layer with actual content changed
@@ -556,12 +535,6 @@ pub fn placeComposite(self: *Compositor) void {
         const win = self.vx.window();
         self.kitty.placeImageDirect(img.id, win.width, win.height);
     }
-}
-
-/// Flatten all layers into composite_buf without uploading to the terminal.
-/// Used by the scene manager to snapshot a scene's rendered output for transitions.
-pub fn compositeOnly(self: *Compositor) void {
-    self.flattenLayers();
 }
 
 /// Rotate drawn_bbox → prev_bbox and clear dirty flags for all layers.

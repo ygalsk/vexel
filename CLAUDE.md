@@ -28,6 +28,6 @@ Terminal graphics runtime. Zig 0.15.2 + libvaxis + ziglua (Lua 5.4) + zqlite + z
 ## Build
 ```
 zig build                        # compile
-zig build run -- examples/bounce/   # run an example project
+zig build run -- examples/boids/   # run an example project
 zig build test                   # unit tests
 ```

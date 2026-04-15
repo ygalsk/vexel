@@ -27,6 +27,6 @@
 //! via `App.registerModule`. Pure functions (Zig args/return) are auto-wrapped.
 
 /// High-level application facade. Wraps all engine subsystems (renderer, input,
-/// audio, ECS, Lua VM, scenes, timers, persistence) behind init/run/deinit.
+/// audio, Lua VM, persistence) behind init/run/deinit.
 /// Register Zig modules with `registerModule()` before calling `run()`.
 pub const App = @import("app").App;
