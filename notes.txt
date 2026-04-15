@@ -1,1 +1,0 @@
-move fps from lua scripts to somethign togglebale that already is 1st class in the event loop
