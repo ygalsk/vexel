@@ -4,4 +4,6 @@ zig-out/
 assets/
 .claude/
 graphify-out/
+design/graph/
+design/.obsidian/
 vexel.log
