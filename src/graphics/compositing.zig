@@ -20,7 +20,7 @@ pub const Color = struct {
             .r = @truncate(hex >> 16),
             .g = @truncate(hex >> 8),
             .b = @truncate(hex),
-            .a = 255,
+            .a = if (hex > 0xFFFFFF) @truncate(hex >> 24) else 255,
         };
     }
 
@@ -91,6 +91,24 @@ pub const BBox = struct {
     }
 };
 
+/// Axis-aligned clipping rectangle used by drawLine, drawCircle, and drawHLineRaw.
+const ClipRect = struct { x0: i32, y0: i32, x1: i32, y1: i32 };
+
+pub const FlushTiming = struct {
+    flatten_ns: u64 = 0,
+    upload_ns: u64 = 0,
+};
+
+const Layer = struct {
+    pixels: []u8,
+    dirty: bool,
+    has_content: bool,
+    visible: bool,
+    drawn_bbox: BBox,      // region drawn this frame
+    prev_bbox: BBox,       // region drawn last frame
+    cleared_this_frame: bool, // true if clearLayer/clearAll was called this frame
+};
+
 /// Z-index base for compositor layers and sprites. Interleaved so that
 /// compositor layer N is behind sprites on layer N, which is behind layer N+1.
 const Z_BASE: i32 = -20;
@@ -99,15 +117,6 @@ const Z_BASE: i32 = -20;
 pub fn layerSpriteZ(layer: u8) i32 {
     return Z_BASE + @as(i32, layer) * 2 + 1;
 }
-
-const Layer = struct {
-    pixels: []u8,
-    dirty: bool,
-    has_content: bool,
-    visible: bool,
-    drawn_bbox: BBox, // region drawn this frame
-    prev_bbox: BBox, // region drawn last frame (cleared next frame)
-};
 
 const Compositor = @This();
 
@@ -119,9 +128,13 @@ width: u16,
 height: u16,
 active_layer: u8,
 composite_buf: []u8,
-composite_image: ?vaxis.Image,
-pending_free_id: ?u32,
 any_dirty: bool,
+scissor: ?ClipRect = null,
+
+/// Timing breakdown from the most recent flush() call (nanoseconds, 0 if no upload occurred).
+last_timing: FlushTiming = .{},
+/// True after the first successful transmitAndDisplay — composite_buf holds valid terminal image data.
+has_composite: bool = false,
 
 pub fn init(allocator: std.mem.Allocator, kitty: *Kitty, vx: *vaxis.Vaxis) !Compositor {
     const buf_size = @as(usize, DEFAULT_WIDTH) * @as(usize, DEFAULT_HEIGHT) * 4;
@@ -135,8 +148,6 @@ pub fn init(allocator: std.mem.Allocator, kitty: *Kitty, vx: *vaxis.Vaxis) !Comp
         .height = DEFAULT_HEIGHT,
         .active_layer = 0,
         .composite_buf = try allocator.alloc(u8, buf_size),
-        .composite_image = null,
-        .pending_free_id = null,
         .any_dirty = false,
     };
     @memset(comp.composite_buf, 0);
@@ -149,13 +160,14 @@ pub fn init(allocator: std.mem.Allocator, kitty: *Kitty, vx: *vaxis.Vaxis) !Comp
         layer.visible = true;
         layer.drawn_bbox = BBox.EMPTY;
         layer.prev_bbox = BBox.EMPTY;
+        layer.cleared_this_frame = false;
     }
 
     return comp;
 }
 
 pub fn deinit(self: *Compositor) void {
-    self.freeAllImages();
+    self.kitty.freeImage(Kitty.COMPOSITE_ID);
     for (&self.layers) |*layer| {
         self.allocator.free(layer.pixels);
     }
@@ -175,18 +187,11 @@ pub fn setResolution(self: *Compositor, w: u16, h: u16) !void {
         layer.has_content = false;
         layer.drawn_bbox = BBox.EMPTY;
         layer.prev_bbox = BBox.EMPTY;
+        layer.cleared_this_frame = false;
     }
     self.allocator.free(self.composite_buf);
     self.composite_buf = try self.allocator.alloc(u8, buf_size);
     @memset(self.composite_buf, 0);
-    if (self.pending_free_id) |old_id| {
-        self.kitty.freeImage(old_id);
-        self.pending_free_id = null;
-    }
-    if (self.composite_image) |img| {
-        self.kitty.freeImage(img.id);
-        self.composite_image = null;
-    }
     self.width = w;
     self.height = h;
     self.any_dirty = true;
@@ -201,11 +206,58 @@ pub fn getActiveLayer(self: *const Compositor) u8 {
     return self.active_layer;
 }
 
+pub fn setScissor(self: *Compositor, x: i32, y: i32, w: i32, h: i32) void {
+    self.scissor = .{ .x0 = x, .y0 = y, .x1 = x + w, .y1 = y + h };
+}
+
+pub fn clearScissor(self: *Compositor) void {
+    self.scissor = null;
+}
+
+/// Return the clipped draw region [x0, y0, x1, y1) for a given rect.
+/// Clips to both buffer bounds and active scissor rect (if set).
+/// Returns null if the result is empty.
+inline fn clipBounds(self: *const Compositor, x: i32, y: i32, w: i32, h: i32) ?ClipRect {
+    var x0 = x;
+    var y0 = y;
+    var x1 = x + w;
+    var y1 = y + h;
+
+    // Clip to buffer bounds
+    x0 = @max(x0, 0);
+    y0 = @max(y0, 0);
+    x1 = @min(x1, @as(i32, self.width));
+    y1 = @min(y1, @as(i32, self.height));
+
+    // Clip to scissor rect
+    if (self.scissor) |sc| {
+        x0 = @max(x0, sc.x0);
+        y0 = @max(y0, sc.y0);
+        x1 = @min(x1, sc.x1);
+        y1 = @min(y1, sc.y1);
+    }
+
+    if (x0 >= x1 or y0 >= y1) return null;
+    return .{ .x0 = x0, .y0 = y0, .x1 = x1, .y1 = y1 };
+}
+
+/// Return the effective clipping viewport: buffer bounds intersected with the active scissor.
+inline fn clipViewport(self: *const Compositor) ClipRect {
+    if (self.scissor) |sc| {
+        return .{
+            .x0 = @max(0, sc.x0),
+            .y0 = @max(0, sc.y0),
+            .x1 = @min(@as(i32, self.width), sc.x1),
+            .y1 = @min(@as(i32, self.height), sc.y1),
+        };
+    }
+    return .{ .x0 = 0, .y0 = 0, .x1 = @as(i32, self.width), .y1 = @as(i32, self.height) };
+}
+
 pub fn setPixel(self: *Compositor, x: i32, y: i32, color: Color) void {
-    if (x < 0 or y < 0) return;
-    const ux: usize = @intCast(x);
-    const uy: usize = @intCast(y);
-    if (ux >= self.width or uy >= self.height) return;
+    const clip = self.clipBounds(x, y, 1, 1) orelse return;
+    const ux: usize = @intCast(clip.x0);
+    const uy: usize = @intCast(clip.y0);
 
     const layer = &self.layers[self.active_layer];
     const offset = (uy * @as(usize, self.width) + ux) * 4;
@@ -220,12 +272,12 @@ pub fn setPixel(self: *Compositor, x: i32, y: i32, color: Color) void {
 pub fn blitBuffer(self: *Compositor, x: i32, y: i32, w: i32, h: i32, colors: []const u32) void {
     if (w <= 0 or h <= 0) return;
 
-    // Clip destination rect to layer bounds
-    const x0: i32 = @max(0, x);
-    const y0: i32 = @max(0, y);
-    const x1: i32 = @min(@as(i32, self.width), x + w);
-    const y1: i32 = @min(@as(i32, self.height), y + h);
-    if (x0 >= x1 or y0 >= y1) return;
+    // Clip destination rect to layer bounds and scissor
+    const cb = self.clipBounds(x, y, w, h) orelse return;
+    const x0 = cb.x0;
+    const y0 = cb.y0;
+    const x1 = cb.x1;
+    const y1 = cb.y1;
 
     const layer = &self.layers[self.active_layer];
     const dst_stride: usize = @as(usize, self.width) * 4;
@@ -261,12 +313,12 @@ pub fn getActiveLayerSlice(self: *Compositor) []u32 {
 }
 
 pub fn drawRect(self: *Compositor, x: i32, y: i32, w: i32, h: i32, color: Color) void {
-    // Clip to buffer bounds
-    const x0: usize = @intCast(@max(0, x));
-    const y0: usize = @intCast(@max(0, y));
-    const x1: usize = @intCast(@max(0, @min(@as(i32, self.width), x + w)));
-    const y1: usize = @intCast(@max(0, @min(@as(i32, self.height), y + h)));
-    if (x0 >= x1 or y0 >= y1) return;
+    // Clip to buffer bounds and scissor
+    const cb = self.clipBounds(x, y, w, h) orelse return;
+    const x0: usize = @intCast(cb.x0);
+    const y0: usize = @intCast(cb.y0);
+    const x1: usize = @intCast(cb.x1);
+    const y1: usize = @intCast(cb.y1);
 
     const layer = &self.layers[self.active_layer];
     const stride: usize = @as(usize, self.width) * 4;
@@ -293,6 +345,8 @@ pub fn drawLine(self: *Compositor, x1: i32, y1: i32, x2: i32, y2: i32, color: Co
     const sy: i32 = if (y1 < y2) 1 else -1;
     var err = dx + dy;
 
+    const clip = self.clipViewport();
+
     const layer = &self.layers[self.active_layer];
     var bmin_x: u16 = std.math.maxInt(u16);
     var bmin_y: u16 = std.math.maxInt(u16);
@@ -300,7 +354,7 @@ pub fn drawLine(self: *Compositor, x1: i32, y1: i32, x2: i32, y2: i32, color: Co
     var bmax_y: u16 = 0;
 
     while (true) {
-        if (cx >= 0 and cy >= 0 and cx < self.width and cy < self.height) {
+        if (cx >= clip.x0 and cy >= clip.y0 and cx < clip.x1 and cy < clip.y1) {
             const ux: u16 = @intCast(cx);
             const uy: u16 = @intCast(cy);
             const offset = (@as(usize, uy) * @as(usize, self.width) + @as(usize, ux)) * 4;
@@ -335,20 +389,22 @@ pub fn drawCircle(self: *Compositor, cx: i32, cy: i32, r: i32, color: Color) voi
     var yi: i32 = 0;
     var err: i32 = 1 - r;
 
-    // Compute clipped bounding box for the circle
-    const bx0: u16 = @intCast(@max(0, cx - r));
-    const by0: u16 = @intCast(@max(0, cy - r));
-    const bx1: u16 = @intCast(@min(@as(i32, self.width), cx + r + 1));
-    const by1: u16 = @intCast(@min(@as(i32, self.height), cy + r + 1));
+    const clip = self.clipViewport();
+
+    // Compute dirty bounding box for the circle intersected with clip region
+    const bx0: i32 = @max(clip.x0, cx - r);
+    const by0: i32 = @max(clip.y0, cy - r);
+    const bx1: i32 = @min(clip.x1, cx + r + 1);
+    const by1: i32 = @min(clip.y1, cy + r + 1);
     if (bx0 >= bx1 or by0 >= by1) return;
 
     var drew = false;
 
     while (xi >= yi) {
-        drew = drawHLineRaw(layer, self.width, self.height, cx - xi, cx + xi, cy + yi, color_u32) or drew;
-        drew = drawHLineRaw(layer, self.width, self.height, cx - xi, cx + xi, cy - yi, color_u32) or drew;
-        drew = drawHLineRaw(layer, self.width, self.height, cx - yi, cx + yi, cy + xi, color_u32) or drew;
-        drew = drawHLineRaw(layer, self.width, self.height, cx - yi, cx + yi, cy - xi, color_u32) or drew;
+        drew = drawHLineRaw(layer, self.width, clip, cx - xi, cx + xi, cy + yi, color_u32) or drew;
+        drew = drawHLineRaw(layer, self.width, clip, cx - xi, cx + xi, cy - yi, color_u32) or drew;
+        drew = drawHLineRaw(layer, self.width, clip, cx - yi, cx + yi, cy + xi, color_u32) or drew;
+        drew = drawHLineRaw(layer, self.width, clip, cx - yi, cx + yi, cy - xi, color_u32) or drew;
 
         yi += 1;
         if (err <= 0) {
@@ -359,14 +415,15 @@ pub fn drawCircle(self: *Compositor, cx: i32, cy: i32, r: i32, color: Color) voi
         }
     }
 
-    if (drew) self.markLayerDirty(layer, bx0, by0, bx1, by1);
+    if (drew) self.markLayerDirty(layer, @intCast(bx0), @intCast(by0), @intCast(bx1), @intCast(by1));
 }
 
 /// Write a horizontal line of pixels to a layer without marking dirty. Returns true if any pixels were written.
-fn drawHLineRaw(layer: *Layer, buf_w: u16, buf_h: u16, x1: i32, x2: i32, y: i32, color_u32: u32) bool {
-    if (y < 0 or y >= buf_h) return false;
-    const start: usize = @intCast(@max(0, x1));
-    const end: usize = @intCast(@max(0, @min(@as(i32, buf_w), x2 + 1)));
+/// Clips to the given ClipRect.
+fn drawHLineRaw(layer: *Layer, buf_w: u16, clip: ClipRect, x1: i32, x2: i32, y: i32, color_u32: u32) bool {
+    if (y < clip.y0 or y >= clip.y1) return false;
+    const start: usize = @intCast(@max(clip.x0, x1));
+    const end: usize = @intCast(@max(clip.x0, @min(clip.x1, x2 + 1)));
     if (start >= end) return false;
 
     const uy: usize = @intCast(y);
@@ -402,13 +459,12 @@ pub fn blitImage(
     const scaled_h: u32 = sr_h * s;
 
     const dst_w: u32 = self.width;
-    const dst_h: u32 = self.height;
 
-    const vis_x0: i32 = @max(0, dst_x);
-    const vis_y0: i32 = @max(0, dst_y);
-    const vis_x1: i32 = @min(@as(i32, @intCast(dst_w)), dst_x + @as(i32, @intCast(scaled_w)));
-    const vis_y1: i32 = @min(@as(i32, @intCast(dst_h)), dst_y + @as(i32, @intCast(scaled_h)));
-    if (vis_x0 >= vis_x1 or vis_y0 >= vis_y1) return;
+    const cb = self.clipBounds(dst_x, dst_y, @intCast(scaled_w), @intCast(scaled_h)) orelse return;
+    const vis_x0 = cb.x0;
+    const vis_y0 = cb.y0;
+    const vis_x1 = cb.x1;
+    const vis_y1 = cb.y1;
 
     const layer = &self.layers[self.active_layer];
     const dst_stride: usize = @as(usize, dst_w) * 4;
@@ -443,12 +499,55 @@ pub fn blitImage(
     self.markLayerDirty(layer, @intCast(vis_x0), @intCast(vis_y0), @intCast(vis_x1), @intCast(vis_y1));
 }
 
+/// Blit a rectangular region of RGBA source pixels using only their alpha channel as a mask,
+/// painting the given tint color at each covered pixel. Used by font rendering.
+/// src_x/src_y select the top-left corner of the source region within src; w/h are the region size.
+pub fn blitAlphaMask(
+    self: *Compositor,
+    src: []const u8,
+    src_stride: usize,
+    src_x: i32,
+    src_y: i32,
+    w: i32,
+    h: i32,
+    dst_x: i32,
+    dst_y: i32,
+    tint: Color,
+) void {
+    if (w <= 0 or h <= 0) return;
+    const cb = self.clipBounds(dst_x, dst_y, w, h) orelse return;
+
+    const layer = &self.layers[self.active_layer];
+    const dst_stride: usize = @as(usize, self.width) * 4;
+
+    const rows: usize = @intCast(cb.y1 - cb.y0);
+    const cols: usize = @intCast(cb.x1 - cb.x0);
+    const src_col_off: usize = @intCast(cb.x0 - dst_x + src_x);
+    const src_row_off: usize = @intCast(cb.y0 - dst_y + src_y);
+
+    var row: usize = 0;
+    while (row < rows) : (row += 1) {
+        const src_row = (src_row_off + row) * src_stride + src_col_off * 4;
+        const dst_row = (@as(usize, @intCast(cb.y0)) + row) * dst_stride + @as(usize, @intCast(cb.x0)) * 4;
+        var col: usize = 0;
+        while (col < cols) : (col += 1) {
+            const glyph_a = src[src_row + col * 4 + 3];
+            if (glyph_a == 0) continue;
+            const final_a: u8 = @intCast((@as(u16, tint.a) * @as(u16, glyph_a) + 127) / 255);
+            const c = Color{ .r = tint.r, .g = tint.g, .b = tint.b, .a = final_a };
+            c.write(layer.pixels, dst_row + col * 4);
+        }
+    }
+    self.markLayerDirty(layer, @intCast(cb.x0), @intCast(cb.y0), @intCast(cb.x1), @intCast(cb.y1));
+}
+
 pub fn clearLayer(self: *Compositor) void {
     const layer = &self.layers[self.active_layer];
     clearBBox(layer, self.width);
     layer.dirty = true;
     layer.has_content = false;
     layer.drawn_bbox = BBox.EMPTY;
+    layer.cleared_this_frame = true;
     self.any_dirty = true;
 }
 
@@ -459,6 +558,7 @@ pub fn clearAll(self: *Compositor) void {
         layer.dirty = true;
         layer.has_content = false;
         layer.drawn_bbox = BBox.EMPTY;
+        layer.cleared_this_frame = true;
         self.any_dirty = true;
     }
 }
@@ -482,25 +582,19 @@ pub fn markAllDirty(self: *Compositor) void {
         layer.dirty = true;
         layer.drawn_bbox = full;
         layer.prev_bbox = full;
+        layer.cleared_this_frame = true;
     }
     self.any_dirty = true;
 }
 
-/// Flatten all visible layers into the composite buffer, upload as a single image.
-/// Old images are freed at the start of the NEXT flush — after vx.render() has
-/// placed the replacement — so there is never a frame with no image visible.
+/// Flatten visible layers into composite_buf and upload the full frame to the terminal.
+/// Uses a=T (transmit-and-display) with a fixed image ID — atomic upload and placement.
+/// dirty-rect bbox tracking is still used to bound the CPU flatten work.
 pub fn flush(self: *Compositor) !void {
-    // Free the image from the PREVIOUS frame (it has now been rendered over)
-    if (self.pending_free_id) |old_id| {
-        self.kitty.freeImage(old_id);
-        self.pending_free_id = null;
-    }
-
-    // Check if any layer with actual content changed
     var content_dirty = false;
     if (self.any_dirty) {
         for (&self.layers) |*layer| {
-            if (layer.dirty and layer.has_content) {
+            if (layer.dirty and (layer.has_content or layer.cleared_this_frame)) {
                 content_dirty = true;
                 break;
             }
@@ -508,33 +602,47 @@ pub fn flush(self: *Compositor) !void {
     }
 
     if (!content_dirty) {
-        // Nothing with content changed — composite image stays the same.
-        // Caller handles placement via placeComposite().
-        if (self.any_dirty) {
-            self.rotateBBoxes();
-        }
+        if (self.any_dirty) self.rotateBBoxes();
         return;
     }
 
+    var t = try std.time.Timer.start();
     self.flattenLayers();
+    self.last_timing.flatten_ns = t.lap();
 
-    const new_img = try self.kitty.uploadRgba(self.composite_buf, self.width, self.height);
+    const win = self.vx.window();
+    try self.kitty.transmitAndDisplay(self.composite_buf, self.width, self.height, win.width, win.height);
+    self.has_composite = true;
+    self.last_timing.upload_ns = t.lap();
 
-    // Schedule the old image for deletion on NEXT flush (after render)
-    if (self.composite_image) |old| {
-        self.pending_free_id = old.id;
-    }
-    self.composite_image = new_img;
     self.rotateBBoxes();
 }
 
-/// Emit the composite image placement directly to the TTY, bypassing vaxis cells.
-/// Call this AFTER flush() and AFTER any vx.render() call (resize clears images).
-pub fn placeComposite(self: *Compositor) void {
-    if (self.composite_image) |img| {
-        const win = self.vx.window();
-        self.kitty.placeImageDirect(img.id, win.width, win.height);
+pub const LayerStats = struct { active_count: u8, dirty_w: u16, dirty_h: u16 };
+
+pub fn getStats(self: *const Compositor) LayerStats {
+    var count: u8 = 0;
+    var dw: u16 = 0;
+    var dh: u16 = 0;
+    for (self.layers) |layer| {
+        if (layer.has_content) {
+            count += 1;
+            if (!layer.drawn_bbox.isEmpty()) {
+                dw = @max(dw, layer.drawn_bbox.max_x -| layer.drawn_bbox.min_x);
+                dh = @max(dh, layer.drawn_bbox.max_y -| layer.drawn_bbox.min_y);
+            }
+        }
     }
+    return .{ .active_count = count, .dirty_w = dw, .dirty_h = dh };
+}
+
+/// Re-place the existing composite image after a vx.render() call disturbed it.
+/// Re-transmits via a=T because some terminals don't retain image data for a=p re-placement.
+/// Call this immediately after vx.render() whenever the cell grid was redrawn.
+pub fn redisplay(self: *Compositor) !void {
+    if (!self.has_composite) return;
+    const win = self.vx.window();
+    try self.kitty.transmitAndDisplay(self.composite_buf, self.width, self.height, win.width, win.height);
 }
 
 /// Rotate drawn_bbox → prev_bbox and clear dirty flags for all layers.
@@ -543,20 +651,24 @@ fn rotateBBoxes(self: *Compositor) void {
         layer.prev_bbox = layer.drawn_bbox;
         layer.drawn_bbox = BBox.EMPTY;
         layer.dirty = false;
+        layer.cleared_this_frame = false;
     }
     self.any_dirty = false;
 }
 
 fn flattenLayers(self: *Compositor) void {
-    // Compute the union of all visible layers' bboxes (drawn + prev to catch clears)
+    // Accumulate the damage region: drawn pixels ∪ cleared regions.
+    // This bounds the flatten loop to only pixels that may have changed,
+    // saving CPU work even though we always upload the full frame via a=T.
     var region = BBox.EMPTY;
     for (&self.layers) |*layer| {
         if (!layer.visible and layer.prev_bbox.isEmpty()) continue;
         if (layer.has_content) {
             region = region.unionWith(layer.drawn_bbox);
         }
-        // Include prev_bbox so cleared regions get recomposited
-        region = region.unionWith(layer.prev_bbox);
+        if (layer.cleared_this_frame) {
+            region = region.unionWith(layer.prev_bbox);
+        }
     }
 
     // Clamp to canvas
@@ -565,12 +677,7 @@ fn flattenLayers(self: *Compositor) void {
     region.max_x = @min(region.max_x, self.width);
     region.max_y = @min(region.max_y, self.height);
 
-    if (region.isEmpty()) {
-        // Nothing visible at all
-        const byte_count = @as(usize, self.width) * @as(usize, self.height) * 4;
-        @memset(self.composite_buf[0..byte_count], 0);
-        return;
-    }
+    if (region.isEmpty()) return;
 
     const stride: usize = @as(usize, self.width) * 4;
     const rx0: usize = region.min_x;
@@ -630,18 +737,6 @@ fn flattenLayers(self: *Compositor) void {
         while (y < region.max_y) : (y += 1) {
             @memset(self.composite_buf[y * stride + rx0 * 4 ..][0..row_bytes], 0);
         }
-    }
-}
-
-/// Free all kitty images from terminal memory.
-pub fn freeAllImages(self: *Compositor) void {
-    if (self.pending_free_id) |old_id| {
-        self.kitty.freeImage(old_id);
-        self.pending_free_id = null;
-    }
-    if (self.composite_image) |img| {
-        self.kitty.freeImage(img.id);
-        self.composite_image = null;
     }
 }
 

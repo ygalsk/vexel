@@ -428,8 +428,8 @@ function engine.draw()
 
 	local mode = use_zig and "ZIG" or "LUA"
 	local label = string.format("MODE: %s  |  %dx%d = %d calls/frame", mode, W, H, W * H)
-	engine.graphics.draw_text(1, 0, label, 0xFFFFFF, 0x000000)
-	engine.graphics.draw_text(1, 1, "TAB: toggle  |  ESC: quit", 0xAAAAAA, 0x000000)
+	engine.graphics.draw_text(4, 2, label, 0xFFFFFF)
+	engine.graphics.draw_text(4, 12, "TAB: toggle  |  ESC: quit", 0xAAAAAA)
 end
 
 function engine.on_key(key, action)

@@ -1,7 +1,6 @@
 const std = @import("std");
 const zlua = @import("zlua");
 const Lua = zlua.Lua;
-const vaxis = @import("vaxis");
 const Compositing = @import("compositing");
 const SpritePlacer = @import("sprite_placer");
 const ImageMod = @import("image");
@@ -14,56 +13,14 @@ const SoundId = audio_mod_.SoundId;
 const AudioLoadOpts = audio_mod_.LoadOpts;
 const AudioPlayOpts = audio_mod_.PlayOpts;
 const SaveFs = @import("save").SaveFs;
+const font_mod = @import("font");
+const FontAtlas = font_mod.FontAtlas;
+const DrawOpts = font_mod.DrawOpts;
 const METATABLE_IMAGE = "VexelImage";
 const METATABLE_SOUND = "VexelSound";
+const METATABLE_FONT = "VexelFont";
 
 const Color = Compositing.Color;
-
-pub const CellContext = struct {
-    vx: *vaxis.Vaxis,
-    screen_info: *SpritePlacer.ScreenInfo,
-    cell_dirty: *bool,
-
-    fn colorToVaxis(c: Color) vaxis.Cell.Color {
-        return .{ .rgb = .{ c.r, c.g, c.b } };
-    }
-
-    pub fn drawText(self: *CellContext, col: u16, row: u16, text: []const u8, fg: ?Color, bg: ?Color) void {
-        self.cell_dirty.* = true;
-        const style: vaxis.Cell.Style = .{
-            .fg = if (fg) |c| colorToVaxis(c) else .default,
-            .bg = if (bg) |c| colorToVaxis(c) else .default,
-        };
-        _ = self.vx.window().print(&.{.{ .text = text, .style = style }}, .{
-            .row_offset = row,
-            .col_offset = col,
-            .wrap = .none,
-        });
-    }
-
-    pub fn drawRect(self: *CellContext, col: u16, row: u16, w: u16, h: u16, color: Color) void {
-        self.cell_dirty.* = true;
-        const win = self.vx.window();
-        const style: vaxis.Cell.Style = .{
-            .bg = colorToVaxis(color),
-        };
-        var y: u16 = row;
-        while (y < row +| h and y < win.height) : (y += 1) {
-            var x: u16 = col;
-            while (x < col +| w and x < win.width) : (x += 1) {
-                win.writeCell(x, y, .{
-                    .char = .{ .grapheme = " ", .width = 1 },
-                    .style = style,
-                });
-            }
-        }
-    }
-
-    pub fn clear(self: *CellContext) void {
-        self.cell_dirty.* = true;
-        self.vx.window().clear();
-    }
-};
 
 /// Userdata stored inside each Lua image handle.
 pub const LuaImageHandle = struct {
@@ -97,31 +54,45 @@ fn getUpvalue2(lua: *Lua, comptime T: type) *T {
 }
 
 pub const EngineContext = struct {
-    cell_ctx: *CellContext,
     compositor: *Compositing,
     sprite_placer: *SpritePlacer,
+    screen_info: *SpritePlacer.ScreenInfo,
     image_manager: *ImageMod,
     shader_registry: *lua_bind.ShaderRegistry,
     input_state: *InputState,
     audio_system: ?*AudioSystem,
     save_fs: *SaveFs,
+    default_font: *FontAtlas,
+};
+
+/// Heap-allocated FontAtlas wrapped in Lua userdata.
+pub const LuaFontHandle = struct {
+    font: *FontAtlas,
+    valid: bool,
 };
 
 /// Register all engine.* API functions into the Lua state.
 /// Call this after LuaEngine.init() but before loadGame().
 pub fn register(lua: *Lua, ctx: EngineContext) void {
-    const cell_ctx = ctx.cell_ctx;
     const compositor = ctx.compositor;
     const sprite_placer = ctx.sprite_placer;
+    const screen_info = ctx.screen_info;
     const image_manager = ctx.image_manager;
     const shader_registry = ctx.shader_registry;
     const input_state = ctx.input_state;
     const audio_system = ctx.audio_system;
     const save_fs = ctx.save_fs;
+    const default_font = ctx.default_font;
 
     // Create VexelImage metatable with __gc
     lua.newMetatable(METATABLE_IMAGE) catch {};
     pushUpvalueClosure(lua, image_manager, zlua.wrap(lImageGc));
+    lua.setField(-2, "__gc");
+    lua.pop(1);
+
+    // Create VexelFont metatable with __gc
+    lua.newMetatable(METATABLE_FONT) catch {};
+    lua.pushFunction(zlua.wrap(lFontGc));
     lua.setField(-2, "__gc");
     lua.pop(1);
 
@@ -131,16 +102,23 @@ pub fn register(lua: *Lua, ctx: EngineContext) void {
     // engine.graphics
     lua.newTable();
 
-    pushUpvalueClosure(lua, cell_ctx, zlua.wrap(lDrawText));
+    pushUpvalueClosure2(lua, compositor, default_font, zlua.wrap(lDrawText));
     lua.setField(-2, "draw_text");
-    pushUpvalueClosure(lua, cell_ctx, zlua.wrap(lDrawRect));
-    lua.setField(-2, "draw_rect");
-    pushUpvalueClosure(lua, cell_ctx, zlua.wrap(lClear));
-    lua.setField(-2, "clear");
-    pushUpvalueClosure(lua, cell_ctx, zlua.wrap(lGetSize));
+    pushUpvalueClosure(lua, screen_info, zlua.wrap(lGetSize));
     lua.setField(-2, "get_size");
-    pushUpvalueClosure(lua, cell_ctx, zlua.wrap(lGetPixelSize));
+    pushUpvalueClosure(lua, screen_info, zlua.wrap(lGetPixelSize));
     lua.setField(-2, "get_pixel_size");
+
+    pushUpvalueClosure(lua, image_manager, zlua.wrap(lLoadFont));
+    lua.setField(-2, "load_font");
+    lua.pushFunction(zlua.wrap(lUnloadFont));
+    lua.setField(-2, "unload_font");
+    pushUpvalueClosure(lua, default_font, zlua.wrap(lGetTextWidth));
+    lua.setField(-2, "get_text_width");
+    pushUpvalueClosure(lua, default_font, zlua.wrap(lGetTextHeight));
+    lua.setField(-2, "get_text_height");
+    pushUpvalueClosure(lua, compositor, zlua.wrap(lSetScissor));
+    lua.setField(-2, "set_scissor");
 
     pushUpvalueClosure(lua, compositor, zlua.wrap(lSetResolution));
     lua.setField(-2, "set_resolution");
@@ -260,41 +238,63 @@ fn luaHexColor(lua: *Lua, idx: i32, default: u32) Color {
 }
 
 fn lDrawText(lua: *Lua) i32 {
-    const ctx = getUpvalue(lua, CellContext);
-    const col: u16 = @intCast(lua.toInteger(1) catch 0);
-    const row: u16 = @intCast(lua.toInteger(2) catch 0);
-    const text = lua.toString(3) catch "?";
-    ctx.drawText(col, row, text, luaOptionalColor(lua, 4), luaOptionalColor(lua, 5));
-    return 0;
-}
+    const comp = getUpvalue(lua, Compositing);
+    const default_font = getUpvalue2(lua, FontAtlas);
+    const x: i32 = @intCast(lua.toInteger(1) catch 0);
+    const y: i32 = @intCast(lua.toInteger(2) catch 0);
+    const text = lua.toString(3) catch return 0;
+    const color = luaHexColor(lua, 4, 0xFFFFFF);
 
-fn lDrawRect(lua: *Lua) i32 {
-    const ctx = getUpvalue(lua, CellContext);
-    const col: u16 = @intCast(lua.toInteger(1) catch 0);
-    const row: u16 = @intCast(lua.toInteger(2) catch 0);
-    const w: u16 = @intCast(lua.toInteger(3) catch 1);
-    const h: u16 = @intCast(lua.toInteger(4) catch 1);
-    ctx.drawRect(col, row, w, h, luaHexColor(lua, 5, 0xFFFFFF));
-    return 0;
-}
+    var opts = DrawOpts{};
+    var atlas = default_font;
 
-fn lClear(lua: *Lua) i32 {
-    const ctx = getUpvalue(lua, CellContext);
-    ctx.clear();
+    if (lua.typeOf(5) == .table) {
+        // opts.font: font userdata
+        if (lua.getField(5, "font") == .userdata) {
+            const ud = lua.toUserdata(LuaFontHandle, -1) catch null;
+            if (ud) |h| {
+                if (h.valid) atlas = h.font;
+            }
+        }
+        lua.pop(1);
+
+        // opts.width
+        if (lua.getField(5, "width") == .number) {
+            const w = lua.toInteger(-1) catch 0;
+            if (w > 0) opts.width = @intCast(w);
+        }
+        lua.pop(1);
+
+        // opts.align
+        if (lua.getField(5, "align") == .string) {
+            const s = lua.toString(-1) catch "";
+            opts.alignment = std.meta.stringToEnum(DrawOpts.Align, s) orelse .left;
+        }
+        lua.pop(1);
+
+        // opts.wrap
+        if (lua.getField(5, "wrap") == .string) {
+            const s = lua.toString(-1) catch "";
+            opts.wrap = std.meta.stringToEnum(DrawOpts.Wrap, s) orelse .none;
+        }
+        lua.pop(1);
+    }
+
+    atlas.drawText(comp, x, y, text, color, opts);
     return 0;
 }
 
 fn lGetSize(lua: *Lua) i32 {
-    const ctx = getUpvalue(lua, CellContext);
-    lua.pushInteger(@intCast(ctx.screen_info.cols));
-    lua.pushInteger(@intCast(ctx.screen_info.rows));
+    const info = getUpvalue(lua, SpritePlacer.ScreenInfo);
+    lua.pushInteger(@intCast(info.cols));
+    lua.pushInteger(@intCast(info.rows));
     return 2;
 }
 
 fn lGetPixelSize(lua: *Lua) i32 {
-    const ctx = getUpvalue(lua, CellContext);
-    lua.pushInteger(@intCast(ctx.screen_info.x_pixel));
-    lua.pushInteger(@intCast(ctx.screen_info.y_pixel));
+    const info = getUpvalue(lua, SpritePlacer.ScreenInfo);
+    lua.pushInteger(@intCast(info.x_pixel));
+    lua.pushInteger(@intCast(info.y_pixel));
     return 2;
 }
 
@@ -383,6 +383,140 @@ fn lPixelShade(lua: *Lua) i32 {
 fn lPixelClear(lua: *Lua) i32 {
     const comp = getUpvalue(lua, Compositing);
     comp.clearLayer();
+    return 0;
+}
+
+// --- Font functions ---
+
+fn pushFontUserdata(lua: *Lua, font: *FontAtlas) void {
+    const ud = lua.newUserdata(LuaFontHandle, 0);
+    ud.* = .{ .font = font, .valid = true };
+    _ = lua.getField(zlua.registry_index, METATABLE_FONT);
+    lua.setMetatable(-2);
+}
+
+fn releaseFontHandle(ud: *LuaFontHandle) void {
+    if (!ud.valid) return;
+    const alloc = ud.font.allocator;
+    ud.font.deinit();
+    alloc.destroy(ud.font);
+    ud.valid = false;
+}
+
+fn lFontGc(lua: *Lua) i32 {
+    releaseFontHandle(lua.checkUserdata(LuaFontHandle, 1, METATABLE_FONT));
+    return 0;
+}
+
+/// engine.graphics.load_font(path, size)          — TTF at pixel_height=size
+/// engine.graphics.load_font(path, glyph_w, glyph_h) — bitmap PNG
+fn lLoadFont(lua: *Lua) i32 {
+    const mgr = getUpvalue(lua, ImageMod);
+    const rel_path = lua.toString(1) catch {
+        lua.raiseErrorStr("load_font: expected string path", .{});
+    };
+    const size: u16 = @intCast(lua.toInteger(2) catch {
+        lua.raiseErrorStr("load_font: expected integer size", .{});
+    });
+
+    const full_path = std.fmt.allocPrint(mgr.allocator, "{s}/{s}", .{ mgr.game_dir, rel_path }) catch {
+        lua.raiseErrorStr("load_font: out of memory", .{});
+    };
+    defer mgr.allocator.free(full_path);
+
+    const font_ptr = mgr.allocator.create(FontAtlas) catch {
+        lua.raiseErrorStr("load_font: out of memory", .{});
+    };
+    errdefer mgr.allocator.destroy(font_ptr);
+
+    // 3 args → bitmap PNG (glyph_w=size, glyph_h=arg3)
+    if (lua.typeOf(3) == .number) {
+        const glyph_h: u8 = @intCast(lua.toInteger(3) catch size);
+        const glyph_w: u8 = @intCast(size);
+
+        // Load PNG via image manager to get RGBA pixels
+        const handle = mgr.loadImage(rel_path) catch {
+            lua.raiseErrorStr("load_font: failed to load image '%s'", .{rel_path.ptr});
+        };
+        defer mgr.unloadImage(handle);
+
+        const info = mgr.getImageInfo(handle) orelse {
+            lua.raiseErrorStr("load_font: no pixel data for '%s'", .{rel_path.ptr});
+        };
+
+        font_ptr.* = FontAtlas.loadFromBitmap(
+            mgr.allocator,
+            info.pixels,
+            @intCast(info.width),
+            @intCast(info.height),
+            glyph_w,
+            glyph_h,
+        ) catch {
+            lua.raiseErrorStr("load_font: invalid bitmap font '%s'", .{rel_path.ptr});
+        };
+    } else {
+        // 2 args → TTF
+        const ttf_data = std.fs.cwd().readFileAlloc(mgr.allocator, full_path, 16 * 1024 * 1024) catch {
+            lua.raiseErrorStr("load_font: failed to read '%s'", .{rel_path.ptr});
+        };
+        defer mgr.allocator.free(ttf_data);
+
+        font_ptr.* = FontAtlas.loadFromTtf(mgr.allocator, ttf_data, size) catch {
+            lua.raiseErrorStr("load_font: failed to rasterize TTF '%s'", .{rel_path.ptr});
+        };
+    }
+
+    pushFontUserdata(lua, font_ptr);
+    return 1;
+}
+
+/// engine.graphics.unload_font(font)
+fn lUnloadFont(lua: *Lua) i32 {
+    releaseFontHandle(lua.checkUserdata(LuaFontHandle, 1, METATABLE_FONT));
+    return 0;
+}
+
+/// Resolve the FontAtlas to use: return ud.font if arg at idx is a valid VexelFont userdata,
+/// otherwise return default.
+fn resolveFont(lua: *Lua, idx: i32, default: *FontAtlas) *FontAtlas {
+    if (lua.typeOf(idx) == .userdata) {
+        if (lua.toUserdata(LuaFontHandle, idx) catch null) |ud| {
+            if (ud.valid) return ud.font;
+        }
+    }
+    return default;
+}
+
+/// engine.graphics.get_text_width(text, [font]) → int
+fn lGetTextWidth(lua: *Lua) i32 {
+    const default_font = getUpvalue(lua, FontAtlas);
+    const text = lua.toString(1) catch {
+        lua.pushInteger(0);
+        return 1;
+    };
+    lua.pushInteger(@intCast(resolveFont(lua, 2, default_font).measureText(text)));
+    return 1;
+}
+
+/// engine.graphics.get_text_height([font]) → int
+fn lGetTextHeight(lua: *Lua) i32 {
+    const default_font = getUpvalue(lua, FontAtlas);
+    lua.pushInteger(@intCast(resolveFont(lua, 1, default_font).line_height));
+    return 1;
+}
+
+/// engine.graphics.set_scissor(x,y,w,h) or set_scissor() to clear
+fn lSetScissor(lua: *Lua) i32 {
+    const comp = getUpvalue(lua, Compositing);
+    if (lua.typeOf(1) == .nil or lua.typeOf(1) == .none) {
+        comp.clearScissor();
+    } else {
+        const x: i32 = @intCast(lua.toInteger(1) catch 0);
+        const y: i32 = @intCast(lua.toInteger(2) catch 0);
+        const w: i32 = @intCast(lua.toInteger(3) catch 0);
+        const h: i32 = @intCast(lua.toInteger(4) catch 0);
+        comp.setScissor(x, y, w, h);
+    }
     return 0;
 }
 

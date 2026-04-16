@@ -112,9 +112,9 @@ function engine.draw()
 
     -- HUD overlay
     local mode_label = is_julia and "Julia" or "Mandelbrot"
-    engine.graphics.draw_text(1, 0,
+    engine.graphics.draw_text(4, 2,
         string.format("%s  zoom: %.0fx", mode_label, zoom), 0xCCCCCC)
-    engine.graphics.draw_text(1, 1, "[m]andelbrot  [j]ulia  [r]eset  +/-  [q]uit", 0x666666)
+    engine.graphics.draw_text(4, 12, "[m]andelbrot  [j]ulia  [r]eset  +/-  [q]uit", 0x666666)
 end
 
 function engine.on_key(key, action)

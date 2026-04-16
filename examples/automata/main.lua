@@ -13,8 +13,8 @@ function engine.draw()
         reset_flag and 1 or 0)
     reset_flag = false
 
-    engine.graphics.draw_text(1, 1, "  [</>]speed  [spc]new seed  [esc]quit", "777777", "000000")
-    engine.graphics.draw_text(1, 2, "3d cellular automata  speed:" .. string.format("%.1f", speed), "ffffff", "000000")
+    engine.graphics.draw_text(4, 2, "  [</>]speed  [spc]new seed  [esc]quit", 0x777777)
+    engine.graphics.draw_text(4, 12, "3d cellular automata  speed:" .. string.format("%.1f", speed), 0xFFFFFF)
 end
 
 function engine.on_key(key, action)

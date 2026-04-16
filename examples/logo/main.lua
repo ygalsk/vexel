@@ -40,8 +40,8 @@ function engine.draw()
         "VEXEL  [%s]  %.1fs  |  %dx%d",
         phase_names[phase_idx + 1], remaining, W, H
     )
-    engine.graphics.draw_text(1, 0, label, 0xCCCCCC)
-    engine.graphics.draw_text(1, 1, "[space] next  [q] quit", 0x666666)
+    engine.graphics.draw_text(4, 2, label, 0xCCCCCC)
+    engine.graphics.draw_text(4, 12, "[space] next  [q] quit", 0x666666)
 end
 
 function engine.on_key(key, action)

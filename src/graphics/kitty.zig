@@ -19,9 +19,20 @@ writer: *IoWriter,
 encode_buf: []u8,
 next_file_id: u32,
 transport: TransportMode,
+/// Ring slot for compositor SHM files. u2 wraps at 4 — compile-time ring size enforcement.
+shm_slot_composite: u2 = 0,
+/// Ring slot for sprite SHM files. u2 wraps at 4 — compile-time ring size enforcement.
+shm_slot_sprite: u2 = 0,
 
 /// Image IDs for file-based uploads start here to avoid collisions with vaxis's sequential IDs.
 const FILE_ID_BASE: u32 = 0x40000000;
+
+/// Fixed image ID for the fullscreen compositor image (a=T transmit-and-display).
+pub const COMPOSITE_ID: u32 = FILE_ID_BASE;
+/// Fixed placement id for the compositor image. Required to key (i, p) deterministically on
+/// Ghostty (ghostty#6711): without an explicit p=, Ghostty allocates a fresh internal placement
+/// each a=T and old placements accumulate as visible ghosts.
+pub const COMPOSITE_PLACEMENT: u32 = 1;
 
 /// Ghostty requires "tty-graphics-protocol" in the filename for t=t transport.
 /// Kitty doesn't care about the name. This prefix satisfies both.
@@ -40,7 +51,7 @@ pub fn init(allocator: std.mem.Allocator, vx: *vaxis.Vaxis, writer: *IoWriter, t
         .vx = vx,
         .writer = writer,
         .encode_buf = buf,
-        .next_file_id = FILE_ID_BASE,
+        .next_file_id = FILE_ID_BASE + 1, // COMPOSITE_ID occupies FILE_ID_BASE
         .transport = transport,
     };
 }
@@ -195,9 +206,10 @@ fn logTransport(msg: []const u8) void {
     std.fs.File.stderr().writeAll(s) catch {};
 }
 
-// ── Upload paths ───────────────────────────────────────────────────────
+// ── Upload paths (for sprite images) ──────────────────────────────────
 
 /// Upload raw RGBA pixel data using the best available transport.
+/// Returns a vaxis.Image handle for later placement (used by sprite pipeline).
 /// Falls back at runtime if a previously-working transport fails.
 pub fn uploadRgba(self: *Kitty, pixels: []const u8, width: u16, height: u16) !vaxis.Image {
     switch (self.transport) {
@@ -227,18 +239,17 @@ fn uploadViaFile(self: *Kitty, pixels: []const u8, width: u16, height: u16) !vax
     const id = self.next_file_id;
     self.next_file_id +%= 1;
 
+    self.shm_slot_sprite +%= 1;
     var path_buf: [80]u8 = undefined;
-    const path = std.fmt.bufPrint(&path_buf, SHM_PREFIX ++ "{d}", .{id}) catch return error.Unexpected;
+    const path = std.fmt.bufPrint(&path_buf, SHM_PREFIX ++ "sprite-{d}", .{self.shm_slot_sprite}) catch return error.Unexpected;
 
-    const file = std.fs.createFileAbsolute(path, .{}) catch return error.Unexpected;
-    defer file.close();
-    file.writeAll(pixels) catch return error.Unexpected;
+    writeShmFile(path, pixels) catch return error.Unexpected;
 
     var b64_buf: [108]u8 = undefined;
     const encoded_path = std.base64.standard.Encoder.encode(&b64_buf, path);
 
     self.writer.print(
-        "\x1b_Gf=32,s={d},v={d},i={d},t=t,S={d};{s}\x1b\\",
+        "\x1b_Gf=32,s={d},v={d},i={d},t=t,S={d},q=2;{s}\x1b\\",
         .{ width, height, id, pixels.len, encoded_path },
     ) catch return error.Unexpected;
     self.writer.flush() catch {};
@@ -251,22 +262,21 @@ fn uploadViaPosixShm(self: *Kitty, pixels: []const u8, width: u16, height: u16) 
     const id = self.next_file_id;
     self.next_file_id +%= 1;
 
+    self.shm_slot_sprite +%= 1;
     // POSIX shm name → maps to /dev/shm/... on Linux
     var name_buf: [64]u8 = undefined;
-    const shm_name = std.fmt.bufPrint(&name_buf, "/tty-graphics-protocol-vexel-{d}", .{id}) catch return error.Unexpected;
+    const shm_name = std.fmt.bufPrint(&name_buf, "/tty-graphics-protocol-vexel-sprite-{d}", .{self.shm_slot_sprite}) catch return error.Unexpected;
 
     var path_buf: [80]u8 = undefined;
     const file_path = std.fmt.bufPrint(&path_buf, "/dev/shm{s}", .{shm_name}) catch return error.Unexpected;
 
-    const file = std.fs.createFileAbsolute(file_path, .{}) catch return error.Unexpected;
-    defer file.close();
-    file.writeAll(pixels) catch return error.Unexpected;
+    writeShmFile(file_path, pixels) catch return error.Unexpected;
 
     var b64_buf: [88]u8 = undefined;
     const encoded = std.base64.standard.Encoder.encode(&b64_buf, shm_name);
 
     self.writer.print(
-        "\x1b_Gf=32,s={d},v={d},i={d},t=s,S={d};{s}\x1b\\",
+        "\x1b_Gf=32,s={d},v={d},i={d},t=s,S={d},q=2;{s}\x1b\\",
         .{ width, height, id, pixels.len, encoded },
     ) catch return error.Unexpected;
     self.writer.flush() catch {};
@@ -286,6 +296,104 @@ fn uploadViaBase64(self: *Kitty, pixels: []const u8, width: u16, height: u16) !v
     return self.vx.transmitPreEncodedImage(self.writer, encoded, width, height, .rgba);
 }
 
+// ── Compositor transmit-and-display (a=T) ─────────────────────────────
+
+/// Upload RGBA pixels and place them fullscreen in one atomic a=T command.
+/// Uses a fixed COMPOSITE_ID — replaces any previous placement of the same ID.
+/// DECSC/DECRC saves and restores the cursor so vaxis cell state is undisturbed.
+/// q=2 suppresses terminal ACK responses.
+pub fn transmitAndDisplay(self: *Kitty, pixels: []const u8, width: u16, height: u16, cols: u16, rows: u16) !void {
+    switch (self.transport) {
+        .posix_shm => {
+            return self.transmitAndDisplayViaPosixShm(pixels, width, height, cols, rows) catch {
+                self.transport = .tmpfile;
+                return self.transmitAndDisplayViaFile(pixels, width, height, cols, rows) catch {
+                    self.transport = .base64;
+                    logTransport("shm+tmpfile failed for transmit, using base64");
+                    return self.transmitAndDisplayViaBase64(pixels, width, height, cols, rows);
+                };
+            };
+        },
+        .tmpfile => {
+            return self.transmitAndDisplayViaFile(pixels, width, height, cols, rows) catch {
+                self.transport = .base64;
+                logTransport("tmpfile failed for transmit, using base64");
+                return self.transmitAndDisplayViaBase64(pixels, width, height, cols, rows);
+            };
+        },
+        .base64 => return self.transmitAndDisplayViaBase64(pixels, width, height, cols, rows),
+    }
+}
+
+fn transmitAndDisplayViaPosixShm(self: *Kitty, pixels: []const u8, width: u16, height: u16, cols: u16, rows: u16) !void {
+    self.shm_slot_composite +%= 1;
+    var name_buf: [64]u8 = undefined;
+    const shm_name = std.fmt.bufPrint(&name_buf, "/tty-graphics-protocol-vexel-composite-{d}", .{self.shm_slot_composite}) catch return error.Unexpected;
+
+    var path_buf: [80]u8 = undefined;
+    const file_path = std.fmt.bufPrint(&path_buf, "/dev/shm{s}", .{shm_name}) catch return error.Unexpected;
+
+    writeShmFile(file_path, pixels) catch return error.Unexpected;
+
+    var b64_buf: [88]u8 = undefined;
+    const encoded = std.base64.standard.Encoder.encode(&b64_buf, shm_name);
+
+    // DECSC + cursor home + a=T (transmit and display) + DECRC, all in one flush
+    self.writer.print(
+        "\x1b7\x1b[1;1H\x1b_Ga=T,i={d},p={d},f=32,s={d},v={d},c={d},r={d},z=-20,C=1,q=2,t=s,S={d};{s}\x1b\\\x1b8",
+        .{ COMPOSITE_ID, COMPOSITE_PLACEMENT, width, height, cols, rows, pixels.len, encoded },
+    ) catch return error.Unexpected;
+    self.writer.flush() catch {};
+}
+
+fn transmitAndDisplayViaFile(self: *Kitty, pixels: []const u8, width: u16, height: u16, cols: u16, rows: u16) !void {
+    self.shm_slot_composite +%= 1;
+    var path_buf: [80]u8 = undefined;
+    const path = std.fmt.bufPrint(&path_buf, SHM_PREFIX ++ "composite-{d}", .{self.shm_slot_composite}) catch return error.Unexpected;
+
+    writeShmFile(path, pixels) catch return error.Unexpected;
+
+    var b64_buf: [108]u8 = undefined;
+    const encoded_path = std.base64.standard.Encoder.encode(&b64_buf, path);
+
+    self.writer.print(
+        "\x1b7\x1b[1;1H\x1b_Ga=T,i={d},p={d},f=32,s={d},v={d},c={d},r={d},z=-20,C=1,q=2,t=t,S={d};{s}\x1b\\\x1b8",
+        .{ COMPOSITE_ID, COMPOSITE_PLACEMENT, width, height, cols, rows, pixels.len, encoded_path },
+    ) catch return error.Unexpected;
+    self.writer.flush() catch {};
+}
+
+fn transmitAndDisplayViaBase64(self: *Kitty, pixels: []const u8, width: u16, height: u16, cols: u16, rows: u16) !void {
+    const raw_chunk = 3072;
+    const b64_chunk = comptime std.base64.standard.Encoder.calcSize(raw_chunk);
+    var chunk_buf: [b64_chunk]u8 = undefined;
+
+    var offset: usize = 0;
+    while (offset < pixels.len) {
+        const end = @min(offset + raw_chunk, pixels.len);
+        const chunk = pixels[offset..end];
+        const more: u1 = if (end < pixels.len) 1 else 0;
+        const encoded = std.base64.standard.Encoder.encode(&chunk_buf, chunk);
+
+        if (offset == 0) {
+            // First chunk: DECSC + cursor home + full parameters
+            self.writer.print(
+                "\x1b7\x1b[1;1H\x1b_Ga=T,i={d},p={d},f=32,s={d},v={d},c={d},r={d},z=-20,C=1,q=2,m={d};{s}\x1b\\",
+                .{ COMPOSITE_ID, COMPOSITE_PLACEMENT, width, height, cols, rows, more, encoded },
+            ) catch return error.Unexpected;
+        } else {
+            self.writer.print(
+                "\x1b_Gm={d};{s}\x1b\\",
+                .{ more, encoded },
+            ) catch return error.Unexpected;
+        }
+        offset = end;
+    }
+    // DECRC after all chunks
+    self.writer.print("\x1b8", .{}) catch return error.Unexpected;
+    self.writer.flush() catch {};
+}
+
 // ── Image management ───────────────────────────────────────────────────
 
 /// Free a previously uploaded image from terminal memory.
@@ -298,16 +406,15 @@ pub fn freeImage(self: *Kitty, id: u32) void {
     }
 }
 
-/// Emit a Kitty image placement escape directly to the TTY,
-/// bypassing the vaxis cell grid. Positions at top-left, fills screen.
-/// Saves/restores cursor so vaxis's internal position tracking stays correct.
-pub fn placeImageDirect(self: *Kitty, img_id: u32, cols: u16, rows: u16) void {
-    // \x1b7 = DECSC (save cursor+attrs), \x1b8 = DECRC (restore)
-    self.writer.print(
-        "\x1b7\x1b[1;1H\x1b_Ga=p,i={d},r={d},c={d},z=-20,C=1\x1b\\\x1b8",
-        .{ img_id, rows, cols },
-    ) catch {};
-    self.writer.flush() catch {};
+/// Writes bytes to an SHM file at an absolute path.
+/// Unlinks any existing path first (terminal may or may not have unlinked),
+/// then creates with O_CREAT | O_EXCL so we always get a fresh inode — never
+/// truncate a file the terminal may still have mmap'd (SIGBUS in Ghostty).
+fn writeShmFile(file_path: []const u8, bytes: []const u8) !void {
+    std.fs.deleteFileAbsolute(file_path) catch {};
+    const file = try std.fs.createFileAbsolute(file_path, .{ .exclusive = true });
+    defer file.close();
+    try file.writeAll(bytes);
 }
 
 /// Remove any leftover /dev/shm/vexel-* files from previous runs or crashes.

@@ -21,6 +21,11 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
+    const truetype_dep = b.dependency("TrueType", .{
+        .target = target,
+        .optimize = optimize,
+    });
+
     const audio_enabled = b.option(bool, "audio", "Enable audio support (requires audio device)") orelse true;
 
     const zaudio_dep = if (audio_enabled) b.dependency("zaudio", .{}) else null;
@@ -53,6 +58,26 @@ pub fn build(b: *std.Build) void {
             .{ .name = "vaxis", .module = vaxis_dep.module("vaxis") },
             .{ .name = "kitty", .module = kitty_mod },
             .{ .name = "image", .module = image_mod },
+        },
+    });
+
+    const font_mod = b.createModule(.{
+        .root_source_file = b.path("src/graphics/font.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &.{
+            .{ .name = "compositing", .module = compositing_mod },
+            .{ .name = "TrueType", .module = truetype_dep.module("TrueType") },
+        },
+    });
+
+    const default_font_mod = b.createModule(.{
+        .root_source_file = b.path("src/graphics/default_font.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &.{
+            .{ .name = "compositing", .module = compositing_mod },
+            .{ .name = "font", .module = font_mod },
         },
     });
 
@@ -102,6 +127,12 @@ pub fn build(b: *std.Build) void {
         },
     }) else null;
 
+    const engine_log_mod = b.createModule(.{
+        .root_source_file = b.path("src/engine/log.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
     const lua_engine_mod = b.createModule(.{
         .root_source_file = b.path("src/scripting/lua_engine.zig"),
         .target = target,
@@ -117,13 +148,13 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
         .imports = &.{
             .{ .name = "zlua", .module = zlua_dep.module("zlua") },
-            .{ .name = "vaxis", .module = vaxis_dep.module("vaxis") },
             .{ .name = "compositing", .module = compositing_mod },
             .{ .name = "sprite_placer", .module = sprite_placer_mod },
             .{ .name = "image", .module = image_mod },
             .{ .name = "lua_bind", .module = lua_bind_mod },
             .{ .name = "input", .module = input_mod },
             .{ .name = "save", .module = save_mod },
+            .{ .name = "font", .module = font_mod },
         },
     });
     if (audio_mod) |am| {
@@ -146,6 +177,9 @@ pub fn build(b: *std.Build) void {
             .{ .name = "lua_api", .module = lua_api_mod },
             .{ .name = "lua_bind", .module = lua_bind_mod },
             .{ .name = "save", .module = save_mod },
+            .{ .name = "font", .module = font_mod },
+            .{ .name = "default_font", .module = default_font_mod },
+            .{ .name = "engine_log", .module = engine_log_mod },
         },
     });
     if (audio_mod) |am| {
@@ -214,6 +248,14 @@ pub fn build(b: *std.Build) void {
             .{ .name = "kitty", .module = kitty_mod },
             .{ .name = "image", .module = image_mod },
         }},
+        .{ .path = "src/graphics/font.zig", .imports = &.{
+            .{ .name = "compositing", .module = compositing_mod },
+            .{ .name = "TrueType", .module = truetype_dep.module("TrueType") },
+        }},
+        .{ .path = "src/graphics/default_font.zig", .imports = &.{
+            .{ .name = "compositing", .module = compositing_mod },
+            .{ .name = "font", .module = font_mod },
+        }},
         .{ .path = "src/graphics/sprite_placer.zig", .imports = &.{
             .{ .name = "vaxis", .module = vaxis_dep.module("vaxis") },
             .{ .name = "compositing", .module = compositing_mod },
@@ -249,13 +291,13 @@ pub fn build(b: *std.Build) void {
                 .optimize = optimize,
                 .imports = &.{
                     .{ .name = "zlua", .module = zlua_dep.module("zlua") },
-                    .{ .name = "vaxis", .module = vaxis_dep.module("vaxis") },
                     .{ .name = "compositing", .module = compositing_mod },
                     .{ .name = "sprite_placer", .module = sprite_placer_mod },
                     .{ .name = "image", .module = image_mod },
                     .{ .name = "lua_bind", .module = lua_bind_mod },
                     .{ .name = "input", .module = input_mod },
                     .{ .name = "save", .module = save_mod },
+                    .{ .name = "font", .module = font_mod },
                 },
             }),
         });

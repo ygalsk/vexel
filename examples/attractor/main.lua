@@ -161,8 +161,8 @@ function engine.draw()
     engine.graphics.pixel.buffer(pixels, 0, 0, W, H)
 
     local label = "  [1]lorenz  [2]thomas  [3]dadras  [</>]rotation  [spc]scatter  [esc]quit"
-    engine.graphics.draw_text(1, 1, label, "777777", "000000")
-    engine.graphics.draw_text(1, 2, "attractor: " .. ATTRACTORS[idx].name, "ffffff", "000000")
+    engine.graphics.draw_text(4, 2, label, 0x777777)
+    engine.graphics.draw_text(4, 12, "attractor: " .. ATTRACTORS[idx].name, 0xFFFFFF)
 end
 
 function engine.on_key(key, action)

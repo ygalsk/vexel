@@ -27,8 +27,8 @@ function engine.draw()
     -- HUD
     local label = "[1]maze [2]coral [3]waves [4]mitosis  [r]reset  [esc]quit"
     local mode_label = "mode: " .. modes[mode].name
-    engine.graphics.draw_text(1, 1, label, "888888", "000000")
-    engine.graphics.draw_text(1, 2, mode_label, "ffffff", "000000")
+    engine.graphics.draw_text(4, 2, label, 0x888888)
+    engine.graphics.draw_text(4, 12, mode_label, 0xFFFFFF)
 end
 
 function engine.on_key(key, action)
